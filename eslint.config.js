@@ -9,6 +9,27 @@ import react from "eslint-plugin-react";
 export default tseslint.config(
 	{ ignores: ["dist"] },
 	{
+		name: "jsxA11y",
+		files: ["**/*.{js,mjs,cjs,jsx,mjsx,ts,tsx,mtsx}"],
+		plugins: {
+			"jsx-a11y": jsxA11y,
+		},
+		languageOptions: {
+			ecmaVersion: 2022,
+			globals: globals.browser,
+			parserOptions: {
+				project: ["./tsconfig.node.json", "./tsconfig.app.json"],
+				tsconfigRootDir: import.meta.dirname,
+				ecmaFeatures: {
+					jsx: true,
+				},
+			},
+		},
+		rules: {
+			...jsxA11y.configs.strict.rules,
+		},
+	},
+	{
 		name: "Typescript",
 		extends: [
 			js.configs.recommended,
@@ -17,7 +38,7 @@ export default tseslint.config(
 		],
 		files: ["**/*.{ts,tsx}"],
 		languageOptions: {
-			ecmaVersion: 2020,
+			ecmaVersion: 2022,
 			globals: globals.browser,
 			parserOptions: {
 				project: ["./tsconfig.node.json", "./tsconfig.app.json"],
