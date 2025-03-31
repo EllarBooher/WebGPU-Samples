@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState, useRef } from "react";
-import { SampleEntry, samplesByID } from "./Samples";
+import { SampleEntry } from "./Samples";
 import { RendererApp, initializeApp } from "./RendererApp";
 import { GUI } from "lil-gui";
 import "./WebGPUSamplePage.css";
@@ -115,8 +115,7 @@ const RenderingCanvas = function RenderingCanvas({
 			const drawContext = canvasRef.current?.getContext("webgpu");
 
 			if (drawContext) {
-				const deltaTime =
-					time - (lastTimeRef.current ? lastTimeRef.current : 0.0);
+				const deltaTime = time - (lastTimeRef.current ?? 0.0);
 				lastTimeRef.current = time;
 
 				const drawTexture = drawContext.getCurrentTexture();
