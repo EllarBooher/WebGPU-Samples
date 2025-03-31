@@ -1,0 +1,57 @@
+.citation {
+	display: flex;
+	gap: 1rem;
+	padding: 0.5rem;
+}
+
+.citation > p {
+	margin: 0;
+}
+
+.readme-body {
+	padding: 1rem;
+}
+
+.readme-body > p {
+	overflow-wrap: anywhere;
+}
+
+.readme-body > h1 {
+	margin-inline: 1rem;
+	padding-bottom: 0.5rem;
+	margin-bottom: 1rem;
+	border-bottom: 1px solid white;
+}
+
+.readme-body > h2 {
+	margin-inline: 1rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid white;
+}
+
+.readme-body > *:not(h1, h2) {
+	padding-inline: 1rem;
+}
+
+.readme-body > ul {
+	padding-inline: 4rem;
+}
+
+.readme-body > .citation {
+	padding-inline: 2rem;
+}
+
+/* Style blocks of math, not inline math */
+mjx-container[display] {
+	background-color: var(--background-color-darkest);
+	padding: 1em;
+	border-radius: 0.5em;
+	width: 0;
+	min-width: 100%;
+	overflow-x: auto;
+	box-sizing: border-box;
+}
+
+.citation-text {
+	overflow-wrap: anywhere;
+}

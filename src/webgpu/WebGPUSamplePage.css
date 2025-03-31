@@ -1,0 +1,114 @@
+.lil-gui {
+	--title-background-color: var(--background-color-darkest);
+	--title-text-color: var(--text-color);
+	--background-color: var(--background-color-dark);
+	--widget-color: var(--background-color-light);
+	--hover-color: var(--background-color-lightest);
+	--focus-color: var(--background-color-lightest);
+	--number-color: var(--text-color);
+	--string-color: var(--text-color);
+}
+
+.lil-gui.root {
+	max-height: 100%;
+}
+
+.lil-gui.root > .children {
+	overflow-y: scroll;
+}
+
+.lil-gui option {
+	color: black;
+}
+
+.lil-gui.transition.root > .children {
+	overflow-y: scroll;
+}
+
+.canvas-container {
+	flex: 1;
+
+	/*
+	relative allows absolute children (canvas & GUI pane) to snap to the edge of
+	the rendering area and not some other parent It also allows the canvas to fill
+	the exact visible area and overflow: hidden any extra
+
+	Other techniques seems to always add a scrollbar for the canvas when zooming
+	or even at 100% zoom This arrangement keeps the canvas filling the available
+	area which is what we want.
+	*/
+	position: relative;
+	overflow: hidden;
+}
+
+.sample-canvas {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+
+.gui-pane-floating {
+	position: absolute;
+	right: 0;
+}
+
+.sample-main {
+	display: flex;
+	flex-direction: row;
+}
+
+.sample-body {
+	flex: 1;
+}
+
+.sample-app-container {
+	display: flex;
+	flex-direction: row;
+	background-color: var(--background-color-dark);
+
+	/*
+	 * We have sample end neatly at 100vh when page is scrolled all the way up.
+	 * This assumes that only the header is offsetting the top
+	 */
+	height: calc(100svh - var(--header-height) - 2rem);
+}
+
+.sample-text {
+	margin: 0;
+	padding: 2rem;
+	background-color: var(--background-color-light);
+	flex: 1;
+}
+
+.sample-errors {
+	padding: 2rem;
+	background-color: #91433f;
+}
+
+.sample-sidebar {
+	width: 10rem;
+	background-color: var(--background-color-dark);
+	justify-items: center;
+}
+
+.sample-sidebar > h2 {
+	padding-inline: 1rem;
+	margin: 0;
+}
+
+.sample-sidebar > ul {
+	padding: 0;
+	margin: 0;
+}
+
+.sample-sidebar > ul > li {
+	width: 100%;
+	height: 2rem;
+	display: flex;
+	text-align: center;
+	list-style-type: none;
+}
+
+.sample-sidebar > ul > li > a {
+	flex: 1;
+}
