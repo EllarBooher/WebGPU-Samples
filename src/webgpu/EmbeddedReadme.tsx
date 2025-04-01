@@ -4,6 +4,7 @@ import "prism-themes/themes/prism-one-dark.min.css";
 
 import parseToHTML, { DOMNode, domToReact, Element } from "html-react-parser";
 import { HashLink } from "react-router-hash-link";
+import { SampleID, SampleInitDescriptorByID } from "./Samples";
 
 const repoRoot =
 	"https://github.com/EllarBooher/EllarBooher.github.io/tree/main/src/webgpu";
@@ -17,11 +18,13 @@ const repoRoot =
  * the page but also viewing in the repo
  */
 export const EmbeddedReadme = memo(function EmbeddedReadme({
-	projectFolder,
+	sampleID,
 }: {
-	projectFolder?: string;
+	sampleID: SampleID;
 }) {
 	const [readmeText, setReadmeText] = useState<string>();
+
+	const projectFolder = SampleInitDescriptorByID.get(sampleID)?.projectFolder;
 
 	useEffect(() => {
 		if (projectFolder === undefined) {

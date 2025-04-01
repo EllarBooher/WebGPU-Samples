@@ -1,8 +1,8 @@
 import React, { useEffect, useCallback, useState, useRef } from "react";
-import { SampleEntry } from "./Samples";
 import { RendererApp, initializeApp } from "./RendererApp";
 import { GUI } from "lil-gui";
 import "./WebGPUSamplePage.css";
+import { SampleID, SampleInitDescriptorByID } from "./Samples";
 
 const CanvasScreenshotWidget = ({
 	canvas,
@@ -225,9 +225,9 @@ const RenderingCanvas = function RenderingCanvas({
  * @param sample - The sample load, run, and display.
  */
 export const AppLoader = function AppLoader({
-	sample,
+	sampleID,
 }: {
-	sample: SampleEntry;
+	sampleID: SampleID;
 }): JSX.Element {
 	const [errors, setErrors] = useState<string[]>();
 	const appRef = useRef<RendererApp>();
@@ -249,7 +249,14 @@ export const AppLoader = function AppLoader({
 		[setErrors]
 	);
 
+	const sample = SampleInitDescriptorByID.get(sampleID);
+
 	useEffect(() => {
+		if (sample === undefined) {
+			setErrors(["No such sample, please navigate to another page."]);
+			setInitialized(true);
+			return;
+		}
 		if (!("gpu" in navigator)) {
 			setErrors([
 				"WebGPU is not available in this browser.",
