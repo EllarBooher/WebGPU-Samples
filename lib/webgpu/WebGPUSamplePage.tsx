@@ -222,12 +222,22 @@ const RenderingCanvas = function RenderingCanvas({
 /**
  * A component that handles the initialization of the rendering application for
  * a given sample, before serving it on a canvas.
+ *
+ * By default, the sample's root div is a row flexbox. Its height is unmanaged
+ * and will expand with the UI. Pass a height or other CSS via
+ * {@link styleOverrides} to manage the container's shape. The UI will scroll
+ * vertically when overflowing.
+ *
  * @param sample - The sample load, run, and display.
+ * @param styleOverrides - Optional CSS properties to pass to the outermost div,
+ *  useful for controlling the width and height.
  */
 export const AppLoader = function AppLoader({
 	sampleID,
+	styleOverrides,
 }: {
 	sampleID: SampleID;
+	styleOverrides?: React.CSSProperties;
 }): JSX.Element {
 	const [errors, setErrors] = useState<string[]>();
 	const appRef = useRef<RendererApp>();
@@ -338,7 +348,7 @@ export const AppLoader = function AppLoader({
 	}
 
 	return (
-		<div className="webgpu-samples-app-loader">
+		<div className="webgpu-samples-app-loader" style={styleOverrides}>
 			{initialized ? (
 				<>
 					{errors !== undefined ? (

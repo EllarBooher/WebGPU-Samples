@@ -12,11 +12,11 @@ const root = document.getElementById("root")!;
 
 const SamplePage = ({ sampleID }: { sampleID: SampleID }) => {
 	return (
-		<>
+		<div style={{ flex: "1" }}>
 			<SampleDirectory />
-			<AppLoader sampleID={sampleID} />
+			<AppLoader styleOverrides={{ height: "60svh" }} sampleID={sampleID} />
 			<EmbeddedReadme sampleID={sampleID} />
-		</>
+		</div>
 	);
 };
 const SampleDirectory = () => {
@@ -33,6 +33,7 @@ const SampleDirectory = () => {
 				display: "flex",
 				gap: "0.5rem",
 				alignSelf: "center",
+				padding: "1rem",
 			}}
 		>
 			<a href={`/`}>index</a>

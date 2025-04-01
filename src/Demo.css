@@ -13,11 +13,17 @@ html {
 	--text-color-link: #fcc878;
 }
 
+body {
+	margin: 1rem;
+	background-color: var(--background-color-dark);
+}
+
 #root {
 	display: flex;
 	flex-direction: column;
 	min-height: 100vh;
 	color: var(--text-color);
+	background-color: var(--background-color-light);
 }
 
 a {
