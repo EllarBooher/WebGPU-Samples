@@ -4,8 +4,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
 
-import { wgslPlugin } from "./src/shaders/WGSLPlugin";
-import sampleReadme from "./src/webgpu/ReadmePlugin";
+import { wgslPlugin } from "./lib/shaders/WGSLPlugin";
+import sampleReadme from "./lib/webgpu/ReadmePlugin";
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,7 +25,7 @@ export default defineConfig({
 		emptyOutDir: true,
 		outDir: path.resolve(__dirname, "dist"),
 		lib: {
-			entry: path.resolve(__dirname, "src/main.ts"),
+			entry: path.resolve(__dirname, "lib/main.ts"),
 			formats: ["es"],
 			fileName: () => "main.js",
 		},
@@ -33,5 +33,5 @@ export default defineConfig({
 			external: ["react", "react-dom", "react-router"],
 		},
 	},
-	test: { includeSource: ["src/**/*.{js,ts}"] },
+	test: { includeSource: ["lib/**/*.{js,ts}"] },
 });

@@ -16,7 +16,7 @@ export default tseslint.config(
 			...tseslint.configs.recommendedTypeChecked,
 			...tseslint.configs.stylisticTypeChecked,
 		],
-		files: ["src/**/*.{js,mjs,cjs,jsx,mjsx,ts,tsx,mtsx}"],
+		files: ["lib/**/*.{js,mjs,cjs,jsx,mjsx,ts,tsx,mtsx}"],
 		languageOptions: {
 			ecmaVersion: 2022,
 			globals: globals.browser,
