@@ -338,7 +338,7 @@ export const AppLoader = function AppLoader({
 	}
 
 	return (
-		<>
+		<div className="webgpu-samples-app-loader">
 			{initialized ? (
 				<>
 					{errors !== undefined ? (
@@ -350,6 +350,6 @@ export const AppLoader = function AppLoader({
 			) : (
 				loadingBlock
 			)}
-		</>
+		</div>
 	);
 };

@@ -25,6 +25,11 @@
 	overflow-y: scroll;
 }
 
+.webgpu-samples-app-loader {
+	display: flex;
+	margin: 5rem;
+}
+
 .webgpu-samples-canvas-container {
 	flex: 1;
 
