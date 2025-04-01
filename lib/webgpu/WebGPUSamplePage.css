@@ -1,12 +1,12 @@
 .lil-gui {
-	--title-background-color: var(--background-color-darkest);
-	--title-text-color: var(--text-color);
-	--background-color: var(--background-color-dark);
-	--widget-color: var(--background-color-light);
-	--hover-color: var(--background-color-lightest);
-	--focus-color: var(--background-color-lightest);
-	--number-color: var(--text-color);
-	--string-color: var(--text-color);
+	--title-background-color: var(--webgpu-samples-bg-color-darkest);
+	--title-text-color: var(--webgpu-samples-text-color);
+	--background-color: var(--webgpu-samples-bg-color-dark);
+	--widget-color: var(--webgpu-samples-bg-color-light);
+	--hover-color: var(--webgpu-samples-bg-color-lightest);
+	--focus-color: var(--webgpu-samples-bg-color-lightest);
+	--number-color: var(--webgpu-samples-text-color);
+	--string-color: var(--webgpu-samples-text-color);
 }
 
 .lil-gui.root {
@@ -59,11 +59,11 @@
 .webgpu-samples-info {
 	margin: 0;
 	padding: 2rem;
-	background-color: var(--background-color-light);
+	background-color: var(--webgpu-samples-bg-color-light);
 	flex: 1;
 }
 
 .webgpu-samples-error {
 	padding: 2rem;
-	background-color: #91433f;
+	background-color: var(--webgpu-samples-text-color-error);
 }
