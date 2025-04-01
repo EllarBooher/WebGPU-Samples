@@ -1,44 +1,41 @@
-.citation {
-	display: flex;
-	gap: 1rem;
-	padding: 0.5rem;
-}
-
-.citation > p {
-	margin: 0;
-}
-
-.readme-body {
+.webgpu-samples-readme-body {
 	padding: 1rem;
 }
 
-.readme-body > p {
+.webgpu-samples-readme-body > p {
 	overflow-wrap: anywhere;
 }
 
-.readme-body > h1 {
+.webgpu-samples-readme-body > h1 {
 	margin-inline: 1rem;
 	padding-bottom: 0.5rem;
 	margin-bottom: 1rem;
 	border-bottom: 1px solid white;
 }
 
-.readme-body > h2 {
+.webgpu-samples-readme-body > h2 {
 	margin-inline: 1rem;
 	padding-bottom: 0.5rem;
 	border-bottom: 1px solid white;
 }
 
-.readme-body > *:not(h1, h2) {
+.webgpu-samples-readme-body > *:not(h1, h2) {
 	padding-inline: 1rem;
 }
 
-.readme-body > ul {
+.webgpu-samples-readme-body > ul {
 	padding-inline: 4rem;
 }
 
-.readme-body > .citation {
+.webgpu-samples-readme-body > .webgpu-samples-citation {
 	padding-inline: 2rem;
+	padding-block: 0.5rem;
+	display: flex;
+	gap: 1rem;
+}
+
+.webgpu-samples-citation-text {
+	overflow-wrap: anywhere;
 }
 
 /* Style blocks of math, not inline math */
@@ -50,8 +47,4 @@ mjx-container[display] {
 	min-width: 100%;
 	overflow-x: auto;
 	box-sizing: border-box;
-}
-
-.citation-text {
-	overflow-wrap: anywhere;
 }

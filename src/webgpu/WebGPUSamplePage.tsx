@@ -205,11 +205,11 @@ const RenderingCanvas = function RenderingCanvas({
 	 */
 	return (
 		<>
-			<div className="canvas-container">
-				<canvas className="sample-canvas" ref={canvasRef} />
+			<div className="webgpu-samples-canvas-container">
+				<canvas className="webgpu-samples-canvas" ref={canvasRef} />
 			</div>
 			<div
-				className={guiDocked ? undefined : "gui-pane-floating"}
+				className={guiDocked ? undefined : "webgpu-samples-gui-floating"}
 				ref={guiPaneRef}
 			/>
 			{import.meta.env.DEV ? (
@@ -310,13 +310,13 @@ export const AppLoader = function AppLoader({
 	}, [sample, handleError]);
 
 	const errorBlock = (
-		<div className="sample-text">
+		<div className="webgpu-samples-info">
 			<p>
 				{`Sorry, there was an issue, cause the sample to fail to load or crash.
             This app uses WebGPU, which can be unstable on some browsers.
             Try updating or using another browser.`}
 			</p>
-			<ol className="sample-errors">
+			<ol className="webgpu-samples-error">
 				{errors?.map((value) => {
 					return <li key={value}>{value}</li>;
 				})}
@@ -324,14 +324,14 @@ export const AppLoader = function AppLoader({
 		</div>
 	);
 	const loadingBlock = (
-		<div className="sample-text">
+		<div className="webgpu-samples-info">
 			<p>{`Loading...`}</p>
 		</div>
 	);
 
 	if (navigator.gpu === undefined) {
 		return (
-			<div className="sample-text">
+			<div className="webgpu-samples-info">
 				<p>{`Your browser does not support WebGPU. Please try another.`}</p>
 			</div>
 		);

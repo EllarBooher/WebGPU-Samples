@@ -48,7 +48,7 @@ const rehypeCitation = () => {
 		node.tagName = "div";
 		node.properties = {
 			id: anchor.properties.id ?? undefined,
-			className: ["citation"],
+			className: ["webgpu-samples-citation"],
 		};
 
 		anchor.properties = {};
@@ -59,7 +59,7 @@ const rehypeCitation = () => {
 			{
 				type: "element",
 				tagName: "div",
-				properties: { className: ["citation-text"] },
+				properties: { className: ["webgpu-samples-citation-text"] },
 				children: rest,
 			},
 		];

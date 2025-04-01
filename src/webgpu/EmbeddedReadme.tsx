@@ -90,5 +90,9 @@ export const EmbeddedReadme = memo(function EmbeddedReadme({
 		},
 	};
 
-	return <div className="readme-body">{parseToHTML(readmeText, options)}</div>;
+	return (
+		<div className="webgpu-samples-readme-body">
+			{parseToHTML(readmeText, options)}
+		</div>
+	);
 });
