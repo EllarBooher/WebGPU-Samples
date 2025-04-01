@@ -12,6 +12,8 @@
 	"scripts": {
 		"dev": "vite",
 		"lint": "eslint . --cache-location './node_modules/@eslint/.eslintcache' && stylelint \"**/*.css\"",
+		"test": "vitest",
+		"test:ui": "vitest --ui",
 		"build": "vite build",
 		"preview": "vite preview"
 	},
@@ -32,6 +34,7 @@
 		"@types/react-dom": "^18.3.5",
 		"@types/react-router-hash-link": "^2.4.9",
 		"@vitejs/plugin-react": "^4.3.4",
+		"@vitest/ui": "^3.1.1",
 		"@webgpu/types": "^0.1.60",
 		"eslint": "^9.21.0",
 		"eslint-plugin-jsx-a11y": "^6.10.2",
@@ -57,6 +60,7 @@
 		"typescript-eslint": "^8.24.1",
 		"vite": "^6.2.0",
 		"vite-plugin-dts": "^4.5.3",
+		"vitest": "^3.1.1",
 		"wgpu-matrix": "^3.4.0"
 	}
 }
