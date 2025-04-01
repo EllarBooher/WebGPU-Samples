@@ -1,7 +1,4 @@
-/**
- * Default exports the plaintext contents of a WebGPU shader language source
- * file.
- */
+// Signature of modules transformed in WGSLPlugin.ts
 declare module "*.wgsl" {
 	const shader: string;
 	export default shader;
