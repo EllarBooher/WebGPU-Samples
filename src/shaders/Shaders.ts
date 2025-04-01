@@ -3,7 +3,7 @@ import path from "node:path";
 
 interface ShaderInclude {
 	code: string;
-	flags: string[];
+	flags: ReadonlySet<string>;
 }
 
 const FLAGS_PREFIX = "#flags ";
@@ -11,29 +11,20 @@ const FLAGS_PREFIX = "#flags ";
  * Find the flags definition directive, a line that lists all valid conditional
  * flags.
  */
-function gatherFlags(filename: string, source: string): string[] {
-	let flags: string[] = [];
-	let foundPrefix = false;
-	source.split("\n").forEach((line, index) => {
+function gatherFlags(source: string): ReadonlySet<string> {
+	const flags = new Set<string>();
+	source.split("\n").forEach((line) => {
 		if (line.startsWith(FLAGS_PREFIX)) {
-			if (foundPrefix) {
-				console.error(`Duplicate ${FLAGS_PREFIX.trim()} prefix found:
-                    Original line:
-                    (${filename}:${index})
-                    ${line}`);
-			} else {
-				foundPrefix = true;
-				flags = line
-					.trim()
-					.substring(FLAGS_PREFIX.length)
-					.split(" ")
-					.map((value) => {
-						return value.trim();
-					})
-					.filter((value) => {
-						return value.length > 0;
-					});
-			}
+			line.trim()
+				.substring(FLAGS_PREFIX.length)
+				.split(" ")
+				.map((value) => {
+					return value.trim();
+				})
+				.filter((value) => {
+					return value.length > 0;
+				})
+				.forEach((value) => flags.add(value));
 		}
 	});
 	return flags;
@@ -74,12 +65,12 @@ function replaceConditionalBlocks(
 	console.log(
 		`Including '${filename}' with ${
 			enabledConditions.length
-		} flag(s) '${enabledConditions.join(
-			","
-		)}'. Possible flag(s) are '${source.flags.join(",")}'`
+		} flag(s) '${enabledConditions.join(",")}'. Possible flag(s) are '${[
+			...source.flags.values(),
+		].join(",")}'`
 	);
 	const invalidFlags = enabledConditions.filter((flag) => {
-		return !source.flags.includes(flag);
+		return !source.flags.has(flag);
 	});
 	if (invalidFlags.length > 0) {
 		console.error(
@@ -136,7 +127,7 @@ function replaceConditionalBlocks(
 
 			if (step == ConditionalState.Outside) {
 				if (prefix == LinePrefix.IF) {
-					if (source.flags.includes(remainder)) {
+					if (source.flags.has(remainder)) {
 						step = ConditionalState.IF;
 						currentFlag = remainder;
 						keepLines = enabledFlags.has(currentFlag);
@@ -279,7 +270,7 @@ export function packShaders(
 			const code = fs.readFileSync(resolvedPath).toString();
 			includeMappings.set(resolvedPath, {
 				code: code,
-				flags: gatherFlags(resolvedPath, code),
+				flags: gatherFlags(code),
 			});
 			const includeSource = includeMappings.get(resolvedPath)!;
 
@@ -309,8 +300,26 @@ export function packShaders(
 if (import.meta.vitest) {
 	const { it, expect } = import.meta.vitest;
 	it("gatherFlags", () => {
-		expect(
-			gatherFlags("test.wgsl", `#flags flag1 flag2 flag3`)
-		).toMatchObject(["flag1", "flag2", "flag3"]);
+		const cases: [string, string[]][] = [
+			[`#flags flag`, ["flag"]],
+			[`#flags flags`, ["flags"]],
+			[`#flags #flags`, ["#flags"]],
+			[`#flags flag1 flag2 flag3`, ["flag1", "flag2", "flag3"]],
+			[`#flags`, []],
+			[`#flags `, []],
+			[`#flags                                  `, []],
+			[`    #flags      `, []],
+			[
+				`#flags snake_case PascalCase camelCase kebab-case`,
+				["snake_case", "PascalCase", "camelCase", "kebab-case"],
+			],
+			[`#flags duplicate duplicate`, ["duplicate"]],
+			[`#flags duplicate\n#flags duplicate`, ["duplicate"]],
+			[`#flags flag1\n#flags flag2`, ["flag1", "flag2"]],
+		];
+		cases.forEach((pair) => {
+			const [input, output] = pair;
+			expect(gatherFlags(input)).toMatchObject(new Set(output));
+		});
 	});
 }
