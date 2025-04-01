@@ -1,9 +1,8 @@
-/// <reference types="vitest" />
+/// <reference types="vitest/config" />
 
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
-
 import { wgslPlugin } from "./lib/shaders/WGSLPlugin";
 import sampleReadme from "./lib/webgpu/ReadmePlugin";
 
@@ -21,8 +20,6 @@ export default defineConfig({
 		dts({ tsconfigPath: "./tsconfig.app.json" }),
 	],
 	build: {
-		minify: false, // for easy to debug and the size is not that important
-		emptyOutDir: true,
 		outDir: path.resolve(__dirname, "dist"),
 		lib: {
 			entry: path.resolve(__dirname, "lib/main.ts"),
