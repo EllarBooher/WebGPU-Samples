@@ -4469,7 +4469,7 @@ const SampleInitDescriptorByID = /* @__PURE__ */ new Map([
     }
   ]
 ]);
-const repoRoot = "https://github.com/EllarBooher/EllarBooher.github.io/tree/main/src/webgpu";
+const repoRoot = "https://github.com/EllarBooher/WebGPU-Samples/tree/main/src/webgpu";
 const EmbeddedReadme = memo(function EmbeddedReadme2({
   sampleID
 }) {
