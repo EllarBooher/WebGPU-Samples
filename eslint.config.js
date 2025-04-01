@@ -10,40 +10,22 @@ import jsxA11y from "eslint-plugin-jsx-a11y";
 export default tseslint.config(
 	{ ignores: ["dist"] },
 	{
-		name: "jsxA11y",
-		files: ["**/*.{js,mjs,cjs,jsx,mjsx,ts,tsx,mtsx}"],
-		plugins: {
-			"jsx-a11y": jsxA11y,
-		},
-		languageOptions: {
-			ecmaVersion: 2022,
-			globals: globals.browser,
-			parserOptions: {
-				project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-				tsconfigRootDir: import.meta.dirname,
-				ecmaFeatures: {
-					jsx: true,
-				},
-			},
-		},
-		rules: {
-			...jsxA11y.configs.strict.rules,
-		},
-	},
-	{
 		name: "Typescript",
 		extends: [
 			js.configs.recommended,
 			...tseslint.configs.recommendedTypeChecked,
 			...tseslint.configs.stylisticTypeChecked,
 		],
-		files: ["**/*.{ts,tsx}"],
+		files: ["src/**/*.{js,mjs,cjs,jsx,mjsx,ts,tsx,mtsx}"],
 		languageOptions: {
 			ecmaVersion: 2022,
 			globals: globals.browser,
 			parserOptions: {
-				project: ["./tsconfig.node.json", "./tsconfig.app.json"],
+				projectService: true,
 				tsconfigRootDir: import.meta.dirname,
+				ecmaFeatures: {
+					jsx: true,
+				},
 			},
 		},
 		settings: { react: { version: "18.3" } },
@@ -52,6 +34,7 @@ export default tseslint.config(
 			"react-hooks": reactHooks,
 			"react-refresh": reactRefresh,
 			tsdoc: tsdoc,
+			"jsx-a11y": jsxA11y,
 		},
 		rules: {
 			...reactHooks.configs.recommended.rules,
@@ -61,6 +44,7 @@ export default tseslint.config(
 			],
 			...react.configs.recommended.rules,
 			...react.configs["jsx-runtime"].rules,
+			...jsxA11y.configs.strict.rules,
 			"@typescript-eslint/no-unused-vars": [
 				"warn",
 				{
