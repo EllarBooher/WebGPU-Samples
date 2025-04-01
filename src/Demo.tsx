@@ -3,9 +3,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { EmbeddedReadme } from "../lib/webgpu/EmbeddedReadme";
 import { AppLoader } from "../lib/webgpu/WebGPUSamplePage";
-import "./Main.css";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { SampleID, SampleIDs } from "../lib/webgpu/Samples";
+
+import "./Demo.css";
 
 const root = document.getElementById("root")!;
 
