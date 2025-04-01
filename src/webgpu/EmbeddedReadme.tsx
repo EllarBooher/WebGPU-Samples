@@ -7,7 +7,7 @@ import { HashLink } from "react-router-hash-link";
 import { SampleID, SampleInitDescriptorByID } from "./Samples";
 
 const repoRoot =
-	"https://github.com/EllarBooher/EllarBooher.github.io/tree/main/src/webgpu";
+	"https://github.com/EllarBooher/WebGPU-Samples/tree/main/src/webgpu";
 
 /**
  * Formatting of the markdown READMEs in a style specific to this project.
