@@ -1,32 +1,32 @@
-.lil-gui {
-	--title-background-color: var(--webgpu-samples-bg-color-darkest);
-	--title-text-color: var(--webgpu-samples-text-color);
-	--background-color: var(--webgpu-samples-bg-color-dark);
-	--widget-color: var(--webgpu-samples-bg-color-light);
-	--hover-color: var(--webgpu-samples-bg-color-lightest);
-	--focus-color: var(--webgpu-samples-bg-color-lightest);
-	--number-color: var(--webgpu-samples-text-color);
-	--string-color: var(--webgpu-samples-text-color);
-}
-
-.lil-gui.root {
-	max-height: 100%;
-}
-
-.lil-gui.root > .children {
-	overflow-y: scroll;
-}
-
-.lil-gui option {
-	color: black;
-}
-
-.lil-gui.transition.root > .children {
-	overflow-y: scroll;
-}
-
 .webgpu-samples-app-loader {
 	display: flex;
+
+	.lil-gui {
+		--title-background-color: var(--webgpu-samples-bg-color-darkest);
+		--title-text-color: var(--webgpu-samples-text-color);
+		--background-color: var(--webgpu-samples-bg-color-dark);
+		--widget-color: var(--webgpu-samples-bg-color-light);
+		--hover-color: var(--webgpu-samples-bg-color-lightest);
+		--focus-color: var(--webgpu-samples-bg-color-lightest);
+		--number-color: var(--webgpu-samples-text-color);
+		--string-color: var(--webgpu-samples-text-color);
+	}
+
+	.lil-gui.root {
+		max-height: 100%;
+	}
+
+	.lil-gui.root > .children {
+		overflow-y: scroll;
+	}
+
+	.lil-gui option {
+		color: black;
+	}
+
+	.lil-gui.transition.root > .children {
+		overflow-y: scroll;
+	}
 }
 
 .webgpu-samples-canvas-container {

@@ -1,5 +1,16 @@
 .webgpu-samples-readme-body {
 	padding: 1rem;
+
+	/* Style blocks of math, not inline math */
+	mjx-container[display] {
+		background-color: var(--webgpu-samples-bg-color-darkest);
+		padding: 1em;
+		border-radius: 0.5em;
+		width: 0;
+		min-width: 100%;
+		overflow-x: auto;
+		box-sizing: border-box;
+	}
 }
 
 .webgpu-samples-readme-body > p {
@@ -36,15 +47,4 @@
 
 .webgpu-samples-citation-text {
 	overflow-wrap: anywhere;
-}
-
-/* Style blocks of math, not inline math */
-mjx-container[display] {
-	background-color: var(--webgpu-samples-bg-color-darkest);
-	padding: 1em;
-	border-radius: 0.5em;
-	width: 0;
-	min-width: 100%;
-	overflow-x: auto;
-	box-sizing: border-box;
 }
