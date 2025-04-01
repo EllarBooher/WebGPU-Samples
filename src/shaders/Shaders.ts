@@ -305,3 +305,12 @@ export function packShaders(
 		includes: [...includeMappings.keys()],
 	};
 }
+
+if (import.meta.vitest) {
+	const { it, expect } = import.meta.vitest;
+	it("gatherFlags", () => {
+		expect(
+			gatherFlags("test.wgsl", `#flags flag1 flag2 flag3`)
+		).toMatchObject(["flag1", "flag2", "flag3"]);
+	});
+}
