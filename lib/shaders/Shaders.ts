@@ -30,6 +30,89 @@ function gatherFlags(source: string): ReadonlySet<string> {
 	return flags;
 }
 
+type SourceLocation = { lineNumber: number; lineText: string };
+type ReplaceConditionalBlocksWarnings =
+	| { type: "Unexpected Flag Enabled"; flags: string[] }
+	| { type: "Unexpected End of Source" }
+	| ({ type: "Unexpected Flag"; flag: string } & SourceLocation)
+	| ({ type: "Unexpected Conditional" } & SourceLocation);
+interface ReplaceConditionalBlocksResult {
+	/**
+	 * The transformed source.
+	 */
+	expandedLines: string[];
+	warnings: ReplaceConditionalBlocksWarnings[];
+}
+function logReplaceConditionalBlocksWarning(
+	filename: string,
+	source: ShaderInclude,
+	warning: ReplaceConditionalBlocksWarnings
+) {
+	switch (warning.type) {
+		case "Unexpected Flag Enabled": {
+			console.warn(
+				`${warning.type}: One or more passed flags are not declared in source. Were they misspelled?
+				Invalid flags: ${warning.flags}
+				Declared flags: ${source.flags}`
+			);
+			break;
+		}
+		case "Unexpected End of Source": {
+			console.warn(
+				`${warning.type}: Reached end of source while processing a conditional block. Was an #ENDIF forgotten?`
+			);
+			break;
+		}
+		case "Unexpected Flag": {
+			console.warn(
+				`${warning.type}: Encountered a flag in source that is not declared. Was it misspelled?
+				${warning.flag}
+				Original line:
+				(${filename}:${warning.lineNumber})
+				${warning.lineText}`
+			);
+			break;
+		}
+		case "Unexpected Conditional": {
+			console.warn(
+				`${warning.type}: Encountered an unexpected conditional directive with an impossible transition.
+				Original line:
+				(${filename}:${warning.lineNumber})
+				${warning.lineText}`
+			);
+			break;
+		}
+	}
+}
+
+const ConditionalLinePrefixes = ["None", "ifdef", "else", "endif"] as const;
+type ConditionalLinePrefix = (typeof ConditionalLinePrefixes)[number];
+
+const PlaintextToLinePrefix = new Map<string, ConditionalLinePrefix>([
+	["#ifdef", "ifdef"],
+	["#else", "else"],
+	["#endif", "endif"],
+]);
+
+function getConditionalLinePrefix(line: string): {
+	prefix: ConditionalLinePrefix;
+	remainder: string;
+} {
+	const lineTrimmed = line.trim();
+	const lineFirstWord = lineTrimmed.split(" ", 1)[0];
+	const prefix = PlaintextToLinePrefix.get(lineFirstWord) ?? "None";
+
+	const remainder =
+		prefix === "None"
+			? lineTrimmed
+			: lineTrimmed.substring(lineFirstWord.length).trim();
+
+	return {
+		prefix: prefix,
+		remainder: remainder,
+	};
+}
+
 /*
  * A conditional block looks like the following:
  *
@@ -52,32 +135,28 @@ function gatherFlags(source: string): ReadonlySet<string> {
  * At this point, nesting is not supported.
  */
 function replaceConditionalBlocks(
-	filename: string,
 	source: ShaderInclude,
 	enabledConditions: string[] = []
-): string[] {
-	const IF_PREFIX = "#ifdef ";
-	const ELSE_PREFIX = "#else";
-	const ENDIF_PREFIX = "#endif";
+): ReplaceConditionalBlocksResult {
+	const result: ReplaceConditionalBlocksResult = {
+		expandedLines: [],
+		warnings: [],
+	};
 
 	const enabledFlags = new Set<string>(enabledConditions);
 
-	console.log(
-		`Including '${filename}' with ${
-			enabledConditions.length
-		} flag(s) '${enabledConditions.join(",")}'. Possible flag(s) are '${[
-			...source.flags.values(),
-		].join(",")}'`
-	);
 	const invalidFlags = enabledConditions.filter((flag) => {
 		return !source.flags.has(flag);
 	});
 	if (invalidFlags.length > 0) {
-		console.error(
-			`Found invalid flag(s) '${invalidFlags.join(
-				","
-			)}', these will not be used`
-		);
+		result.warnings.push({
+			type: "Unexpected Flag Enabled",
+			flags: invalidFlags,
+		});
+	}
+
+	if (source.code.trim().length === 0) {
+		return result;
 	}
 
 	enum ConditionalState {
@@ -85,109 +164,80 @@ function replaceConditionalBlocks(
 		IF,
 		ELSE,
 	}
-	enum LinePrefix {
-		None,
-		IF,
-		ELSE,
-		ENDIF,
-	}
-	const getPrefix = (
-		line: string
-	): { prefix: LinePrefix; remainder: string } => {
-		let prefix = LinePrefix.None;
-		let prefixLength = 0;
-		if (line.startsWith(IF_PREFIX)) {
-			prefix = LinePrefix.IF;
-			prefixLength = IF_PREFIX.length;
-		} else if (line.startsWith(ELSE_PREFIX)) {
-			prefix = LinePrefix.ELSE;
-			prefixLength = ELSE_PREFIX.length;
-		} else if (line.startsWith(ENDIF_PREFIX)) {
-			prefix = LinePrefix.ENDIF;
-			prefixLength = ENDIF_PREFIX.length;
-		}
-
-		return {
-			prefix: prefix,
-			remainder: line.substring(prefixLength).trim(),
-		};
-	};
 
 	let step = ConditionalState.Outside;
 	let currentFlag = "";
 	let keepLines = true;
 
-	const sourceOut = source.code
-		.split("\n")
-		.filter((line) => {
-			return !line.startsWith(FLAGS_PREFIX);
-		})
-		.filter((line, index) => {
-			const { prefix, remainder } = getPrefix(line);
+	result.expandedLines.push(
+		...source.code
+			.split("\n")
+			.map((line) => line.trim())
+			.filter((line) => {
+				return !line.startsWith(FLAGS_PREFIX) && line.length > 0;
+			})
+			.filter((line, index) => {
+				const { prefix, remainder } = getConditionalLinePrefix(line);
 
-			if (step == ConditionalState.Outside) {
-				if (prefix == LinePrefix.IF) {
-					if (source.flags.has(remainder)) {
-						step = ConditionalState.IF;
-						currentFlag = remainder;
-						keepLines = enabledFlags.has(currentFlag);
-					} else {
-						console.error(
-							`Invalid conditional syntax: invalid flag.
-                        Original line:
-                        (${filename}:${index})
-                        ${line}`
-						);
+				if (step == ConditionalState.Outside) {
+					if (prefix == "ifdef") {
+						if (source.flags.has(remainder)) {
+							step = ConditionalState.IF;
+							currentFlag = remainder;
+							keepLines = enabledFlags.has(currentFlag);
+						} else {
+							result.warnings.push({
+								type: "Unexpected Flag",
+								flag: remainder,
+								lineNumber: index,
+								lineText: line,
+							});
+						}
+					} else if (prefix != "None") {
+						result.warnings.push({
+							type: "Unexpected Conditional",
+							lineNumber: index,
+							lineText: line,
+						});
 					}
-				} else if (prefix != LinePrefix.None) {
-					console.error(
-						`Invalid conditional syntax: invalid conditional statement outside of conditional block.
-                    Original line:
-                    (${filename}:${index})
-                    ${line}`
-					);
+				} else if (step == ConditionalState.IF) {
+					if (prefix == "else") {
+						step = ConditionalState.ELSE;
+						keepLines = !enabledFlags.has(currentFlag);
+					} else if (prefix == "endif") {
+						step = ConditionalState.Outside;
+						currentFlag = "";
+						keepLines = true;
+					} else if (prefix != "None") {
+						result.warnings.push({
+							type: "Unexpected Conditional",
+							lineNumber: index,
+							lineText: line,
+						});
+					}
+				} else if (step == ConditionalState.ELSE) {
+					if (prefix == "endif") {
+						step = ConditionalState.Outside;
+						currentFlag = "";
+						keepLines = true;
+					} else if (prefix != "None") {
+						result.warnings.push({
+							type: "Unexpected Conditional",
+							lineNumber: index,
+							lineText: line,
+						});
+					}
 				}
-			} else if (step == ConditionalState.IF) {
-				if (prefix == LinePrefix.ELSE) {
-					step = ConditionalState.ELSE;
-					keepLines = !enabledFlags.has(currentFlag);
-				} else if (prefix == LinePrefix.ENDIF) {
-					step = ConditionalState.Outside;
-					currentFlag = "";
-					keepLines = true;
-				} else if (prefix != LinePrefix.None) {
-					console.error(
-						`(${filename}:${index}) Invalid conditional syntax in IF branch.
-                    Original line:
-                    (${filename}:${index})
-                    ${line}`
-					);
-				}
-			} else if (step == ConditionalState.ELSE) {
-				if (prefix == LinePrefix.ENDIF) {
-					step = ConditionalState.Outside;
-					currentFlag = "";
-					keepLines = true;
-				} else if (prefix != LinePrefix.None) {
-					console.error(
-						`(${filename}:${index}) Invalid conditional syntax in ELSE branch.
-                    Original line:
-                    (${filename}:${index})
-                    ${line}`
-					);
-				}
-			}
 
-			return keepLines && prefix == LinePrefix.None;
-		});
+				return keepLines && prefix == "None";
+			})
+	);
 
 	if (step != ConditionalState.Outside) {
-		console.error(
-			`While processing shader include conditionals, encountered end of lines without exiting a conditional.`
-		);
+		result.warnings.push({ type: "Unexpected End of Source" });
 	}
 
-	return sourceOut;
+	return result;
 }
 
 /**
@@ -274,15 +324,26 @@ export function packShaders(
 			});
 			const includeSource = includeMappings.get(resolvedPath)!;
 
-			lines.splice(
-				lineIndex,
-				0,
-				...replaceConditionalBlocks(
+			console.log(
+				`Including '${includeFilename}' with ${
+					fragments.length
+				} flag(s) '${fragments.join(",")}'. Possible flag(s) are '${[
+					...includeSource.flags.values(),
+				].join(",")}'`
+			);
+			const replaceResult = replaceConditionalBlocks(
+				includeSource,
+				fragments
+			);
+			replaceResult.warnings.forEach((warning) => {
+				logReplaceConditionalBlocksWarning(
 					includeFilename,
 					includeSource,
-					fragments
-				)
-			);
+					warning
+				);
+			});
+
+			lines.splice(lineIndex, 0, ...replaceResult.expandedLines);
 		} else {
 			lineIndex += 1;
 		}
@@ -306,9 +367,12 @@ if (import.meta.vitest) {
 			[`#flags #flags`, ["#flags"]],
 			[`#flags flag1 flag2 flag3`, ["flag1", "flag2", "flag3"]],
 			[`#flags`, []],
+			[`#Flags`, []],
+			[`#flagss`, []],
 			[`#flags `, []],
 			[`#flags                                  `, []],
 			[`    #flags      `, []],
+			[`    #flags flag`, []],
 			[
 				`#flags snake_case PascalCase camelCase kebab-case`,
 				["snake_case", "PascalCase", "camelCase", "kebab-case"],
@@ -320,6 +384,193 @@ if (import.meta.vitest) {
 		cases.forEach((pair) => {
 			const [input, output] = pair;
 			expect(gatherFlags(input)).toMatchObject(new Set(output));
+		});
+	});
+
+	it("getConditionalLinePrefix", () => {
+		const cases: [string, ReturnType<typeof getConditionalLinePrefix>][] = [
+			["#ifdef foo", { prefix: "ifdef", remainder: "foo" }],
+			["#else foo", { prefix: "else", remainder: "foo" }],
+			["#endif foo", { prefix: "endif", remainder: "foo" }],
+			["#ifdef foo\nbar", { prefix: "ifdef", remainder: "foo\nbar" }],
+			["#else foo\nbar", { prefix: "else", remainder: "foo\nbar" }],
+			["#endif foo\nbar", { prefix: "endif", remainder: "foo\nbar" }],
+			["  #ifdef      foo", { prefix: "ifdef", remainder: "foo" }],
+			["  #else      foo", { prefix: "else", remainder: "foo" }],
+			["  #endif      foo", { prefix: "endif", remainder: "foo" }],
+			["#ifdeffoo", { prefix: "None", remainder: "#ifdeffoo" }],
+			["#elsefoo", { prefix: "None", remainder: "#elsefoo" }],
+			["#endiffoo", { prefix: "None", remainder: "#endiffoo" }],
+		];
+		cases.forEach((pair, index) => {
+			const [input, output] = pair;
+			expect(
+				getConditionalLinePrefix(input),
+				index.toString()
+			).toMatchObject(output);
+		});
+	});
+
+	it("replaceConditionalBlocks", () => {
+		const cases: [
+			{
+				source?: string;
+				declaredFlags?: string[];
+				definedFlags?: string[];
+			},
+			ReplaceConditionalBlocksResult
+		][] = [
+			[{}, { expandedLines: [], warnings: [] }],
+			[
+				{ source: `#include foo.wgsl` },
+				{ expandedLines: [`#include foo.wgsl`], warnings: [] },
+			],
+			[
+				{ source: `#ifdef FLAG` },
+				{
+					expandedLines: [],
+					warnings: [
+						{
+							type: "Unexpected Flag",
+							flag: "FLAG",
+							lineNumber: 0,
+							lineText: "#ifdef FLAG",
+						},
+					],
+				},
+			],
+			[
+				{ definedFlags: ["FLAG", "FOO", "BAR"] },
+				{
+					expandedLines: [],
+					warnings: [
+						{
+							type: "Unexpected Flag Enabled",
+							flags: ["FLAG", "FOO", "BAR"],
+						},
+					],
+				},
+			],
+			[
+				{ source: `#ifdef FLAG\n#else\n#endif` },
+				{
+					expandedLines: [],
+					warnings: [
+						{
+							type: "Unexpected Flag",
+							lineNumber: 0,
+							lineText: "#ifdef FLAG",
+							flag: "FLAG",
+						},
+						{
+							type: "Unexpected Conditional",
+							lineNumber: 1,
+							lineText: "#else",
+						},
+						{
+							type: "Unexpected Conditional",
+							lineNumber: 2,
+							lineText: "#endif",
+						},
+					],
+				},
+			],
+			[
+				{
+					source: `#ifdef FLAG FOO\n#else\n#endif`,
+					declaredFlags: ["FLAG"],
+				},
+				{
+					expandedLines: [],
+					warnings: [
+						{
+							type: "Unexpected Flag",
+							lineNumber: 0,
+							lineText: "#ifdef FLAG FOO",
+							flag: "FLAG FOO",
+						},
+						{
+							type: "Unexpected Conditional",
+							lineNumber: 1,
+							lineText: "#else",
+						},
+						{
+							type: "Unexpected Conditional",
+							lineNumber: 2,
+							lineText: "#endif",
+						},
+					],
+				},
+			],
+			[
+				{
+					source: `#ifdef FLAG\n#else\n#endif`,
+					declaredFlags: ["FLAG"],
+				},
+				{
+					expandedLines: [],
+					warnings: [],
+				},
+			],
+			[
+				{
+					source: `#ifdef FLAG\n#else\n#endif`,
+					declaredFlags: ["FLAG"],
+					definedFlags: ["FLAG"],
+				},
+				{
+					expandedLines: [],
+					warnings: [],
+				},
+			],
+			[
+				{
+					source: `#ifdef FLAG\n`,
+					declaredFlags: ["FLAG"],
+				},
+				{
+					expandedLines: [],
+					warnings: [
+						{
+							type: "Unexpected End of Source",
+						},
+					],
+				},
+			],
+			[
+				{
+					source: `#ifdef FLAG\nfoo\n#else\ndisabled\n#endif`,
+					declaredFlags: ["FLAG"],
+					definedFlags: ["FLAG"],
+				},
+				{
+					expandedLines: ["foo"],
+					warnings: [],
+				},
+			],
+			[
+				{
+					source: `#ifdef FLAG\nfoo\n#else\nbar\n#endif`,
+					declaredFlags: ["FLAG"],
+				},
+				{
+					expandedLines: ["bar"],
+					warnings: [],
+				},
+			],
+		];
+		cases.forEach((pair, index) => {
+			const [input, output] = pair;
+			expect(
+				replaceConditionalBlocks(
+					{
+						code: input.source ?? "",
+						flags: new Set(input.declaredFlags),
+					},
+					input.definedFlags
+				),
+				index.toString()
+			).toMatchObject(output);
 		});
 	});
 }
