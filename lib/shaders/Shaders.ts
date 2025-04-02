@@ -257,11 +257,13 @@ export function packShaders(
 	const includeMappings = new Map<string, ShaderInclude>();
 
 	const logger = console.log;
-	console.log = (...args): void => {
-		if (!quiet) {
-			logger(...args);
-		}
-	};
+	if (quiet) {
+		console.log = (...args): void => {
+			if (!quiet) {
+				logger(...args);
+			}
+		};
+	}
 
 	console.log(`Preprocessing shader ${filePath}`);
 
