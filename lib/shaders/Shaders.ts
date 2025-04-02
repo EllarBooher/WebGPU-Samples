@@ -241,6 +241,22 @@ function replaceConditionalBlocks(
 }
 
 /**
+ * Includes are relative to one folder deeper than the shaders root.
+ * For example, for a shader at 'root/sample/foo.wgsl', include paths will be relative to 'root/sample'
+ */
+function resolveIncludeRootPath(filePath: string, shadersRootPath: string) {
+	// TODO: better validation for includes that escape their project, for
+	// invalid or empty paths, etc
+	const fileRelativePath = path
+		.relative(shadersRootPath, filePath)
+		.split(path.sep);
+	if (fileRelativePath.length < 2 || fileRelativePath[0] == "..") {
+		return shadersRootPath;
+	}
+	return path.join(shadersRootPath, fileRelativePath[0], path.sep);
+}
+
+/**
  * Preprocesses the given WebGPU shader language source file in plaintext.
  * @param filePath - The path to the shader source file.
  * @param source - The plaintext of the shader source file.
@@ -250,6 +266,7 @@ function replaceConditionalBlocks(
 export function packShaders(
 	filePath: string,
 	source: string,
+	shadersRootPath: string,
 	quiet: boolean
 ): { source: string; includes: string[] } {
 	const INCLUDE_PREFIX = "#include ";
@@ -271,12 +288,9 @@ export function packShaders(
 	 * Find which project folder in shaders/ the source is in. includes will be
 	 * relative to that.
 	 */
-
-	// TODO: better validation for includes that escape their project, for
-	// invalid or empty paths, etc
-	const includeWorkingPrefix = path.join(
-		import.meta.dirname,
-		path.relative(import.meta.dirname, filePath).split(path.sep)[0]
+	const includeWorkingPrefix = resolveIncludeRootPath(
+		filePath,
+		shadersRootPath
 	);
 
 	let lineIndex = 0;
@@ -573,6 +587,48 @@ if (import.meta.vitest) {
 				),
 				index.toString()
 			).toMatchObject(output);
+		});
+	});
+
+	it("resolveIncludeRootPath", () => {
+		const cases: [{ filePath: string; shadersRootPath: string }, string][] =
+			[
+				[
+					{
+						filePath: "C:/path/to/shaders/project/test.wgsl",
+						shadersRootPath: "C:/path/to/shaders/",
+					},
+					path.normalize("C:/path/to/shaders/project/"),
+				],
+				[
+					{
+						filePath: "path/to/shaders/project/test.wgsl",
+						shadersRootPath: "path/to/shaders/",
+					},
+					path.normalize("path/to/shaders/project/"),
+				],
+				[
+					{
+						filePath: "/path/to/shaders/project/test.wgsl",
+						shadersRootPath: "/path/to/shaders/",
+					},
+					path.normalize("/path/to/shaders/project/"),
+				],
+				[
+					{
+						filePath:
+							"/path/to/shaders/project with spaces/test.wgsl",
+						shadersRootPath: "/path/to/shaders/",
+					},
+					path.normalize("/path/to/shaders/project with spaces/"),
+				],
+			];
+		cases.forEach((pair, index) => {
+			const [input, output] = pair;
+			expect(
+				resolveIncludeRootPath(input.filePath, input.shadersRootPath),
+				index.toString()
+			).toBe(output);
 		});
 	});
 }
