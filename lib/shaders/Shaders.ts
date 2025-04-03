@@ -244,7 +244,10 @@ function replaceConditionalBlocks(
  * Includes are relative to one folder deeper than the shaders root.
  * For example, for a shader at 'root/sample/foo.wgsl', include paths will be relative to 'root/sample'
  */
-function resolveIncludeRootPath(filePath: string, shadersRootPath: string) {
+function resolveIncludeRootPath(
+	filePath: string,
+	shadersRootPath: string
+): string {
 	// TODO: better validation for includes that escape their project, for
 	// invalid or empty paths, etc
 	const fileRelativePath = path
@@ -254,6 +257,59 @@ function resolveIncludeRootPath(filePath: string, shadersRootPath: string) {
 		return shadersRootPath;
 	}
 	return path.join(shadersRootPath, fileRelativePath[0], path.sep);
+}
+
+function stripComments(source: string): string {
+	type CommentState = "None" | "Line" | "Block";
+	let state: CommentState = "None";
+
+	// Line/block comments override any comment directives that appear later
+	// Block comments can start and end anywhere in a line, and there is no bound on the number of block comments on a line
+	// Line comments block out all remaining characters
+
+	return source
+		.split("\n")
+		.map((line) => {
+			let outLine = "";
+
+			if (state === "Line") state = "None";
+			if (line.length < 2) {
+				return state === "None" ? line : "";
+			}
+
+			for (let i = 0; i < line.length; i++) {
+				if (line.length - i >= 2) {
+					const nextTwoChars = line.substring(i, i + 2);
+					switch (state) {
+						case "None": {
+							if (nextTwoChars === "//") {
+								state = "Line";
+								i += 2;
+							} else if (nextTwoChars === "/*") {
+								state = "Block";
+								i += 2;
+							}
+							break;
+						}
+						case "Block": {
+							if (nextTwoChars === "*/") {
+								state = "None";
+								i += 2;
+							}
+							break;
+						}
+					}
+				}
+
+				if (state === "None") outLine += line.charAt(i);
+			}
+
+			console.log(`line ${line} outline ${outLine}`);
+
+			return outLine;
+		})
+		.filter((line) => line.trim().length > 0)
+		.join("\n");
 }
 
 /**
@@ -294,7 +350,7 @@ export function packShaders(
 	);
 
 	let lineIndex = 0;
-	const lines = source.split("\n");
+	const lines = stripComments(source).split("\n");
 	while (lineIndex < lines.length) {
 		const line = lines[lineIndex];
 		if (line.startsWith(INCLUDE_PREFIX)) {
@@ -333,7 +389,9 @@ export function packShaders(
 				);
 				continue;
 			}
-			const code = fs.readFileSync(resolvedPath).toString();
+			const code = stripComments(
+				fs.readFileSync(resolvedPath).toString()
+			);
 			includeMappings.set(resolvedPath, {
 				code: code,
 				flags: gatherFlags(code),
@@ -629,6 +687,27 @@ if (import.meta.vitest) {
 				resolveIncludeRootPath(input.filePath, input.shadersRootPath),
 				index.toString()
 			).toBe(output);
+		});
+	});
+
+	it("stripComments", () => {
+		const cases: [string, string][] = [
+			["//", ""],
+			["//\na", "a"],
+			["/*\na\n*/", ""],
+			["/*\n/*\na\n*/", ""],
+			["/*\n/*\na\n*/\na", "a"],
+			["///*\na", "a"],
+			["no comments\nno comments", "no comments\nno comments"],
+			["line /* with comments */ in middle // of it", "line  in middle "],
+			[
+				"line /* with /* competing */ block */ comments",
+				"line  block */ comments",
+			],
+		];
+		cases.forEach((pair, index) => {
+			const [input, output] = pair;
+			expect(stripComments(input), index.toString()).toBe(output);
 		});
 	});
 }
