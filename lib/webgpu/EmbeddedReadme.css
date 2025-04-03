@@ -23,6 +23,7 @@
 
 .webgpu-samples-readme-body > p {
 	overflow-wrap: anywhere;
+	text-align: justify;
 }
 
 .webgpu-samples-readme-body > h1 {
