@@ -267,50 +267,68 @@ function resolveIncludeRootPath(
 
 function stripComments(source: string): string {
 	type CommentState = "None" | "Line" | "Block";
+
+	/*
+	 * Line/block comments override any comment directives that appear later
+	 *
+	 * Block comments can start and end anywhere in a line, and there is no
+	 * bound on the number of block comments on a line
+	 *
+	 * Line comments block out all remaining characters
+	 *
+	 * Block comments can be nested (see https://www.w3.org/TR/WGSL/#comments)
+	 *
+	 * Unterminated block comments are allowed, that just means all content will be
+	 * stripped until end of file.
+	 */
+	let blockNestedCount = 0;
 	let state: CommentState = "None";
-
-	// Line/block comments override any comment directives that appear later
-	// Block comments can start and end anywhere in a line, and there is no bound on the number of block comments on a line
-	// Line comments block out all remaining characters
-
 	return source
 		.split("\n")
 		.map((line) => {
 			let outLine = "";
 
-			if (state === "Line") state = "None";
-			if (line.length < 2) {
-				return state === "None" ? line : "";
-			}
-
 			for (let i = 0; i < line.length; i++) {
-				if (line.length - i >= 2) {
+				const outChar = line.charAt(i);
+				let skip = false;
+				if (line.length - i >= 1) {
 					const nextTwoChars = line.substring(i, i + 2);
 					switch (state) {
 						case "None": {
 							if (nextTwoChars === "//") {
 								state = "Line";
-								i += 2;
+								skip = true;
 							} else if (nextTwoChars === "/*") {
 								state = "Block";
-								i += 2;
+								blockNestedCount += 1;
+								skip = true;
 							}
 							break;
 						}
 						case "Block": {
-							if (nextTwoChars === "*/") {
-								state = "None";
-								i += 2;
+							if (nextTwoChars === "/*") {
+								blockNestedCount += 1;
+								skip = true;
+							} else if (nextTwoChars === "*/") {
+								if (blockNestedCount > 0) blockNestedCount -= 1;
+								if (blockNestedCount === 0) {
+									state = "None";
+								}
+
+								skip = true;
 							}
 							break;
 						}
 					}
 				}
 
-				if (state === "None") outLine += line.charAt(i);
+				if (skip) i += 1;
+				else if (state === "None") outLine += outChar;
 			}
 
-			console.log(`line ${line} outline ${outLine}`);
+			// Line comments continue until the end of line, so we need to reset
+			// at the end of each line
+			if (state === "Line") state = "None";
 
 			return outLine;
 		})
@@ -702,14 +720,13 @@ if (import.meta.vitest) {
 			["//\na", "a"],
 			["/*\na\n*/", ""],
 			["/*\n/*\na\n*/", ""],
-			["/*\n/*\na\n*/\na", "a"],
+			["/*\n/*\na\n*/\na\n*/", ""],
 			["///*\na", "a"],
 			["no comments\nno comments", "no comments\nno comments"],
 			["line /* with comments */ in middle // of it", "line  in middle "],
-			[
-				"line /* with /* competing */ block */ comments",
-				"line  block */ comments",
-			],
+			["line /* with /* nested */ block */ comments", "line  comments"],
+			[`/*/**/*/`, ``],
+			[`//\n/*/*a*/*/`, ``],
 		];
 		cases.forEach((pair, index) => {
 			const [input, output] = pair;

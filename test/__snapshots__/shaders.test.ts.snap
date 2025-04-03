@@ -4068,29 +4068,6 @@ fn renderCompositedAtmosphere(@builtin(global_invocation_id) global_id : vec3<u3
 	let intersects_ground = mu < cos_horizon;
     if (depth <= 0.0)
     {
-        if (intersects_ground)
-        {
-            let material: PBRTexel = convertPBRPropertiesWater(
-				vec3<f32>(1.0),
-				vec3<f32>(0.0,1.0,0.0),
-				1.0
-			);
-            luminance_transfer = sampleGeometryLuminance(
-				&atmosphere,
-				&light,
-				uv,
-				material,
-				origin,
-				direction_world,
-				depth,
-				intersects_ground
-			);
-        }
-        else
-        {
-            luminance_transfer = sampleSkyLuminance(&atmosphere, &light, origin, direction_world);
-        }
-		*/
 		luminance_transfer = sampleSkyLuminance(&atmosphere, &light, origin, direction_world);
     }
     else
