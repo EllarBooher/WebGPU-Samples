@@ -16,7 +16,9 @@
 		"test:ui": "vitest --ui",
 		"build": "vite build",
 		"prod": "concurrently \"npm run lint -- --max-warnings 0\" \"npm run build\"",
-		"preview": "vite preview"
+		"precommit": "concurrently \"npm run prod\" \"npm run test\"",
+		"preview": "vite preview",
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"html-react-parser": "^5.2.2",
@@ -46,7 +48,9 @@
 		"eslint-plugin-tsdoc": "^0.4.0",
 		"globals": "^15.15.0",
 		"html-react-parser": "^5.2.2",
+		"husky": "^9.1.7",
 		"lil-gui": "^0.20.0",
+		"lint-staged": "^15.5.0",
 		"prism-themes": "^1.9.0",
 		"react-router-hash-link": "^2.4.3",
 		"rehype-mathjax": "^7.1.0",
