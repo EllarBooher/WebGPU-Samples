@@ -11,12 +11,12 @@
 	},
 	"scripts": {
 		"dev": "vite",
-		"lint": "eslint . --cache-location './node_modules/@eslint/.eslintcache' && stylelint \"**/*.css\"",
+		"lint": "eslint . --max-warnings 0 --cache-location './node_modules/@eslint/.eslintcache' && stylelint \"**/*.css\"",
 		"test": "vitest",
 		"test:ui": "vitest --ui",
 		"build": "vite build",
-		"prod": "concurrently \"npm run lint -- --max-warnings 0\" \"npm run build\"",
-		"precommit": "concurrently \"npm run prod\" \"npm run test\"",
+		"prod": "concurrently \"npm run lint\" \"npm run build\"",
+		"precommit": "lint-staged && npm run test",
 		"preview": "vite preview",
 		"prepare": "husky"
 	},
@@ -68,5 +68,9 @@
 		"vite-plugin-dts": "^4.5.3",
 		"vitest": "^3.1.1",
 		"wgpu-matrix": "^3.4.0"
+	},
+	"lint-staged": {
+		"*": "eslint --no-warn-ignored --max-warnings 0 --cache-location './node_modules/@eslint/.eslintcache'",
+		"*.css": "stylelint"
 	}
 }
