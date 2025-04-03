@@ -30,7 +30,10 @@ function gatherFlags(source: string): ReadonlySet<string> {
 	return flags;
 }
 
-type SourceLocation = { lineNumber: number; lineText: string };
+interface SourceLocation {
+	lineNumber: number;
+	lineText: string;
+}
 type ReplaceConditionalBlocksWarnings =
 	| { type: "Unexpected Flag Enabled"; flags: string[] }
 	| { type: "Unexpected End of Source" }
@@ -47,13 +50,15 @@ function logReplaceConditionalBlocksWarning(
 	filename: string,
 	source: ShaderInclude,
 	warning: ReplaceConditionalBlocksWarnings
-) {
+): void {
 	switch (warning.type) {
 		case "Unexpected Flag Enabled": {
 			console.warn(
-				`${warning.type}: One or more passed flags are not declared in source. Were they misspelled?
-				Invalid flags: ${warning.flags}
-				Declared flags: ${source.flags}`
+				`${
+					warning.type
+				}: One or more passed flags are not declared in source. Were they misspelled?
+				Invalid flags: [${warning.flags.join()}]
+				Declared flags: ${[...source.flags.values()].join()}`
 			);
 			break;
 		}
@@ -85,6 +90,7 @@ function logReplaceConditionalBlocksWarning(
 	}
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ConditionalLinePrefixes = ["None", "ifdef", "else", "endif"] as const;
 type ConditionalLinePrefix = (typeof ConditionalLinePrefixes)[number];
 
