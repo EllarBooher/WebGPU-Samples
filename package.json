@@ -13,10 +13,11 @@
 		"dev": "vite",
 		"lint": "eslint . --max-warnings 0 --cache-location './node_modules/@eslint/.eslintcache' && stylelint \"**/*.css\"",
 		"test": "vitest",
+		"test:run": "vitest --run",
 		"test:ui": "vitest --ui",
 		"build": "vite build",
 		"prod": "concurrently \"npm run lint\" \"npm run build\"",
-		"precommit": "lint-staged && npm run test",
+		"precommit": "lint-staged && npm run test:run",
 		"preview": "vite preview",
 		"prepare": "husky"
 	},
