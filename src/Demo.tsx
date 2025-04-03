@@ -12,10 +12,12 @@ const root = document.getElementById("root")!;
 
 const SamplePage = ({ sampleID }: { sampleID: SampleID }) => {
 	return (
-		<div style={{ flex: "1" }}>
+		<div style={{ flex: "1", display: "flex", flexDirection: "column" }}>
 			<SampleDirectory />
 			<AppLoader styleOverrides={{ height: "60svh" }} sampleID={sampleID} />
-			<EmbeddedReadme sampleID={sampleID} />
+			<div style={{ maxWidth: "90ch", alignSelf: "center" }}>
+				<EmbeddedReadme sampleID={sampleID} />
+			</div>
 		</div>
 	);
 };

@@ -1,5 +1,7 @@
 .webgpu-samples-readme-body {
 	padding: 1rem;
+	display: flex;
+	flex-direction: column;
 
 	/* Style blocks of math, not inline math */
 	mjx-container[display] {
@@ -7,10 +9,16 @@
 		padding: 1em;
 		border-radius: 0.5em;
 		width: 0;
-		min-width: 100%;
+		min-width: calc(100% - 6rem);
 		overflow-x: auto;
 		box-sizing: border-box;
+		align-self: center;
 	}
+}
+
+.webgpu-samples-readme-body > * {
+	margin-bottom: 0;
+	margin-top: 1rem;
 }
 
 .webgpu-samples-readme-body > p {
@@ -19,14 +27,11 @@
 
 .webgpu-samples-readme-body > h1 {
 	margin-inline: 1rem;
-	padding-bottom: 0.5rem;
-	margin-bottom: 1rem;
 	border-bottom: 1px solid var(--webgpu-samples-text-color);
 }
 
 .webgpu-samples-readme-body > h2 {
 	margin-inline: 1rem;
-	padding-bottom: 0.5rem;
 	border-bottom: 1px solid var(--webgpu-samples-text-color);
 }
 
@@ -40,7 +45,6 @@
 
 .webgpu-samples-readme-body > .webgpu-samples-citation {
 	padding-inline: 2rem;
-	padding-block: 0.5rem;
 	display: flex;
 	gap: 1rem;
 }
