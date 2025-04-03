@@ -30,5 +30,8 @@ export default defineConfig({
 			external: ["react", "react-dom", "react-router"],
 		},
 	},
-	test: { includeSource: ["lib/**/*.{js,ts}"] },
+	test: {
+		include: ["test/**/*.test.ts"],
+		includeSource: ["lib/**/*.{js,ts}"],
+	},
 });

@@ -1,0 +1,4222 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`packShaders 1`] = `
+{
+  "includes": [
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\constants.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\types.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\util\\raycast.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_common.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_raymarch.inc.wgsl",
+  ],
+  "source": "const PI = 3.141592653589793;
+const METERS_PER_MM = 1000000;
+struct Atmosphere
+{
+scattering_rayleigh_per_Mm : vec3<f32>,
+density_scale_rayleigh_Mm : f32,
+absorption_rayleigh_per_Mm : vec3<f32>,
+planet_radius_Mm : f32,
+scattering_mie_per_Mm : vec3<f32>,
+density_scale_mie_Mm : f32,
+absorption_mie_per_Mm : vec3<f32>,
+atmosphere_radius_Mm : f32,
+ground_albedo : vec3<f32>,
+padding0 : f32,
+scattering_ozone_per_Mm : vec3<f32>,
+padding1 : f32,
+absorption_ozone_per_Mm : vec3<f32>,
+padding2 : f32,
+padding3 : vec4<f32>,
+}
+struct CelestialLight
+{
+color: vec3<f32>,
+strength: f32,
+forward: vec3<f32>,
+angular_radius: f32,
+}
+struct Camera
+{
+inv_proj: mat4x4<f32>,
+inv_view: mat4x4<f32>,
+proj_view: mat4x4<f32>,
+position: vec4<f32>,
+forward: vec4<f32>,
+padding0: mat2x4<f32>,
+}
+struct Time
+{
+padding0: vec2<f32>,
+time_seconds: f32,
+delta_time_seconds: f32,
+}
+struct GlobalUBO
+{
+camera: Camera,
+ocean_camera: Camera,
+atmosphere: Atmosphere,
+light: CelestialLight,
+time: Time,
+}
+struct RaySphereHit
+{
+hit: bool,
+t0: f32,
+t1: f32,
+}
+fn raySphereIntersection(
+ray_origin: vec3<f32>,
+ray_direction_normalized: vec3<f32>,
+radius: f32
+) -> RaySphereHit
+{
+let f: vec3<f32> = ray_origin;
+let d: vec3<f32> = ray_direction_normalized;
+let b: f32 = -1.0 * dot(f, d);
+let center_to_intersection_chord: vec3<f32> = f + b * d;
+let discriminant: f32 = radius * radius - dot(center_to_intersection_chord, center_to_intersection_chord);
+let c: f32 = dot(f, f) - radius * radius;
+var output : RaySphereHit;
+output.hit = false;
+output.t0 = 0.0;
+output.t1 = 0.0;
+if (discriminant < 0.0)
+{
+return output;
+}
+var q: f32 = b;
+if (b < 0.0)
+{
+q -= sqrt(discriminant);
+}
+else
+{
+q += sqrt(discriminant);
+}
+output.hit = true;
+output.t0 = c / q;
+output.t1 = q;
+if (output.t0 > output.t1)
+{
+let temp: f32 = output.t0;
+output.t0 = output.t1;
+output.t1 = temp;
+}
+return output;
+}
+struct RayPlaneHit {
+hit: bool,
+t: f32,
+}
+fn rayPlaneIntersection(
+ray_origin: vec3<f32>,
+ray_direction: vec3<f32>,
+plane_origin: vec3<f32>,
+plane_normal: vec3<f32>
+) -> RayPlaneHit
+{
+var result: RayPlaneHit;
+let perp = dot(plane_normal, ray_direction);
+result.t = dot(plane_origin - ray_origin, plane_normal) / perp;
+result.hit = (abs(perp) > 0.00001) && (result.t > 0.0);
+return result;
+}
+@group(0) @binding(0) var aerial_perspective_lut: texture_storage_3d<rgba16float, write>;
+@group(0) @binding(1) var lut_sampler: sampler;
+@group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
+@group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
+@group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+const AERIAL_PERSPECTIVE_MM_PER_SLICE = 0.001;
+const ISOTROPIC_PHASE = 1.0 / (4.0 * PI);
+fn safeSqrt(value: f32) -> f32 { return sqrt(max(value, 0.0)); }
+fn textureCoordFromUnitRange(value: f32, length: u32) -> f32
+{
+return 0.5 / f32(length) + value * (1.0 - 1.0 / f32(length));
+}
+fn unitRangeFromTextureCoord(coord: f32 , length: u32) -> f32
+{
+return (coord - 0.5 / f32(length)) / (1.0 - 1.0 / f32(length));
+}
+fn transmittanceLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let atmosphere_radius_Mm_squared: f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared: f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h: f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho: f32 = safeSqrt(radius * radius - planet_radius_Mm_squared);
+let d: f32 = max(-radius * mu + safeSqrt(radius * radius * (mu * mu - 1.0) + atmosphere_radius_Mm_squared), 0.0);
+let d_min: f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max: f32 = rho + h;
+let x_mu: f32 = (d - d_min) / (d_max - d_min);
+let x_radius: f32 = rho / h;
+return vec2<f32>(
+textureCoordFromUnitRange(x_mu, dimensions.x),
+textureCoordFromUnitRange(x_radius, dimensions.y)
+);
+}
+fn transmittanceLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let x_mu : f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let x_radius : f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let atmosphere_radius_Mm_squared : f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared : f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h : f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho : f32 = h * x_radius;
+let radius : f32 = safeSqrt(rho * rho + planet_radius_Mm_squared);
+let d_min : f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max : f32 = rho + h;
+let d : f32 = (d_max - d_min) * x_mu + d_min;
+let D_EPSILON: f32 = 0.000000001;
+if (d < D_EPSILON)
+{
+return vec2<f32>(radius, 1.0);
+}
+let mu : f32 = (h * h - rho * rho - d * d) / (2.0 * radius * d);
+return vec2<f32>(radius, clamp(mu, -1.0, 1.0));
+}
+fn multiscatterLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = 0.5 + 0.5 * mu_light;
+let v_unit: f32 = clamp(
+(radius - (*atmosphere).planet_radius_Mm)
+/ ((*atmosphere).atmosphere_radius_Mm - (*atmosphere).planet_radius_Mm),
+0.0, 1.0
+);
+return vec2<f32>(
+textureCoordFromUnitRange(u_unit, dimensions.x),
+textureCoordFromUnitRange(v_unit, dimensions.y)
+);
+}
+fn multiscatterLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let v_unit: f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let mu_light: f32 = 2.0 * (u_unit - 0.5);
+let radius: f32 = mix(
+(*atmosphere).planet_radius_Mm * (1.0002),
+(*atmosphere).atmosphere_radius_Mm * (0.9998),
+v_unit
+);
+return vec2<f32>(radius, mu_light);
+}
+fn sampleMultiscatterLUT(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = multiscatterLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu_light,
+textureDimensions(lut)
+);
+return textureSampleLevel(lut, s, uv, 0.0).xyz;
+}
+fn sampleTransmittanceLUT_RadiusMu(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = transmittanceLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu,
+textureDimensions(lut)
+);
+let sample = textureSampleLevel(lut, s, uv, 0.0).xyz;
+return sample;
+}
+fn sampleTransmittanceLUT_Ray(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+position: vec3<f32>,
+direction: vec3<f32>
+) -> vec3<f32>
+{
+let radius: f32 = length(position);
+let mu: f32 = (dot(position, direction) / (length(position) * length(direction)));
+return sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, radius, mu);
+}
+fn sampleTransmittanceLUT_Segment(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+r_start: f32,
+mu_start: f32,
+d: f32,
+intersects_ground: bool
+) -> vec3<f32>
+{
+let r_end = clamp(
+safeSqrt(d * d + 2.0 * r_start * mu_start * d + r_start * r_start),
+(*atmosphere).planet_radius_Mm, (*atmosphere).atmosphere_radius_Mm
+);
+let mu_end = clamp((r_start * mu_start + d) / r_end, -1.0, 1.0);
+if(intersects_ground)
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, -mu_end)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, -mu_start),
+vec3<f32>(1.0)
+);
+}
+else
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, mu_start)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, mu_end),
+vec3<f32>(1.0)
+);
+}
+}
+struct ExtinctionSample
+{
+scattering_rayleigh: vec3<f32>,
+scattering_mie: vec3<f32>,
+scattering_ozone: vec3<f32>,
+absorption_rayleigh: vec3<f32>,
+absorption_mie: vec3<f32>,
+absorption_ozone: vec3<f32>,
+scattering: vec3<f32>,
+extinction: vec3<f32>,
+}
+fn densityExponential(altitude: f32, density_scale: f32) -> f32
+{ return exp(-altitude / density_scale); }
+fn densityTent(altitude_km: f32) -> f32
+{ return max(0.0, 1.0 - abs(altitude_km - 25.0) / 15.0); }
+fn sampleExtinction(atmosphere: ptr<function,Atmosphere>, altitude_Mm: f32) -> ExtinctionSample
+{
+let density_rayleigh: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_rayleigh_Mm);
+let scattering_rayleigh: vec3<f32> = (*atmosphere).scattering_rayleigh_per_Mm * density_rayleigh;
+let absorption_rayleigh: vec3<f32> = (*atmosphere).absorption_rayleigh_per_Mm * density_rayleigh;
+let density_mie: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_mie_Mm);
+let scattering_mie: vec3<f32> = (*atmosphere).scattering_mie_per_Mm * density_mie;
+let absorption_mie: vec3<f32> = (*atmosphere).absorption_mie_per_Mm * density_mie;
+let density_ozone: f32 = densityTent(altitude_Mm * 1000.0);
+let scattering_ozone: vec3<f32> = (*atmosphere).scattering_ozone_per_Mm * density_ozone;
+let absorption_ozone: vec3<f32> = (*atmosphere).absorption_ozone_per_Mm * density_ozone;
+var extinction_sample: ExtinctionSample;
+extinction_sample.scattering_rayleigh = scattering_rayleigh;
+extinction_sample.scattering_mie = scattering_mie;
+extinction_sample.scattering_ozone = scattering_ozone;
+extinction_sample.absorption_rayleigh = absorption_rayleigh;
+extinction_sample.absorption_mie = absorption_mie;
+extinction_sample.absorption_ozone = absorption_ozone;
+extinction_sample.scattering = scattering_rayleigh + scattering_mie + scattering_ozone;
+extinction_sample.extinction = extinction_sample.scattering + absorption_rayleigh + absorption_mie + absorption_ozone;
+return extinction_sample;
+}
+fn phaseRayleigh(cosine: f32) -> f32
+{
+let scalar: f32 = 3.0 / (16.0 * PI);
+let numerator: f32 = (1.0 + cosine * cosine);
+return scalar * numerator;
+}
+fn phaseMie(cosine: f32, g: f32) -> f32
+{
+let scalar: f32 = 3.0 / (8.0 * PI);
+let numerator: f32 = (1.0 - g * g) * (1.0 + cosine * cosine);
+let denominator: f32 = (2.0 + g * g) * pow(1.0 + g * g - 2.0 * g * cosine, 1.5);
+return scalar * numerator / denominator;
+}
+struct RaymarchStep
+{
+radius: f32,
+mu: f32,
+mu_light: f32,
+nu: f32,
+};
+fn stepRadiusMu(
+start: RaymarchStep,
+step_distance: f32,
+) -> RaymarchStep
+{
+var result: RaymarchStep;
+result.radius = safeSqrt(
+step_distance * step_distance + 2.0 * start.radius * start.mu * step_distance
++ start.radius * start.radius
+);
+result.mu = (start.radius * start.mu + step_distance) / result.radius;
+result.nu = start.nu;
+result.mu_light = (start.radius * start.mu_light + step_distance * start.nu) / result.radius;
+return result;
+}
+fn sampleTransmittanceLUT_RayMarchStep(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+start: RaymarchStep,
+step_distance: f32
+) -> vec3<f32>
+{
+const STEP_DISTANCE_EPSILON = 0.0000001;
+if (step_distance < STEP_DISTANCE_EPSILON)
+{
+return vec3<f32>(1.0);
+}
+let end: RaymarchStep = stepRadiusMu(start, step_distance);
+var transmittance = vec3<f32>(0.0);
+if (start.mu > 0.0)
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, start.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, end.mu);
+}
+else
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, -end.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, -start.mu);
+}
+return clamp(transmittance, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+struct AtmosphereRaycastResult
+{
+intersects_ground: bool,
+t_min: f32,
+t_max: f32,
+}
+fn raycastAtmosphere(atmosphere: ptr<function, Atmosphere>, origin: vec3<f32>, direction: vec3<f32>) -> AtmosphereRaycastResult
+{
+var result: AtmosphereRaycastResult;
+let planet_hit = raySphereIntersection(origin, direction, (*atmosphere).planet_radius_Mm);
+let atmosphere_hit = raySphereIntersection(origin, direction, (*atmosphere).atmosphere_radius_Mm);
+let inside_planet = planet_hit.hit && planet_hit.t0 < 0.0 && planet_hit.t1 > 0.0;
+let intersects_atmosphere = atmosphere_hit.hit && atmosphere_hit.t1 > 0.0;
+if (!intersects_atmosphere || inside_planet)
+{
+result.intersects_ground = true;
+result.t_min = 0.0;
+result.t_max = 0.0;
+return result;
+}
+result.t_min = max(atmosphere_hit.t0, 0.0);
+result.t_max = atmosphere_hit.t1;
+if (planet_hit.hit && planet_hit.t0 > 0.0)
+{
+result.intersects_ground = true;
+result.t_max = planet_hit.t0;
+}
+return result;
+}
+struct ScatteringResult
+{
+luminance: vec3<f32>,
+transmittance: vec3<f32>,
+multiscattering_transfer: vec3<f32>,
+}
+fn computeLuminanceScatteringIntegral(
+atmosphere: ptr<function, Atmosphere>,
+light:  ptr<function, CelestialLight>,
+lut_sampler: sampler,
+transmittance_lut: texture_2d<f32>,
+multiscatter_lut: texture_2d<f32>,
+origin: vec3<f32>,
+direction: vec3<f32>,
+include_ground: bool,
+intersects_ground: bool,
+sample_distance: f32,
+) -> ScatteringResult
+{
+var result: ScatteringResult;
+result.luminance = vec3<f32>(0.0);
+result.transmittance = vec3<f32>(1.0);
+result.multiscattering_transfer = vec3<f32>(0.0);
+if(sample_distance <= 0.0)
+{
+result.luminance = vec3<f32>(1.0, 1.0, 0.0);
+return result;
+}
+let incident_cosine = dot((*light).forward, -direction);
+let start_radius: f32 = length(origin);
+let start_mu: f32 = dot(origin, direction) / (length(origin) * length(direction));
+let start_mu_light: f32 = dot(origin, -(*light).forward) / (length(origin) * length((*light).forward));
+let nu: f32 = dot(-(*light).forward, direction) / (length((*light).forward) * length(direction));
+let origin_step = RaymarchStep(start_radius, start_mu, start_mu_light, nu);
+var transmittance_accumulated = vec3<f32>(1.0);
+const SAMPLE_COUNT = 64.0;
+const T_SUBSTEP = 0.4;
+var t: f32 = 0.0;
+var d_t: f32 = 0.0;
+for (var s = 0.0; s < SAMPLE_COUNT; s += 1.0)
+{
+{
+var t_begin = s / SAMPLE_COUNT;
+var t_end = (s + 1.0) / SAMPLE_COUNT;
+t_begin = sample_distance * t_begin * t_begin;
+t_end = sample_distance * t_end * t_end;
+d_t = t_end - t_begin;
+t = mix(t_begin, t_end, T_SUBSTEP);
+}
+let sample_step: RaymarchStep = stepRadiusMu(origin_step, t);
+let altitude = sample_step.radius - (*atmosphere).planet_radius_Mm;
+let extinction_sample: ExtinctionSample = sampleExtinction(atmosphere, altitude);
+let transmittance_to_t_begin = transmittance_accumulated;
+let transmittance_along_path = exp(-extinction_sample.extinction * d_t);
+transmittance_accumulated *= transmittance_along_path;
+let phase_times_scattering: vec3<f32> =
+extinction_sample.scattering_rayleigh * phaseRayleigh(incident_cosine)
++ extinction_sample.scattering_mie * phaseMie(incident_cosine, 0.8)
++ extinction_sample.scattering_ozone * phaseRayleigh(incident_cosine);
+let multiscatter = sampleMultiscatterLUT(multiscatter_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+var occlusion_planet: f32 = 0.0;
+{
+let horizon_sin = (*atmosphere).planet_radius_Mm / sample_step.radius;
+let horizon_cos = -safeSqrt(1.0 - horizon_sin * horizon_sin);
+occlusion_planet = f32(sample_step.mu_light < horizon_cos);
+}
+let transmittance_to_sun = sampleTransmittanceLUT_RadiusMu(transmittance_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+var shadowing = vec3<f32>(transmittance_to_sun * (1.0 - f32(occlusion_planet)));
+let scattering_illuminance_integral = (vec3(1.0) - transmittance_along_path) / extinction_sample.extinction;
+result.luminance +=
+(phase_times_scattering * shadowing + multiscatter * extinction_sample.scattering)
+* scattering_illuminance_integral * transmittance_to_t_begin
+* 1.0;
+result.multiscattering_transfer += extinction_sample.scattering * scattering_illuminance_integral * transmittance_to_t_begin;
+}
+if (include_ground && intersects_ground)
+{
+let sample_step: RaymarchStep = stepRadiusMu(origin_step, sample_distance);
+let transmittance_to_surface = sampleTransmittanceLUT_RayMarchStep(transmittance_lut, lut_sampler, atmosphere, origin_step, sample_distance);
+let transmittance_to_sun = sampleTransmittanceLUT_RadiusMu(transmittance_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+let normal_dot_light = clamp(sample_step.mu_light, 0.0, 1.0);
+let diffuse = (*atmosphere).ground_albedo / PI;
+result.luminance +=
+transmittance_to_surface * transmittance_to_sun * normal_dot_light * diffuse
+* 1.0;
+}
+result.transmittance = transmittance_accumulated;
+return result;
+}
+@compute @workgroup_size(16,16,1)
+fn computeAerialPerspective(@builtin(global_invocation_id) global_id : vec3<u32>,)
+{
+    let texel_coord = vec3<u32>(global_id.xyz);
+    let size = textureDimensions(aerial_perspective_lut);
+    if(texel_coord.x >= size.x || texel_coord.y >= size.y || texel_coord.z >= size.z)
+    {
+        return;
+    }
+    var atmosphere = u_global.atmosphere;
+    var light = u_global.light;
+	var camera = u_global.camera;
+    let offset = vec2<f32>(0.5, 0.5);
+    let uv = (vec2<f32>(texel_coord.xy) + offset) / vec2<f32>(size.xy);
+    let origin = vec3<f32>(0.0, atmosphere.planet_radius_Mm, 0.0) + camera.position.xyz / METERS_PER_MM;
+    let ndc_space_coord = (uv - vec2<f32>(0.5)) * 2.0 * vec2<f32>(1.0, -1.0);
+    let near_plane_depth = 1.0;
+    let direction_view_space = camera.inv_proj * vec4(ndc_space_coord, near_plane_depth, 1.0);
+    let direction_world = normalize((camera.inv_view * vec4<f32>(direction_view_space.xyz, 0.0)).xyz);
+	let atmosphere_raycast = raycastAtmosphere(&atmosphere, origin, direction_world);
+	let sample_distance = min(
+		atmosphere_raycast.t_max - atmosphere_raycast.t_min,
+		f32(texel_coord.z + 1u) * AERIAL_PERSPECTIVE_MM_PER_SLICE
+	);
+    let include_ground = false;
+    let result = computeLuminanceScatteringIntegral(
+        &atmosphere,
+        &light,
+        lut_sampler,
+        transmittance_lut,
+        multiscatter_lut,
+        origin + direction_world * atmosphere_raycast.t_min,
+        direction_world,
+        include_ground,
+		atmosphere_raycast.intersects_ground,
+		sample_distance
+    );
+	let in_scattering = result.luminance;
+	let mean_transmittance = dot(result.transmittance, vec3<f32>(1.0)) / 3.0;
+    textureStore(aerial_perspective_lut, texel_coord, vec4(in_scattering, mean_transmittance));
+}
+",
+}
+`;
+
+exports[`packShaders 2`] = `
+{
+  "includes": [
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\types.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\util\\raycast.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_common.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\constants.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_raymarch.inc.wgsl",
+  ],
+  "source": "struct Atmosphere
+{
+scattering_rayleigh_per_Mm : vec3<f32>,
+density_scale_rayleigh_Mm : f32,
+absorption_rayleigh_per_Mm : vec3<f32>,
+planet_radius_Mm : f32,
+scattering_mie_per_Mm : vec3<f32>,
+density_scale_mie_Mm : f32,
+absorption_mie_per_Mm : vec3<f32>,
+atmosphere_radius_Mm : f32,
+ground_albedo : vec3<f32>,
+padding0 : f32,
+scattering_ozone_per_Mm : vec3<f32>,
+padding1 : f32,
+absorption_ozone_per_Mm : vec3<f32>,
+padding2 : f32,
+padding3 : vec4<f32>,
+}
+struct CelestialLight
+{
+color: vec3<f32>,
+strength: f32,
+forward: vec3<f32>,
+angular_radius: f32,
+}
+struct Camera
+{
+inv_proj: mat4x4<f32>,
+inv_view: mat4x4<f32>,
+proj_view: mat4x4<f32>,
+position: vec4<f32>,
+forward: vec4<f32>,
+padding0: mat2x4<f32>,
+}
+struct Time
+{
+padding0: vec2<f32>,
+time_seconds: f32,
+delta_time_seconds: f32,
+}
+struct GlobalUBO
+{
+camera: Camera,
+ocean_camera: Camera,
+atmosphere: Atmosphere,
+light: CelestialLight,
+time: Time,
+}
+struct RaySphereHit
+{
+hit: bool,
+t0: f32,
+t1: f32,
+}
+fn raySphereIntersection(
+ray_origin: vec3<f32>,
+ray_direction_normalized: vec3<f32>,
+radius: f32
+) -> RaySphereHit
+{
+let f: vec3<f32> = ray_origin;
+let d: vec3<f32> = ray_direction_normalized;
+let b: f32 = -1.0 * dot(f, d);
+let center_to_intersection_chord: vec3<f32> = f + b * d;
+let discriminant: f32 = radius * radius - dot(center_to_intersection_chord, center_to_intersection_chord);
+let c: f32 = dot(f, f) - radius * radius;
+var output : RaySphereHit;
+output.hit = false;
+output.t0 = 0.0;
+output.t1 = 0.0;
+if (discriminant < 0.0)
+{
+return output;
+}
+var q: f32 = b;
+if (b < 0.0)
+{
+q -= sqrt(discriminant);
+}
+else
+{
+q += sqrt(discriminant);
+}
+output.hit = true;
+output.t0 = c / q;
+output.t1 = q;
+if (output.t0 > output.t1)
+{
+let temp: f32 = output.t0;
+output.t0 = output.t1;
+output.t1 = temp;
+}
+return output;
+}
+struct RayPlaneHit {
+hit: bool,
+t: f32,
+}
+fn rayPlaneIntersection(
+ray_origin: vec3<f32>,
+ray_direction: vec3<f32>,
+plane_origin: vec3<f32>,
+plane_normal: vec3<f32>
+) -> RayPlaneHit
+{
+var result: RayPlaneHit;
+let perp = dot(plane_normal, ray_direction);
+result.t = dot(plane_origin - ray_origin, plane_normal) / perp;
+result.hit = (abs(perp) > 0.00001) && (result.t > 0.0);
+return result;
+}
+@group(0) @binding(0) var multiscatter_lut: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(1) var lut_sampler: sampler;
+@group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
+@group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+const PI = 3.141592653589793;
+const METERS_PER_MM = 1000000;
+const AERIAL_PERSPECTIVE_MM_PER_SLICE = 0.001;
+const ISOTROPIC_PHASE = 1.0 / (4.0 * PI);
+fn safeSqrt(value: f32) -> f32 { return sqrt(max(value, 0.0)); }
+fn textureCoordFromUnitRange(value: f32, length: u32) -> f32
+{
+return 0.5 / f32(length) + value * (1.0 - 1.0 / f32(length));
+}
+fn unitRangeFromTextureCoord(coord: f32 , length: u32) -> f32
+{
+return (coord - 0.5 / f32(length)) / (1.0 - 1.0 / f32(length));
+}
+fn transmittanceLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let atmosphere_radius_Mm_squared: f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared: f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h: f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho: f32 = safeSqrt(radius * radius - planet_radius_Mm_squared);
+let d: f32 = max(-radius * mu + safeSqrt(radius * radius * (mu * mu - 1.0) + atmosphere_radius_Mm_squared), 0.0);
+let d_min: f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max: f32 = rho + h;
+let x_mu: f32 = (d - d_min) / (d_max - d_min);
+let x_radius: f32 = rho / h;
+return vec2<f32>(
+textureCoordFromUnitRange(x_mu, dimensions.x),
+textureCoordFromUnitRange(x_radius, dimensions.y)
+);
+}
+fn transmittanceLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let x_mu : f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let x_radius : f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let atmosphere_radius_Mm_squared : f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared : f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h : f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho : f32 = h * x_radius;
+let radius : f32 = safeSqrt(rho * rho + planet_radius_Mm_squared);
+let d_min : f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max : f32 = rho + h;
+let d : f32 = (d_max - d_min) * x_mu + d_min;
+let D_EPSILON: f32 = 0.000000001;
+if (d < D_EPSILON)
+{
+return vec2<f32>(radius, 1.0);
+}
+let mu : f32 = (h * h - rho * rho - d * d) / (2.0 * radius * d);
+return vec2<f32>(radius, clamp(mu, -1.0, 1.0));
+}
+fn multiscatterLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = 0.5 + 0.5 * mu_light;
+let v_unit: f32 = clamp(
+(radius - (*atmosphere).planet_radius_Mm)
+/ ((*atmosphere).atmosphere_radius_Mm - (*atmosphere).planet_radius_Mm),
+0.0, 1.0
+);
+return vec2<f32>(
+textureCoordFromUnitRange(u_unit, dimensions.x),
+textureCoordFromUnitRange(v_unit, dimensions.y)
+);
+}
+fn multiscatterLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let v_unit: f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let mu_light: f32 = 2.0 * (u_unit - 0.5);
+let radius: f32 = mix(
+(*atmosphere).planet_radius_Mm * (1.0002),
+(*atmosphere).atmosphere_radius_Mm * (0.9998),
+v_unit
+);
+return vec2<f32>(radius, mu_light);
+}
+fn sampleMultiscatterLUT(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = multiscatterLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu_light,
+textureDimensions(lut)
+);
+return textureSampleLevel(lut, s, uv, 0.0).xyz;
+}
+fn sampleTransmittanceLUT_RadiusMu(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = transmittanceLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu,
+textureDimensions(lut)
+);
+let sample = textureSampleLevel(lut, s, uv, 0.0).xyz;
+return sample;
+}
+fn sampleTransmittanceLUT_Ray(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+position: vec3<f32>,
+direction: vec3<f32>
+) -> vec3<f32>
+{
+let radius: f32 = length(position);
+let mu: f32 = (dot(position, direction) / (length(position) * length(direction)));
+return sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, radius, mu);
+}
+fn sampleTransmittanceLUT_Segment(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+r_start: f32,
+mu_start: f32,
+d: f32,
+intersects_ground: bool
+) -> vec3<f32>
+{
+let r_end = clamp(
+safeSqrt(d * d + 2.0 * r_start * mu_start * d + r_start * r_start),
+(*atmosphere).planet_radius_Mm, (*atmosphere).atmosphere_radius_Mm
+);
+let mu_end = clamp((r_start * mu_start + d) / r_end, -1.0, 1.0);
+if(intersects_ground)
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, -mu_end)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, -mu_start),
+vec3<f32>(1.0)
+);
+}
+else
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, mu_start)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, mu_end),
+vec3<f32>(1.0)
+);
+}
+}
+struct ExtinctionSample
+{
+scattering_rayleigh: vec3<f32>,
+scattering_mie: vec3<f32>,
+scattering_ozone: vec3<f32>,
+absorption_rayleigh: vec3<f32>,
+absorption_mie: vec3<f32>,
+absorption_ozone: vec3<f32>,
+scattering: vec3<f32>,
+extinction: vec3<f32>,
+}
+fn densityExponential(altitude: f32, density_scale: f32) -> f32
+{ return exp(-altitude / density_scale); }
+fn densityTent(altitude_km: f32) -> f32
+{ return max(0.0, 1.0 - abs(altitude_km - 25.0) / 15.0); }
+fn sampleExtinction(atmosphere: ptr<function,Atmosphere>, altitude_Mm: f32) -> ExtinctionSample
+{
+let density_rayleigh: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_rayleigh_Mm);
+let scattering_rayleigh: vec3<f32> = (*atmosphere).scattering_rayleigh_per_Mm * density_rayleigh;
+let absorption_rayleigh: vec3<f32> = (*atmosphere).absorption_rayleigh_per_Mm * density_rayleigh;
+let density_mie: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_mie_Mm);
+let scattering_mie: vec3<f32> = (*atmosphere).scattering_mie_per_Mm * density_mie;
+let absorption_mie: vec3<f32> = (*atmosphere).absorption_mie_per_Mm * density_mie;
+let density_ozone: f32 = densityTent(altitude_Mm * 1000.0);
+let scattering_ozone: vec3<f32> = (*atmosphere).scattering_ozone_per_Mm * density_ozone;
+let absorption_ozone: vec3<f32> = (*atmosphere).absorption_ozone_per_Mm * density_ozone;
+var extinction_sample: ExtinctionSample;
+extinction_sample.scattering_rayleigh = scattering_rayleigh;
+extinction_sample.scattering_mie = scattering_mie;
+extinction_sample.scattering_ozone = scattering_ozone;
+extinction_sample.absorption_rayleigh = absorption_rayleigh;
+extinction_sample.absorption_mie = absorption_mie;
+extinction_sample.absorption_ozone = absorption_ozone;
+extinction_sample.scattering = scattering_rayleigh + scattering_mie + scattering_ozone;
+extinction_sample.extinction = extinction_sample.scattering + absorption_rayleigh + absorption_mie + absorption_ozone;
+return extinction_sample;
+}
+fn phaseRayleigh(cosine: f32) -> f32
+{
+let scalar: f32 = 3.0 / (16.0 * PI);
+let numerator: f32 = (1.0 + cosine * cosine);
+return scalar * numerator;
+}
+fn phaseMie(cosine: f32, g: f32) -> f32
+{
+let scalar: f32 = 3.0 / (8.0 * PI);
+let numerator: f32 = (1.0 - g * g) * (1.0 + cosine * cosine);
+let denominator: f32 = (2.0 + g * g) * pow(1.0 + g * g - 2.0 * g * cosine, 1.5);
+return scalar * numerator / denominator;
+}
+struct RaymarchStep
+{
+radius: f32,
+mu: f32,
+mu_light: f32,
+nu: f32,
+};
+fn stepRadiusMu(
+start: RaymarchStep,
+step_distance: f32,
+) -> RaymarchStep
+{
+var result: RaymarchStep;
+result.radius = safeSqrt(
+step_distance * step_distance + 2.0 * start.radius * start.mu * step_distance
++ start.radius * start.radius
+);
+result.mu = (start.radius * start.mu + step_distance) / result.radius;
+result.nu = start.nu;
+result.mu_light = (start.radius * start.mu_light + step_distance * start.nu) / result.radius;
+return result;
+}
+fn sampleTransmittanceLUT_RayMarchStep(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+start: RaymarchStep,
+step_distance: f32
+) -> vec3<f32>
+{
+const STEP_DISTANCE_EPSILON = 0.0000001;
+if (step_distance < STEP_DISTANCE_EPSILON)
+{
+return vec3<f32>(1.0);
+}
+let end: RaymarchStep = stepRadiusMu(start, step_distance);
+var transmittance = vec3<f32>(0.0);
+if (start.mu > 0.0)
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, start.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, end.mu);
+}
+else
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, -end.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, -start.mu);
+}
+return clamp(transmittance, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+struct AtmosphereRaycastResult
+{
+intersects_ground: bool,
+t_min: f32,
+t_max: f32,
+}
+fn raycastAtmosphere(atmosphere: ptr<function, Atmosphere>, origin: vec3<f32>, direction: vec3<f32>) -> AtmosphereRaycastResult
+{
+var result: AtmosphereRaycastResult;
+let planet_hit = raySphereIntersection(origin, direction, (*atmosphere).planet_radius_Mm);
+let atmosphere_hit = raySphereIntersection(origin, direction, (*atmosphere).atmosphere_radius_Mm);
+let inside_planet = planet_hit.hit && planet_hit.t0 < 0.0 && planet_hit.t1 > 0.0;
+let intersects_atmosphere = atmosphere_hit.hit && atmosphere_hit.t1 > 0.0;
+if (!intersects_atmosphere || inside_planet)
+{
+result.intersects_ground = true;
+result.t_min = 0.0;
+result.t_max = 0.0;
+return result;
+}
+result.t_min = max(atmosphere_hit.t0, 0.0);
+result.t_max = atmosphere_hit.t1;
+if (planet_hit.hit && planet_hit.t0 > 0.0)
+{
+result.intersects_ground = true;
+result.t_max = planet_hit.t0;
+}
+return result;
+}
+struct ScatteringResult
+{
+luminance: vec3<f32>,
+transmittance: vec3<f32>,
+multiscattering_transfer: vec3<f32>,
+}
+fn computeLuminanceScatteringIntegral(
+atmosphere: ptr<function, Atmosphere>,
+light:  ptr<function, CelestialLight>,
+lut_sampler: sampler,
+transmittance_lut: texture_2d<f32>,
+origin: vec3<f32>,
+direction: vec3<f32>,
+include_ground: bool,
+intersects_ground: bool,
+sample_distance: f32,
+) -> ScatteringResult
+{
+var result: ScatteringResult;
+result.luminance = vec3<f32>(0.0);
+result.transmittance = vec3<f32>(1.0);
+result.multiscattering_transfer = vec3<f32>(0.0);
+if(sample_distance <= 0.0)
+{
+result.luminance = vec3<f32>(1.0, 1.0, 0.0);
+return result;
+}
+let incident_cosine = dot((*light).forward, -direction);
+let start_radius: f32 = length(origin);
+let start_mu: f32 = dot(origin, direction) / (length(origin) * length(direction));
+let start_mu_light: f32 = dot(origin, -(*light).forward) / (length(origin) * length((*light).forward));
+let nu: f32 = dot(-(*light).forward, direction) / (length((*light).forward) * length(direction));
+let origin_step = RaymarchStep(start_radius, start_mu, start_mu_light, nu);
+var transmittance_accumulated = vec3<f32>(1.0);
+const SAMPLE_COUNT = 256.0;
+const T_SUBSTEP = 0.2;
+var t: f32 = 0.0;
+var d_t: f32 = 0.0;
+for (var s = 0.0; s < SAMPLE_COUNT; s += 1.0)
+{
+{
+let t_new = sample_distance * (s + T_SUBSTEP) / SAMPLE_COUNT;
+d_t = t_new - t;
+t = t_new;
+}
+let sample_step: RaymarchStep = stepRadiusMu(origin_step, t);
+let altitude = sample_step.radius - (*atmosphere).planet_radius_Mm;
+let extinction_sample: ExtinctionSample = sampleExtinction(atmosphere, altitude);
+let transmittance_to_t_begin = transmittance_accumulated;
+let transmittance_along_path = exp(-extinction_sample.extinction * d_t);
+transmittance_accumulated *= transmittance_along_path;
+let phase_times_scattering = extinction_sample.scattering * ISOTROPIC_PHASE;
+let multiscatter = vec3<f32>(0.0);
+var occlusion_planet: f32 = 0.0;
+{
+let horizon_sin = (*atmosphere).planet_radius_Mm / sample_step.radius;
+let horizon_cos = -safeSqrt(1.0 - horizon_sin * horizon_sin);
+occlusion_planet = f32(sample_step.mu_light < horizon_cos);
+}
+let transmittance_to_sun = sampleTransmittanceLUT_RadiusMu(transmittance_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+var shadowing = vec3<f32>(transmittance_to_sun * (1.0 - f32(occlusion_planet)));
+let scattering_illuminance_integral = (vec3(1.0) - transmittance_along_path) / extinction_sample.extinction;
+result.luminance +=
+(phase_times_scattering * shadowing + multiscatter * extinction_sample.scattering)
+* scattering_illuminance_integral * transmittance_to_t_begin
+* 1.0;
+result.multiscattering_transfer += extinction_sample.scattering * scattering_illuminance_integral * transmittance_to_t_begin;
+}
+if (include_ground && intersects_ground)
+{
+let sample_step: RaymarchStep = stepRadiusMu(origin_step, sample_distance);
+let transmittance_to_surface = sampleTransmittanceLUT_RayMarchStep(transmittance_lut, lut_sampler, atmosphere, origin_step, sample_distance);
+let transmittance_to_sun = sampleTransmittanceLUT_RadiusMu(transmittance_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+let normal_dot_light = clamp(sample_step.mu_light, 0.0, 1.0);
+let diffuse = (*atmosphere).ground_albedo / PI;
+result.luminance +=
+transmittance_to_surface * transmittance_to_sun * normal_dot_light * diffuse
+* 1.0;
+}
+result.transmittance = transmittance_accumulated;
+return result;
+}
+@compute @workgroup_size(16, 16, 1)
+fn computeMultiscattering(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let texel_coord = vec2<u32>(global_id.xy);
+    let size = textureDimensions(multiscatter_lut);
+    if texel_coord.x >= size.x || texel_coord.y >= size.y {
+        return;
+    }
+    var atmosphere: Atmosphere = u_global.atmosphere;
+    let offset = vec2<f32>(0.5, 0.5);
+    let uv = (vec2<f32>(texel_coord) + offset) / vec2<f32>(size);
+    let r_mu_light = multiscatterLUT_UV_to_RMu(&atmosphere, uv, textureDimensions(multiscatter_lut));
+    let origin = vec3<f32>(0.0, r_mu_light.x, 0.0);
+    let cos_sun_zenith: f32 = clamp(r_mu_light.y, -1.0, 1.0);
+    let sin_sun_zenith: f32 = safeSqrt(1.0 - cos_sun_zenith * cos_sun_zenith);
+    let sun_direction = vec3<f32>(0.0, cos_sun_zenith, sin_sun_zenith);
+    var light: CelestialLight = u_global.light;
+    light.forward = -sun_direction;
+    var luminance_second_order = vec3<f32>(0.0);
+    var multiscattering_transfer = vec3<f32>(0.0);
+    const SAMPLE_COUNT_SQRT = 5u;
+    const SAMPLE_COUNT = SAMPLE_COUNT_SQRT * SAMPLE_COUNT_SQRT;
+    for (var sample_index = 0u; sample_index < SAMPLE_COUNT; sample_index++) {
+        let azimuthal_index = f32(sample_index) / f32(SAMPLE_COUNT_SQRT);
+        let zenith_index = f32(sample_index % SAMPLE_COUNT_SQRT) + 0.5;
+        let azimuth = 2.0 * PI * f32(azimuthal_index) / f32(SAMPLE_COUNT_SQRT);
+        let cos_azimuth = cos(azimuth);
+        let sin_azimuth = sin(azimuth);
+        let cos_zenith = clamp(
+            2.0 * f32(zenith_index) / f32(SAMPLE_COUNT_SQRT) - 1.0,
+            -1.0, 1.0
+        );
+        let sin_zenith = sqrt(1.0 - cos_zenith * cos_zenith);
+        let direction = vec3<f32>(sin_azimuth * sin_zenith, cos_zenith, cos_azimuth * sin_zenith);
+		let atmosphere_raycast = raycastAtmosphere(&atmosphere, origin, direction);
+        let include_ground = true;
+        let scattering = computeLuminanceScatteringIntegral(
+            &atmosphere,
+            &light,
+            lut_sampler,
+            transmittance_lut,
+			origin + direction * atmosphere_raycast.t_min,
+			direction,
+			include_ground,
+			atmosphere_raycast.intersects_ground,
+			atmosphere_raycast.t_max - atmosphere_raycast.t_min
+        );
+    	const SPHERE_SOLID_ANGLE = 4.0 * PI;
+        let sample_solid_angle = SPHERE_SOLID_ANGLE / f32(SAMPLE_COUNT);
+        luminance_second_order += scattering.luminance * sample_solid_angle;
+        multiscattering_transfer += scattering.multiscattering_transfer * sample_solid_angle;
+    }
+    let inscattering = luminance_second_order * ISOTROPIC_PHASE;
+    let scattering_transfer = multiscattering_transfer * ISOTROPIC_PHASE;
+    let infinite_scattering_transfer = vec3<f32>(1.0 / (1.0 - scattering_transfer));
+    let multiscattering = infinite_scattering_transfer * inscattering;
+    textureStore(multiscatter_lut, texel_coord, vec4<f32>(multiscattering, 1.0));
+}
+",
+}
+`;
+
+exports[`packShaders 3`] = `
+{
+  "includes": [
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\types.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_common.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\constants.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\util\\raycast.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_raymarch.inc.wgsl",
+  ],
+  "source": "struct Atmosphere
+{
+scattering_rayleigh_per_Mm : vec3<f32>,
+density_scale_rayleigh_Mm : f32,
+absorption_rayleigh_per_Mm : vec3<f32>,
+planet_radius_Mm : f32,
+scattering_mie_per_Mm : vec3<f32>,
+density_scale_mie_Mm : f32,
+absorption_mie_per_Mm : vec3<f32>,
+atmosphere_radius_Mm : f32,
+ground_albedo : vec3<f32>,
+padding0 : f32,
+scattering_ozone_per_Mm : vec3<f32>,
+padding1 : f32,
+absorption_ozone_per_Mm : vec3<f32>,
+padding2 : f32,
+padding3 : vec4<f32>,
+}
+struct CelestialLight
+{
+color: vec3<f32>,
+strength: f32,
+forward: vec3<f32>,
+angular_radius: f32,
+}
+struct Camera
+{
+inv_proj: mat4x4<f32>,
+inv_view: mat4x4<f32>,
+proj_view: mat4x4<f32>,
+position: vec4<f32>,
+forward: vec4<f32>,
+padding0: mat2x4<f32>,
+}
+struct Time
+{
+padding0: vec2<f32>,
+time_seconds: f32,
+delta_time_seconds: f32,
+}
+struct GlobalUBO
+{
+camera: Camera,
+ocean_camera: Camera,
+atmosphere: Atmosphere,
+light: CelestialLight,
+time: Time,
+}
+@group(0) @binding(0) var skyview_lut: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(1) var lut_sampler: sampler;
+@group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
+@group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
+@group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+const PI = 3.141592653589793;
+const METERS_PER_MM = 1000000;
+const AERIAL_PERSPECTIVE_MM_PER_SLICE = 0.001;
+const ISOTROPIC_PHASE = 1.0 / (4.0 * PI);
+fn safeSqrt(value: f32) -> f32 { return sqrt(max(value, 0.0)); }
+fn textureCoordFromUnitRange(value: f32, length: u32) -> f32
+{
+return 0.5 / f32(length) + value * (1.0 - 1.0 / f32(length));
+}
+fn unitRangeFromTextureCoord(coord: f32 , length: u32) -> f32
+{
+return (coord - 0.5 / f32(length)) / (1.0 - 1.0 / f32(length));
+}
+fn transmittanceLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let atmosphere_radius_Mm_squared: f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared: f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h: f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho: f32 = safeSqrt(radius * radius - planet_radius_Mm_squared);
+let d: f32 = max(-radius * mu + safeSqrt(radius * radius * (mu * mu - 1.0) + atmosphere_radius_Mm_squared), 0.0);
+let d_min: f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max: f32 = rho + h;
+let x_mu: f32 = (d - d_min) / (d_max - d_min);
+let x_radius: f32 = rho / h;
+return vec2<f32>(
+textureCoordFromUnitRange(x_mu, dimensions.x),
+textureCoordFromUnitRange(x_radius, dimensions.y)
+);
+}
+fn transmittanceLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let x_mu : f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let x_radius : f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let atmosphere_radius_Mm_squared : f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared : f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h : f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho : f32 = h * x_radius;
+let radius : f32 = safeSqrt(rho * rho + planet_radius_Mm_squared);
+let d_min : f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max : f32 = rho + h;
+let d : f32 = (d_max - d_min) * x_mu + d_min;
+let D_EPSILON: f32 = 0.000000001;
+if (d < D_EPSILON)
+{
+return vec2<f32>(radius, 1.0);
+}
+let mu : f32 = (h * h - rho * rho - d * d) / (2.0 * radius * d);
+return vec2<f32>(radius, clamp(mu, -1.0, 1.0));
+}
+fn multiscatterLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = 0.5 + 0.5 * mu_light;
+let v_unit: f32 = clamp(
+(radius - (*atmosphere).planet_radius_Mm)
+/ ((*atmosphere).atmosphere_radius_Mm - (*atmosphere).planet_radius_Mm),
+0.0, 1.0
+);
+return vec2<f32>(
+textureCoordFromUnitRange(u_unit, dimensions.x),
+textureCoordFromUnitRange(v_unit, dimensions.y)
+);
+}
+fn multiscatterLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let v_unit: f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let mu_light: f32 = 2.0 * (u_unit - 0.5);
+let radius: f32 = mix(
+(*atmosphere).planet_radius_Mm * (1.0002),
+(*atmosphere).atmosphere_radius_Mm * (0.9998),
+v_unit
+);
+return vec2<f32>(radius, mu_light);
+}
+fn sampleMultiscatterLUT(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = multiscatterLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu_light,
+textureDimensions(lut)
+);
+return textureSampleLevel(lut, s, uv, 0.0).xyz;
+}
+fn sampleTransmittanceLUT_RadiusMu(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = transmittanceLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu,
+textureDimensions(lut)
+);
+let sample = textureSampleLevel(lut, s, uv, 0.0).xyz;
+return sample;
+}
+fn sampleTransmittanceLUT_Ray(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+position: vec3<f32>,
+direction: vec3<f32>
+) -> vec3<f32>
+{
+let radius: f32 = length(position);
+let mu: f32 = (dot(position, direction) / (length(position) * length(direction)));
+return sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, radius, mu);
+}
+fn sampleTransmittanceLUT_Segment(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+r_start: f32,
+mu_start: f32,
+d: f32,
+intersects_ground: bool
+) -> vec3<f32>
+{
+let r_end = clamp(
+safeSqrt(d * d + 2.0 * r_start * mu_start * d + r_start * r_start),
+(*atmosphere).planet_radius_Mm, (*atmosphere).atmosphere_radius_Mm
+);
+let mu_end = clamp((r_start * mu_start + d) / r_end, -1.0, 1.0);
+if(intersects_ground)
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, -mu_end)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, -mu_start),
+vec3<f32>(1.0)
+);
+}
+else
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, mu_start)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, mu_end),
+vec3<f32>(1.0)
+);
+}
+}
+struct ExtinctionSample
+{
+scattering_rayleigh: vec3<f32>,
+scattering_mie: vec3<f32>,
+scattering_ozone: vec3<f32>,
+absorption_rayleigh: vec3<f32>,
+absorption_mie: vec3<f32>,
+absorption_ozone: vec3<f32>,
+scattering: vec3<f32>,
+extinction: vec3<f32>,
+}
+fn densityExponential(altitude: f32, density_scale: f32) -> f32
+{ return exp(-altitude / density_scale); }
+fn densityTent(altitude_km: f32) -> f32
+{ return max(0.0, 1.0 - abs(altitude_km - 25.0) / 15.0); }
+fn sampleExtinction(atmosphere: ptr<function,Atmosphere>, altitude_Mm: f32) -> ExtinctionSample
+{
+let density_rayleigh: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_rayleigh_Mm);
+let scattering_rayleigh: vec3<f32> = (*atmosphere).scattering_rayleigh_per_Mm * density_rayleigh;
+let absorption_rayleigh: vec3<f32> = (*atmosphere).absorption_rayleigh_per_Mm * density_rayleigh;
+let density_mie: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_mie_Mm);
+let scattering_mie: vec3<f32> = (*atmosphere).scattering_mie_per_Mm * density_mie;
+let absorption_mie: vec3<f32> = (*atmosphere).absorption_mie_per_Mm * density_mie;
+let density_ozone: f32 = densityTent(altitude_Mm * 1000.0);
+let scattering_ozone: vec3<f32> = (*atmosphere).scattering_ozone_per_Mm * density_ozone;
+let absorption_ozone: vec3<f32> = (*atmosphere).absorption_ozone_per_Mm * density_ozone;
+var extinction_sample: ExtinctionSample;
+extinction_sample.scattering_rayleigh = scattering_rayleigh;
+extinction_sample.scattering_mie = scattering_mie;
+extinction_sample.scattering_ozone = scattering_ozone;
+extinction_sample.absorption_rayleigh = absorption_rayleigh;
+extinction_sample.absorption_mie = absorption_mie;
+extinction_sample.absorption_ozone = absorption_ozone;
+extinction_sample.scattering = scattering_rayleigh + scattering_mie + scattering_ozone;
+extinction_sample.extinction = extinction_sample.scattering + absorption_rayleigh + absorption_mie + absorption_ozone;
+return extinction_sample;
+}
+fn phaseRayleigh(cosine: f32) -> f32
+{
+let scalar: f32 = 3.0 / (16.0 * PI);
+let numerator: f32 = (1.0 + cosine * cosine);
+return scalar * numerator;
+}
+fn phaseMie(cosine: f32, g: f32) -> f32
+{
+let scalar: f32 = 3.0 / (8.0 * PI);
+let numerator: f32 = (1.0 - g * g) * (1.0 + cosine * cosine);
+let denominator: f32 = (2.0 + g * g) * pow(1.0 + g * g - 2.0 * g * cosine, 1.5);
+return scalar * numerator / denominator;
+}
+struct RaymarchStep
+{
+radius: f32,
+mu: f32,
+mu_light: f32,
+nu: f32,
+};
+fn stepRadiusMu(
+start: RaymarchStep,
+step_distance: f32,
+) -> RaymarchStep
+{
+var result: RaymarchStep;
+result.radius = safeSqrt(
+step_distance * step_distance + 2.0 * start.radius * start.mu * step_distance
++ start.radius * start.radius
+);
+result.mu = (start.radius * start.mu + step_distance) / result.radius;
+result.nu = start.nu;
+result.mu_light = (start.radius * start.mu_light + step_distance * start.nu) / result.radius;
+return result;
+}
+fn sampleTransmittanceLUT_RayMarchStep(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+start: RaymarchStep,
+step_distance: f32
+) -> vec3<f32>
+{
+const STEP_DISTANCE_EPSILON = 0.0000001;
+if (step_distance < STEP_DISTANCE_EPSILON)
+{
+return vec3<f32>(1.0);
+}
+let end: RaymarchStep = stepRadiusMu(start, step_distance);
+var transmittance = vec3<f32>(0.0);
+if (start.mu > 0.0)
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, start.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, end.mu);
+}
+else
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, -end.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, -start.mu);
+}
+return clamp(transmittance, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+struct RaySphereHit
+{
+hit: bool,
+t0: f32,
+t1: f32,
+}
+fn raySphereIntersection(
+ray_origin: vec3<f32>,
+ray_direction_normalized: vec3<f32>,
+radius: f32
+) -> RaySphereHit
+{
+let f: vec3<f32> = ray_origin;
+let d: vec3<f32> = ray_direction_normalized;
+let b: f32 = -1.0 * dot(f, d);
+let center_to_intersection_chord: vec3<f32> = f + b * d;
+let discriminant: f32 = radius * radius - dot(center_to_intersection_chord, center_to_intersection_chord);
+let c: f32 = dot(f, f) - radius * radius;
+var output : RaySphereHit;
+output.hit = false;
+output.t0 = 0.0;
+output.t1 = 0.0;
+if (discriminant < 0.0)
+{
+return output;
+}
+var q: f32 = b;
+if (b < 0.0)
+{
+q -= sqrt(discriminant);
+}
+else
+{
+q += sqrt(discriminant);
+}
+output.hit = true;
+output.t0 = c / q;
+output.t1 = q;
+if (output.t0 > output.t1)
+{
+let temp: f32 = output.t0;
+output.t0 = output.t1;
+output.t1 = temp;
+}
+return output;
+}
+struct RayPlaneHit {
+hit: bool,
+t: f32,
+}
+fn rayPlaneIntersection(
+ray_origin: vec3<f32>,
+ray_direction: vec3<f32>,
+plane_origin: vec3<f32>,
+plane_normal: vec3<f32>
+) -> RayPlaneHit
+{
+var result: RayPlaneHit;
+let perp = dot(plane_normal, ray_direction);
+result.t = dot(plane_origin - ray_origin, plane_normal) / perp;
+result.hit = (abs(perp) > 0.00001) && (result.t > 0.0);
+return result;
+}
+struct AtmosphereRaycastResult
+{
+intersects_ground: bool,
+t_min: f32,
+t_max: f32,
+}
+fn raycastAtmosphere(atmosphere: ptr<function, Atmosphere>, origin: vec3<f32>, direction: vec3<f32>) -> AtmosphereRaycastResult
+{
+var result: AtmosphereRaycastResult;
+let planet_hit = raySphereIntersection(origin, direction, (*atmosphere).planet_radius_Mm);
+let atmosphere_hit = raySphereIntersection(origin, direction, (*atmosphere).atmosphere_radius_Mm);
+let inside_planet = planet_hit.hit && planet_hit.t0 < 0.0 && planet_hit.t1 > 0.0;
+let intersects_atmosphere = atmosphere_hit.hit && atmosphere_hit.t1 > 0.0;
+if (!intersects_atmosphere || inside_planet)
+{
+result.intersects_ground = true;
+result.t_min = 0.0;
+result.t_max = 0.0;
+return result;
+}
+result.t_min = max(atmosphere_hit.t0, 0.0);
+result.t_max = atmosphere_hit.t1;
+if (planet_hit.hit && planet_hit.t0 > 0.0)
+{
+result.intersects_ground = true;
+result.t_max = planet_hit.t0;
+}
+return result;
+}
+struct ScatteringResult
+{
+luminance: vec3<f32>,
+transmittance: vec3<f32>,
+multiscattering_transfer: vec3<f32>,
+}
+fn computeLuminanceScatteringIntegral(
+atmosphere: ptr<function, Atmosphere>,
+light:  ptr<function, CelestialLight>,
+lut_sampler: sampler,
+transmittance_lut: texture_2d<f32>,
+multiscatter_lut: texture_2d<f32>,
+origin: vec3<f32>,
+direction: vec3<f32>,
+include_ground: bool,
+intersects_ground: bool,
+sample_distance: f32,
+) -> ScatteringResult
+{
+var result: ScatteringResult;
+result.luminance = vec3<f32>(0.0);
+result.transmittance = vec3<f32>(1.0);
+result.multiscattering_transfer = vec3<f32>(0.0);
+if(sample_distance <= 0.0)
+{
+result.luminance = vec3<f32>(1.0, 1.0, 0.0);
+return result;
+}
+let incident_cosine = dot((*light).forward, -direction);
+let start_radius: f32 = length(origin);
+let start_mu: f32 = dot(origin, direction) / (length(origin) * length(direction));
+let start_mu_light: f32 = dot(origin, -(*light).forward) / (length(origin) * length((*light).forward));
+let nu: f32 = dot(-(*light).forward, direction) / (length((*light).forward) * length(direction));
+let origin_step = RaymarchStep(start_radius, start_mu, start_mu_light, nu);
+var transmittance_accumulated = vec3<f32>(1.0);
+const SAMPLE_COUNT = 64.0;
+const T_SUBSTEP = 0.4;
+var t: f32 = 0.0;
+var d_t: f32 = 0.0;
+for (var s = 0.0; s < SAMPLE_COUNT; s += 1.0)
+{
+{
+var t_begin = s / SAMPLE_COUNT;
+var t_end = (s + 1.0) / SAMPLE_COUNT;
+t_begin = sample_distance * t_begin * t_begin;
+t_end = sample_distance * t_end * t_end;
+d_t = t_end - t_begin;
+t = mix(t_begin, t_end, T_SUBSTEP);
+}
+let sample_step: RaymarchStep = stepRadiusMu(origin_step, t);
+let altitude = sample_step.radius - (*atmosphere).planet_radius_Mm;
+let extinction_sample: ExtinctionSample = sampleExtinction(atmosphere, altitude);
+let transmittance_to_t_begin = transmittance_accumulated;
+let transmittance_along_path = exp(-extinction_sample.extinction * d_t);
+transmittance_accumulated *= transmittance_along_path;
+let phase_times_scattering: vec3<f32> =
+extinction_sample.scattering_rayleigh * phaseRayleigh(incident_cosine)
++ extinction_sample.scattering_mie * phaseMie(incident_cosine, 0.8)
++ extinction_sample.scattering_ozone * phaseRayleigh(incident_cosine);
+let multiscatter = sampleMultiscatterLUT(multiscatter_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+var occlusion_planet: f32 = 0.0;
+{
+let horizon_sin = (*atmosphere).planet_radius_Mm / sample_step.radius;
+let horizon_cos = -safeSqrt(1.0 - horizon_sin * horizon_sin);
+occlusion_planet = f32(sample_step.mu_light < horizon_cos);
+}
+let transmittance_to_sun = sampleTransmittanceLUT_RadiusMu(transmittance_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+var shadowing = vec3<f32>(transmittance_to_sun * (1.0 - f32(occlusion_planet)));
+let scattering_illuminance_integral = (vec3(1.0) - transmittance_along_path) / extinction_sample.extinction;
+result.luminance +=
+(phase_times_scattering * shadowing + multiscatter * extinction_sample.scattering)
+* scattering_illuminance_integral * transmittance_to_t_begin
+* 1.0;
+result.multiscattering_transfer += extinction_sample.scattering * scattering_illuminance_integral * transmittance_to_t_begin;
+}
+if (include_ground && intersects_ground)
+{
+let sample_step: RaymarchStep = stepRadiusMu(origin_step, sample_distance);
+let transmittance_to_surface = sampleTransmittanceLUT_RayMarchStep(transmittance_lut, lut_sampler, atmosphere, origin_step, sample_distance);
+let transmittance_to_sun = sampleTransmittanceLUT_RadiusMu(transmittance_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+let normal_dot_light = clamp(sample_step.mu_light, 0.0, 1.0);
+let diffuse = (*atmosphere).ground_albedo / PI;
+result.luminance +=
+transmittance_to_surface * transmittance_to_sun * normal_dot_light * diffuse
+* 1.0;
+}
+result.transmittance = transmittance_accumulated;
+return result;
+}
+fn uv_to_azimuthElevation(
+    atmosphere: ptr<function, Atmosphere>,
+    radius: f32,
+    uv: vec2<f32>,
+) -> vec2<f32>
+{
+    let sin_horizon_zenith = (*atmosphere).planet_radius_Mm / radius;
+    let horizon_zenith = PI - asin(sin_horizon_zenith);
+    let azimuth = 2.0 * PI * (uv.x - 0.5);
+    var view_zenith: f32;
+    if (uv.y < 0.5)
+    {
+        let unnormalized_v = 2.0 * uv.y - 1.0;
+        let angle_fraction = 1.0 - unnormalized_v * unnormalized_v;
+        view_zenith = angle_fraction * horizon_zenith;
+    }
+    else
+    {
+        let unnormalized_v = 2.0 * uv.y - 1.0;
+        let angle_fraction = unnormalized_v * unnormalized_v;
+        view_zenith = (PI - horizon_zenith) * angle_fraction + horizon_zenith;
+    }
+    let elevation = -(view_zenith - PI / 2.0);
+    return vec2<f32>(azimuth, elevation);
+}
+@compute @workgroup_size(16,16,1)
+fn computeSkyViewLuminance(@builtin(global_invocation_id) global_id : vec3<u32>,)
+{
+    let texel_coord = vec2<u32>(global_id.xy);
+    let size = textureDimensions(skyview_lut);
+    if(texel_coord.x >= size.x || texel_coord.y >= size.y)
+    {
+        return;
+    }
+    var atmosphere: Atmosphere = u_global.atmosphere;
+    var light: CelestialLight = u_global.light;
+    let offset = vec2<f32>(0.5, 0.5);
+    let uv = (vec2<f32>(texel_coord) + offset) / vec2<f32>(size);
+    let origin = vec3<f32>(0.0, atmosphere.planet_radius_Mm, 0.0) + u_global.camera.position.xyz / METERS_PER_MM;
+    let azimuth_elevation = uv_to_azimuthElevation(
+        &atmosphere,
+        length(origin),
+        uv
+    );
+    let azimuth = azimuth_elevation.x;
+    let elevation = azimuth_elevation.y;
+    let direction = normalize(vec3(
+        sin(azimuth) * cos(elevation),
+        sin(elevation),
+        cos(azimuth) * cos(elevation)
+    ));
+	let atmosphere_raycast = raycastAtmosphere(&atmosphere, origin, direction);
+    let include_ground = false;
+    let luminance = computeLuminanceScatteringIntegral(
+        &atmosphere,
+        &light,
+        lut_sampler,
+        transmittance_lut,
+        multiscatter_lut,
+        origin + direction * atmosphere_raycast.t_min,
+        direction,
+        include_ground,
+		atmosphere_raycast.intersects_ground,
+		atmosphere_raycast.t_max - atmosphere_raycast.t_min
+    ).luminance;
+    textureStore(skyview_lut, texel_coord, vec4(luminance, 1.0));
+}
+",
+}
+`;
+
+exports[`packShaders 4`] = `
+{
+  "includes": [
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\types.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\util\\raycast.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_common.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\constants.inc.wgsl",
+  ],
+  "source": "struct Atmosphere
+{
+scattering_rayleigh_per_Mm : vec3<f32>,
+density_scale_rayleigh_Mm : f32,
+absorption_rayleigh_per_Mm : vec3<f32>,
+planet_radius_Mm : f32,
+scattering_mie_per_Mm : vec3<f32>,
+density_scale_mie_Mm : f32,
+absorption_mie_per_Mm : vec3<f32>,
+atmosphere_radius_Mm : f32,
+ground_albedo : vec3<f32>,
+padding0 : f32,
+scattering_ozone_per_Mm : vec3<f32>,
+padding1 : f32,
+absorption_ozone_per_Mm : vec3<f32>,
+padding2 : f32,
+padding3 : vec4<f32>,
+}
+struct CelestialLight
+{
+color: vec3<f32>,
+strength: f32,
+forward: vec3<f32>,
+angular_radius: f32,
+}
+struct Camera
+{
+inv_proj: mat4x4<f32>,
+inv_view: mat4x4<f32>,
+proj_view: mat4x4<f32>,
+position: vec4<f32>,
+forward: vec4<f32>,
+padding0: mat2x4<f32>,
+}
+struct Time
+{
+padding0: vec2<f32>,
+time_seconds: f32,
+delta_time_seconds: f32,
+}
+struct GlobalUBO
+{
+camera: Camera,
+ocean_camera: Camera,
+atmosphere: Atmosphere,
+light: CelestialLight,
+time: Time,
+}
+struct RaySphereHit
+{
+hit: bool,
+t0: f32,
+t1: f32,
+}
+fn raySphereIntersection(
+ray_origin: vec3<f32>,
+ray_direction_normalized: vec3<f32>,
+radius: f32
+) -> RaySphereHit
+{
+let f: vec3<f32> = ray_origin;
+let d: vec3<f32> = ray_direction_normalized;
+let b: f32 = -1.0 * dot(f, d);
+let center_to_intersection_chord: vec3<f32> = f + b * d;
+let discriminant: f32 = radius * radius - dot(center_to_intersection_chord, center_to_intersection_chord);
+let c: f32 = dot(f, f) - radius * radius;
+var output : RaySphereHit;
+output.hit = false;
+output.t0 = 0.0;
+output.t1 = 0.0;
+if (discriminant < 0.0)
+{
+return output;
+}
+var q: f32 = b;
+if (b < 0.0)
+{
+q -= sqrt(discriminant);
+}
+else
+{
+q += sqrt(discriminant);
+}
+output.hit = true;
+output.t0 = c / q;
+output.t1 = q;
+if (output.t0 > output.t1)
+{
+let temp: f32 = output.t0;
+output.t0 = output.t1;
+output.t1 = temp;
+}
+return output;
+}
+struct RayPlaneHit {
+hit: bool,
+t: f32,
+}
+fn rayPlaneIntersection(
+ray_origin: vec3<f32>,
+ray_direction: vec3<f32>,
+plane_origin: vec3<f32>,
+plane_normal: vec3<f32>
+) -> RayPlaneHit
+{
+var result: RayPlaneHit;
+let perp = dot(plane_normal, ray_direction);
+result.t = dot(plane_origin - ray_origin, plane_normal) / perp;
+result.hit = (abs(perp) > 0.00001) && (result.t > 0.0);
+return result;
+}
+@group(0) @binding(0) var transmittance_lut: texture_storage_2d<rgba32float, write>;
+@group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+const PI = 3.141592653589793;
+const METERS_PER_MM = 1000000;
+const AERIAL_PERSPECTIVE_MM_PER_SLICE = 0.001;
+const ISOTROPIC_PHASE = 1.0 / (4.0 * PI);
+fn safeSqrt(value: f32) -> f32 { return sqrt(max(value, 0.0)); }
+fn textureCoordFromUnitRange(value: f32, length: u32) -> f32
+{
+return 0.5 / f32(length) + value * (1.0 - 1.0 / f32(length));
+}
+fn unitRangeFromTextureCoord(coord: f32 , length: u32) -> f32
+{
+return (coord - 0.5 / f32(length)) / (1.0 - 1.0 / f32(length));
+}
+fn transmittanceLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let atmosphere_radius_Mm_squared: f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared: f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h: f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho: f32 = safeSqrt(radius * radius - planet_radius_Mm_squared);
+let d: f32 = max(-radius * mu + safeSqrt(radius * radius * (mu * mu - 1.0) + atmosphere_radius_Mm_squared), 0.0);
+let d_min: f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max: f32 = rho + h;
+let x_mu: f32 = (d - d_min) / (d_max - d_min);
+let x_radius: f32 = rho / h;
+return vec2<f32>(
+textureCoordFromUnitRange(x_mu, dimensions.x),
+textureCoordFromUnitRange(x_radius, dimensions.y)
+);
+}
+fn transmittanceLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let x_mu : f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let x_radius : f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let atmosphere_radius_Mm_squared : f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared : f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h : f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho : f32 = h * x_radius;
+let radius : f32 = safeSqrt(rho * rho + planet_radius_Mm_squared);
+let d_min : f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max : f32 = rho + h;
+let d : f32 = (d_max - d_min) * x_mu + d_min;
+let D_EPSILON: f32 = 0.000000001;
+if (d < D_EPSILON)
+{
+return vec2<f32>(radius, 1.0);
+}
+let mu : f32 = (h * h - rho * rho - d * d) / (2.0 * radius * d);
+return vec2<f32>(radius, clamp(mu, -1.0, 1.0));
+}
+fn multiscatterLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = 0.5 + 0.5 * mu_light;
+let v_unit: f32 = clamp(
+(radius - (*atmosphere).planet_radius_Mm)
+/ ((*atmosphere).atmosphere_radius_Mm - (*atmosphere).planet_radius_Mm),
+0.0, 1.0
+);
+return vec2<f32>(
+textureCoordFromUnitRange(u_unit, dimensions.x),
+textureCoordFromUnitRange(v_unit, dimensions.y)
+);
+}
+fn multiscatterLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let v_unit: f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let mu_light: f32 = 2.0 * (u_unit - 0.5);
+let radius: f32 = mix(
+(*atmosphere).planet_radius_Mm * (1.0002),
+(*atmosphere).atmosphere_radius_Mm * (0.9998),
+v_unit
+);
+return vec2<f32>(radius, mu_light);
+}
+fn sampleMultiscatterLUT(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = multiscatterLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu_light,
+textureDimensions(lut)
+);
+return textureSampleLevel(lut, s, uv, 0.0).xyz;
+}
+fn sampleTransmittanceLUT_RadiusMu(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = transmittanceLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu,
+textureDimensions(lut)
+);
+let sample = textureSampleLevel(lut, s, uv, 0.0).xyz;
+return sample;
+}
+fn sampleTransmittanceLUT_Ray(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+position: vec3<f32>,
+direction: vec3<f32>
+) -> vec3<f32>
+{
+let radius: f32 = length(position);
+let mu: f32 = (dot(position, direction) / (length(position) * length(direction)));
+return sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, radius, mu);
+}
+fn sampleTransmittanceLUT_Segment(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+r_start: f32,
+mu_start: f32,
+d: f32,
+intersects_ground: bool
+) -> vec3<f32>
+{
+let r_end = clamp(
+safeSqrt(d * d + 2.0 * r_start * mu_start * d + r_start * r_start),
+(*atmosphere).planet_radius_Mm, (*atmosphere).atmosphere_radius_Mm
+);
+let mu_end = clamp((r_start * mu_start + d) / r_end, -1.0, 1.0);
+if(intersects_ground)
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, -mu_end)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, -mu_start),
+vec3<f32>(1.0)
+);
+}
+else
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, mu_start)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, mu_end),
+vec3<f32>(1.0)
+);
+}
+}
+struct ExtinctionSample
+{
+scattering_rayleigh: vec3<f32>,
+scattering_mie: vec3<f32>,
+scattering_ozone: vec3<f32>,
+absorption_rayleigh: vec3<f32>,
+absorption_mie: vec3<f32>,
+absorption_ozone: vec3<f32>,
+scattering: vec3<f32>,
+extinction: vec3<f32>,
+}
+fn densityExponential(altitude: f32, density_scale: f32) -> f32
+{ return exp(-altitude / density_scale); }
+fn densityTent(altitude_km: f32) -> f32
+{ return max(0.0, 1.0 - abs(altitude_km - 25.0) / 15.0); }
+fn sampleExtinction(atmosphere: ptr<function,Atmosphere>, altitude_Mm: f32) -> ExtinctionSample
+{
+let density_rayleigh: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_rayleigh_Mm);
+let scattering_rayleigh: vec3<f32> = (*atmosphere).scattering_rayleigh_per_Mm * density_rayleigh;
+let absorption_rayleigh: vec3<f32> = (*atmosphere).absorption_rayleigh_per_Mm * density_rayleigh;
+let density_mie: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_mie_Mm);
+let scattering_mie: vec3<f32> = (*atmosphere).scattering_mie_per_Mm * density_mie;
+let absorption_mie: vec3<f32> = (*atmosphere).absorption_mie_per_Mm * density_mie;
+let density_ozone: f32 = densityTent(altitude_Mm * 1000.0);
+let scattering_ozone: vec3<f32> = (*atmosphere).scattering_ozone_per_Mm * density_ozone;
+let absorption_ozone: vec3<f32> = (*atmosphere).absorption_ozone_per_Mm * density_ozone;
+var extinction_sample: ExtinctionSample;
+extinction_sample.scattering_rayleigh = scattering_rayleigh;
+extinction_sample.scattering_mie = scattering_mie;
+extinction_sample.scattering_ozone = scattering_ozone;
+extinction_sample.absorption_rayleigh = absorption_rayleigh;
+extinction_sample.absorption_mie = absorption_mie;
+extinction_sample.absorption_ozone = absorption_ozone;
+extinction_sample.scattering = scattering_rayleigh + scattering_mie + scattering_ozone;
+extinction_sample.extinction = extinction_sample.scattering + absorption_rayleigh + absorption_mie + absorption_ozone;
+return extinction_sample;
+}
+fn phaseRayleigh(cosine: f32) -> f32
+{
+let scalar: f32 = 3.0 / (16.0 * PI);
+let numerator: f32 = (1.0 + cosine * cosine);
+return scalar * numerator;
+}
+fn phaseMie(cosine: f32, g: f32) -> f32
+{
+let scalar: f32 = 3.0 / (8.0 * PI);
+let numerator: f32 = (1.0 - g * g) * (1.0 + cosine * cosine);
+let denominator: f32 = (2.0 + g * g) * pow(1.0 + g * g - 2.0 * g * cosine, 1.5);
+return scalar * numerator / denominator;
+}
+struct RaymarchStep
+{
+radius: f32,
+mu: f32,
+mu_light: f32,
+nu: f32,
+};
+fn stepRadiusMu(
+start: RaymarchStep,
+step_distance: f32,
+) -> RaymarchStep
+{
+var result: RaymarchStep;
+result.radius = safeSqrt(
+step_distance * step_distance + 2.0 * start.radius * start.mu * step_distance
++ start.radius * start.radius
+);
+result.mu = (start.radius * start.mu + step_distance) / result.radius;
+result.nu = start.nu;
+result.mu_light = (start.radius * start.mu_light + step_distance * start.nu) / result.radius;
+return result;
+}
+fn sampleTransmittanceLUT_RayMarchStep(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+start: RaymarchStep,
+step_distance: f32
+) -> vec3<f32>
+{
+const STEP_DISTANCE_EPSILON = 0.0000001;
+if (step_distance < STEP_DISTANCE_EPSILON)
+{
+return vec3<f32>(1.0);
+}
+let end: RaymarchStep = stepRadiusMu(start, step_distance);
+var transmittance = vec3<f32>(0.0);
+if (start.mu > 0.0)
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, start.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, end.mu);
+}
+else
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, -end.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, -start.mu);
+}
+return clamp(transmittance, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+@compute @workgroup_size(16, 16, 1)
+fn computeTransmittance(@builtin(global_invocation_id) global_id : vec3<u32>,)
+{
+    let texel_coord = vec2<u32>(global_id.xy);
+    let size = textureDimensions(transmittance_lut);
+    if(texel_coord.x >= size.x || texel_coord.y >= size.y)
+    {
+        return;
+    }
+    var atmosphere: Atmosphere = u_global.atmosphere;
+    let offset = vec2<f32>(0.5, 0.5);
+    let uv = (vec2<f32>(texel_coord) + offset) / vec2<f32>(size);
+    let r_mu: vec2<f32> = transmittanceLUT_UV_to_RMu(&atmosphere, uv, textureDimensions(transmittance_lut));
+    let radius: f32 = r_mu.x;
+    let direction_cosine: f32 = r_mu.y;
+    let origin: vec3<f32> = vec3<f32>(0.0, radius, 0.0);
+    let direction: vec3<f32> = vec3<f32>(sqrt(1.0 - direction_cosine * direction_cosine), direction_cosine, 0.0);
+    let atmosphere_hit: RaySphereHit = raySphereIntersection(origin, direction, atmosphere.atmosphere_radius_Mm);
+    if(!atmosphere_hit.hit)
+    {
+        textureStore(transmittance_lut, texel_coord, vec4<f32>(1.0, 1.0, 1.0, 1.0));
+        return;
+    }
+    let distance: f32 = atmosphere_hit.t1;
+    var transmittance: vec3<f32> = vec3<f32>(1.0);
+	const SAMPLE_COUNT = 500u;
+    let dt: f32 = distance / f32(SAMPLE_COUNT);
+    for(var i: u32 = 0; i < SAMPLE_COUNT; i++)
+    {
+        let t: f32 = distance * (f32(i) + 0.5) / f32(SAMPLE_COUNT);
+        let position: vec3<f32> = origin + t * direction;
+        let altitude: f32 = length(position) - atmosphere.planet_radius_Mm;
+        let extinction_sample: ExtinctionSample = sampleExtinction(&atmosphere, altitude);
+        transmittance *= exp(-abs(dt) * extinction_sample.extinction);
+    }
+    textureStore(transmittance_lut, texel_coord, vec4<f32>(transmittance, 1.0));
+}
+",
+}
+`;
+
+exports[`packShaders 5`] = `
+{
+  "includes": [
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\constants.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\types.inc.wgsl",
+  ],
+  "source": "const PI = 3.141592653589793;
+const METERS_PER_MM = 1000000;
+struct Atmosphere
+{
+scattering_rayleigh_per_Mm : vec3<f32>,
+density_scale_rayleigh_Mm : f32,
+absorption_rayleigh_per_Mm : vec3<f32>,
+planet_radius_Mm : f32,
+scattering_mie_per_Mm : vec3<f32>,
+density_scale_mie_Mm : f32,
+absorption_mie_per_Mm : vec3<f32>,
+atmosphere_radius_Mm : f32,
+ground_albedo : vec3<f32>,
+padding0 : f32,
+scattering_ozone_per_Mm : vec3<f32>,
+padding1 : f32,
+absorption_ozone_per_Mm : vec3<f32>,
+padding2 : f32,
+padding3 : vec4<f32>,
+}
+struct CelestialLight
+{
+color: vec3<f32>,
+strength: f32,
+forward: vec3<f32>,
+angular_radius: f32,
+}
+struct Camera
+{
+inv_proj: mat4x4<f32>,
+inv_view: mat4x4<f32>,
+proj_view: mat4x4<f32>,
+position: vec4<f32>,
+forward: vec4<f32>,
+padding0: mat2x4<f32>,
+}
+struct Time
+{
+padding0: vec2<f32>,
+time_seconds: f32,
+delta_time_seconds: f32,
+}
+struct GlobalUBO
+{
+camera: Camera,
+ocean_camera: Camera,
+atmosphere: Atmosphere,
+light: CelestialLight,
+time: Time,
+}
+const CASCADE_CAPACITY = 4u;
+struct CascadeUBO
+{
+	wave_number_min_max: vec2<f32>,
+	wave_patch_extent_meters: f32,
+	padding0: f32,
+}
+struct FourierWavesUBO
+{
+	fourier_grid_size: u32,
+	gravity: f32,
+	padding0: f32,
+	wave_period_seconds: f32,
+	wind_speed_meters_per_second: f32,
+	wind_fetch_meters: f32,
+	wave_swell: f32,
+	padding1: f32,
+	cascades: array<CascadeUBO, CASCADE_CAPACITY>,
+}
+struct WaveParameters
+{
+	wave_coord: vec2<i32>,
+	wave_vector: vec2<f32>,
+	wave_number: f32,
+	delta_wave_number: f32,
+	frequency: f32,
+	d_frequency_d_wave_number: f32,
+	wind_angle: f32,
+}
+fn quantizeFrequency(frequency: f32, fundamental_frequency: f32) -> f32
+{
+	let multiple = frequency / fundamental_frequency;
+	return (multiple - fract(multiple)) * fundamental_frequency;
+}
+fn waveParameters(
+	settings: FourierWavesUBO,
+	patch_extent_meters: f32,
+	texel_coord: vec2<u32>
+) -> WaveParameters
+{
+	var result: WaveParameters;
+	let wave_coord_offset = i32(settings.fourier_grid_size / 2u);
+	let g = settings.gravity;
+	result.wave_coord = vec2<i32>(i32(texel_coord.x), i32(texel_coord.y)) - vec2<i32>(wave_coord_offset);
+	const QUANTIZED_FREQUENCIES = true;
+	if (QUANTIZED_FREQUENCIES)
+	{
+		let frequency_quantization_step = 2.0 * PI / settings.wave_period_seconds;
+		let non_quantized_fundamental_wave_number = 2.0 * PI / patch_extent_meters;
+		let fundamental_frequency = quantizeFrequency(
+			sqrt(g * non_quantized_fundamental_wave_number),
+			frequency_quantization_step
+		);
+		let fundamental_wave_number = fundamental_frequency * fundamental_frequency / g;
+		result.delta_wave_number = fundamental_wave_number;
+		let wave_number_non_quantized = length(fundamental_wave_number * vec2<f32>(result.wave_coord));
+		result.frequency = quantizeFrequency(sqrt(g * wave_number_non_quantized), frequency_quantization_step);
+		result.d_frequency_d_wave_number = 0.5 * g / result.frequency;
+		result.wave_number = result.frequency * result.frequency / g;
+		result.wave_vector = result.wave_number * normalize(vec2<f32>(result.wave_coord));
+	}
+	else
+	{
+		let fundamental_wave_number = 2.0 * PI / patch_extent_meters;
+		let fundamental_frequency = sqrt(g * fundamental_wave_number);
+		result.delta_wave_number = fundamental_wave_number;
+		result.wave_vector = fundamental_wave_number * vec2<f32>(result.wave_coord);
+		result.wave_number = length(result.wave_vector);
+		result.frequency = sqrt(g * result.wave_number);
+		result.d_frequency_d_wave_number = 0.5 * g * inverseSqrt(g * result.wave_number);
+	}
+	result.wind_angle = atan2(result.wave_vector.y, result.wave_vector.x);
+	return result;
+}
+fn waveSpectrumJONSWAP(settings: FourierWavesUBO, frequency: f32, peak_frequency: f32) -> f32
+{
+	let wind_speed = settings.wind_speed_meters_per_second;
+	let wind_fetch = settings.wind_fetch_meters;
+	let g = settings.gravity;
+	let alpha = 0.076 * pow(wind_speed * wind_speed / (wind_fetch * g), 0.22);
+	let gamma = 3.3;
+	var sigma = 0.07;
+	if (frequency > peak_frequency)
+	{
+		sigma = 0.09;
+	}
+	let r = exp(-(frequency-peak_frequency)*(frequency-peak_frequency)/(2 * sigma * sigma * peak_frequency * peak_frequency));
+	let f_ratio = peak_frequency / frequency;
+	let numerator =
+		alpha
+		* g * g
+		* exp(-1.25 * f_ratio * f_ratio * f_ratio * f_ratio)
+		* pow(gamma, r);
+	let denominator = frequency * frequency * frequency * frequency * frequency;
+	return numerator / denominator;
+}
+fn gammaApprox(z: f32) -> f32
+{
+	const c_0 = 1.000000000267524225;
+	const c_1 = 4.739837024840160673;
+	const c_2 = -1.393160104839919367;
+	const r = 2.603209;
+	let s = c_0 + c_1 / (z+1.0) + c_2 / (z+2.0);
+	return sqrt(2.0 * PI) * pow(z + r + 0.5, z + 0.5) * exp(-(z + r + 0.5)) * s;
+}
+fn waveDirectionalSpreading(settings: FourierWavesUBO, frequency: f32, peak_frequency: f32, angle: f32) -> f32
+{
+	let f_ratio = peak_frequency / frequency;
+	let swell = settings.wave_swell;
+	let s = 16.0 * tanh(f_ratio) * swell * swell;
+	let gamma_0 = gammaApprox(s + 1.0);
+	let gamma_1 = gammaApprox(2.0 * s + 1.0);
+	let q = (pow(2.0, 2.0 * s - 1.0) / PI) * (gamma_0 * gamma_0 / gamma_1);
+	return q * pow(abs(cos(angle / 2.0)), 2.0 * s);
+}
+@group(0) @binding(0) var out_initial_amplitude: texture_storage_2d_array<rg32float, write>;
+@group(0) @binding(1) var in_gaussian_random_pairs: texture_2d_array<f32>;
+@group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+@group(1) @binding(1) var<uniform> u_fourier_waves: FourierWavesUBO;
+@compute @workgroup_size(16, 16, 1)
+fn computeInitialAmplitude(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+    let texel_coord: vec2<u32> = global_id.xy;
+	let array_layer: u32 = global_id.z;
+    let size: vec2<u32> = textureDimensions(out_initial_amplitude);
+    if texel_coord.x >= size.x
+		|| texel_coord.y >= size.y
+	{
+        return;
+    }
+	let gaussian_pair = textureLoad(in_gaussian_random_pairs, texel_coord, array_layer, 0).xy;
+	let wave = waveParameters(u_fourier_waves, u_fourier_waves.cascades[array_layer].wave_patch_extent_meters, texel_coord);
+	let wave_number_min_max = u_fourier_waves.cascades[array_layer].wave_number_min_max;
+	if (abs(wave.wave_number) < wave.delta_wave_number
+		|| abs(wave.wave_number) < wave_number_min_max.x
+		|| abs(wave.wave_number) > wave_number_min_max.y
+	)
+	{
+		let amplitude = vec2<f32>(0.0, 0.0);
+		textureStore(
+			out_initial_amplitude,
+			texel_coord,
+			array_layer,
+			vec4<f32>(amplitude, 0.0, 0.0)
+		);
+		return;
+	}
+	let g = u_fourier_waves.gravity;
+	let wind_speed = u_fourier_waves.wind_speed_meters_per_second;
+	let wind_fetch = u_fourier_waves.wind_fetch_meters;
+	let peak_frequency = 22.0 * pow(g * g / (wind_speed * wind_fetch), 1.0 / 3.0);
+	let spectrum = waveSpectrumJONSWAP(u_fourier_waves, wave.frequency, peak_frequency)
+		* waveDirectionalSpreading(u_fourier_waves, wave.frequency, peak_frequency, wave.wind_angle);
+	let magnitude = sqrt(
+		2.0
+		* spectrum
+		* (wave.d_frequency_d_wave_number / wave.wave_number)
+		* wave.delta_wave_number * wave.delta_wave_number
+	);
+	let amplitude = inverseSqrt(2.0)
+		* gaussian_pair
+		* magnitude;
+	textureStore(
+		out_initial_amplitude,
+		texel_coord,
+		array_layer,
+		vec4<f32>(amplitude, 0.0, 0.0)
+	);
+}
+@group(0) @binding(2) var out_packed_Dx_plus_iDy_Dz_iDxdz_amplitudeArray: texture_storage_2d_array<rgba32float, write>;
+@group(0) @binding(3) var out_packed_Dydx_plus_iDydz_Dxdx_plus_iDzdz_amplitudeArray: texture_storage_2d_array<rgba32float, write>;
+@group(0) @binding(4) var in_initial_amplitude: texture_2d_array<f32>;
+fn complexMult(a: vec2<f32>, b: vec2<f32>) -> vec2<f32>
+{
+	return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
+}
+@compute @workgroup_size(16, 16, 1)
+fn computeTimeDependentAmplitude(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+    let texel_coord: vec2<u32> = global_id.xy;
+	let array_layer: u32 = global_id.z;
+    let size = textureDimensions(in_initial_amplitude);
+    if texel_coord.x >= size.x
+		|| texel_coord.y >= size.y
+	{
+        return;
+    }
+	let wave = waveParameters(u_fourier_waves, u_fourier_waves.cascades[array_layer].wave_patch_extent_meters, texel_coord);
+	let wave_number_min_max = u_fourier_waves.cascades[array_layer].wave_number_min_max;
+	if (abs(wave.wave_number) < wave.delta_wave_number
+		|| abs(wave.wave_number) < wave_number_min_max.x
+		|| abs(wave.wave_number) > wave_number_min_max.y
+	)
+	{
+		textureStore(
+			out_packed_Dx_plus_iDy_Dz_iDxdz_amplitudeArray,
+			texel_coord,
+			array_layer,
+			vec4<f32>(0.0)
+		);
+		textureStore(
+			out_packed_Dydx_plus_iDydz_Dxdx_plus_iDzdz_amplitudeArray,
+			texel_coord,
+			array_layer,
+			vec4<f32>(0.0)
+		);
+		return;
+	}
+	let k_amplitude = textureLoad(in_initial_amplitude, texel_coord, array_layer, 0).xy;
+	let k_minus_coord = vec2<u32>(
+		(u_fourier_waves.fourier_grid_size - texel_coord.x) % u_fourier_waves.fourier_grid_size,
+		(u_fourier_waves.fourier_grid_size - texel_coord.y) % u_fourier_waves.fourier_grid_size
+	);
+	let k_minus_amplitude = textureLoad(in_initial_amplitude, k_minus_coord, array_layer, 0).xy;
+	let k_minus_amplitude_conjugate = vec2<f32>(k_minus_amplitude.x, -k_minus_amplitude.y);
+	let phase = wave.frequency * u_global.time.time_seconds;
+	let exponential = vec2<f32>(cos(phase), sin(phase));
+	let exponential_conjugate = vec2<f32>(exponential.x, -exponential.y);
+	let Dy_amplitude = complexMult(exponential, k_amplitude)
+		+ complexMult(exponential_conjugate, k_minus_amplitude_conjugate);
+	let iDy_amplitude = vec2<f32>(-Dy_amplitude.y, Dy_amplitude.x);
+	var one_over_wave_number = 1.0 / wave.wave_number;
+	let k_x = wave.wave_vector.x;
+	let k_z = wave.wave_vector.y;
+	let Dx_amplitude = iDy_amplitude * k_x * one_over_wave_number;
+	let Dz_amplitude = iDy_amplitude * k_z * one_over_wave_number;
+	let Dxdx_amplitude = -Dy_amplitude * k_x * k_x * one_over_wave_number;
+	let Dydx_amplitude = iDy_amplitude * k_x;
+	let Dxdz_amplitude = -Dy_amplitude * k_x * k_z * one_over_wave_number;
+	let Dydz_amplitude = iDy_amplitude * k_z;
+	let Dzdz_amplitude = -Dy_amplitude * k_z * k_z * one_over_wave_number;
+	let iDxdz_amplitude = vec2<f32>(-Dxdz_amplitude.y, Dxdz_amplitude.x);
+	let iDydz_amplitude = vec2<f32>(-Dydz_amplitude.y, Dydz_amplitude.x);
+	let iDzdz_amplitude = vec2<f32>(-Dzdz_amplitude.y, Dzdz_amplitude.x);
+	textureStore(
+		out_packed_Dx_plus_iDy_Dz_iDxdz_amplitudeArray,
+		texel_coord,
+		array_layer,
+		vec4<f32>(Dx_amplitude + iDy_amplitude, Dz_amplitude + iDxdz_amplitude)
+	);
+	textureStore(
+		out_packed_Dydx_plus_iDydz_Dxdx_plus_iDzdz_amplitudeArray,
+		texel_coord,
+		array_layer,
+		vec4<f32>(Dydx_amplitude + iDydz_amplitude, Dxdx_amplitude + iDzdz_amplitude)
+	);
+}
+@group(0) @binding(5) var out_turbulence_jacobian_array: texture_storage_2d_array<rgba16float, write>;
+@group(0) @binding(6) var in_turbulence_jacobian_array: texture_2d_array<f32>;
+@group(0) @binding(7) var in_Dx_Dy_Dz_Dxdz_spatial_array: texture_2d_array<f32>;
+@group(0) @binding(8) var in_Dydx_Dydz_Dxdx_Dzdz_spatial_array: texture_2d_array<f32>;
+@compute @workgroup_size(16, 16, 1)
+fn accumulateTurbulence(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+	let texel_coord = vec2<u32>(global_id.xy);
+	let array_layer: u32 = global_id.z;
+    let size = textureDimensions(out_turbulence_jacobian_array);
+    if texel_coord.x >= size.x || texel_coord.y >= size.y {
+        return;
+    }
+	const mip = 0u;
+	let Dx_Dy_Dz_Dxdz = textureLoad(in_Dx_Dy_Dz_Dxdz_spatial_array, texel_coord, array_layer, mip);
+	let Dydx_Dydz_Dxdx_Dzdz = textureLoad(in_Dydx_Dydz_Dxdx_Dzdz_spatial_array, texel_coord, array_layer, mip);
+	let Dydx = Dydx_Dydz_Dxdx_Dzdz.x;
+	let Dydz = Dydx_Dydz_Dxdx_Dzdz.y;
+	let Dxdz = Dx_Dy_Dz_Dxdz.w;
+	let Dzdx = Dxdz;
+	var Dxdx = Dydx_Dydz_Dxdx_Dzdz.z;
+	var Dzdz = Dydx_Dydz_Dxdx_Dzdz.w;
+	var jacobian_xx = 1.0;
+	var jacobian_zz = 1.0;
+	var jacobian_xz = 0.0;
+	var jacobian_zx = 0.0;
+	jacobian_xx += Dxdx;
+	jacobian_zz += Dzdz;
+	jacobian_xz += Dxdz;
+	jacobian_zx += Dzdx;
+	let jacobian = jacobian_xx * jacobian_zz - jacobian_xz * jacobian_zx;
+	let turbulence_previous = textureLoad(in_turbulence_jacobian_array, texel_coord, array_layer, mip).x;
+	let turbulence = min(
+		turbulence_previous + u_global.time.delta_time_seconds * 0.5 / max(jacobian, 0.5),
+		jacobian
+	);
+	textureStore(out_turbulence_jacobian_array, texel_coord, array_layer,
+		vec4<f32>(turbulence, jacobian, 0.0, 0.0)
+	);
+}
+",
+}
+`;
+
+exports[`packShaders 6`] = `
+{
+  "includes": [
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\constants.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\types.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\util\\raycast.inc.wgsl",
+  ],
+  "source": "const PI = 3.141592653589793;
+const METERS_PER_MM = 1000000;
+struct Atmosphere
+{
+scattering_rayleigh_per_Mm : vec3<f32>,
+density_scale_rayleigh_Mm : f32,
+absorption_rayleigh_per_Mm : vec3<f32>,
+planet_radius_Mm : f32,
+scattering_mie_per_Mm : vec3<f32>,
+density_scale_mie_Mm : f32,
+absorption_mie_per_Mm : vec3<f32>,
+atmosphere_radius_Mm : f32,
+ground_albedo : vec3<f32>,
+padding0 : f32,
+scattering_ozone_per_Mm : vec3<f32>,
+padding1 : f32,
+absorption_ozone_per_Mm : vec3<f32>,
+padding2 : f32,
+padding3 : vec4<f32>,
+}
+struct CelestialLight
+{
+color: vec3<f32>,
+strength: f32,
+forward: vec3<f32>,
+angular_radius: f32,
+}
+struct Camera
+{
+inv_proj: mat4x4<f32>,
+inv_view: mat4x4<f32>,
+proj_view: mat4x4<f32>,
+position: vec4<f32>,
+forward: vec4<f32>,
+padding0: mat2x4<f32>,
+}
+struct Time
+{
+padding0: vec2<f32>,
+time_seconds: f32,
+delta_time_seconds: f32,
+}
+struct GlobalUBO
+{
+camera: Camera,
+ocean_camera: Camera,
+atmosphere: Atmosphere,
+light: CelestialLight,
+time: Time,
+}
+struct RaySphereHit
+{
+hit: bool,
+t0: f32,
+t1: f32,
+}
+fn raySphereIntersection(
+ray_origin: vec3<f32>,
+ray_direction_normalized: vec3<f32>,
+radius: f32
+) -> RaySphereHit
+{
+let f: vec3<f32> = ray_origin;
+let d: vec3<f32> = ray_direction_normalized;
+let b: f32 = -1.0 * dot(f, d);
+let center_to_intersection_chord: vec3<f32> = f + b * d;
+let discriminant: f32 = radius * radius - dot(center_to_intersection_chord, center_to_intersection_chord);
+let c: f32 = dot(f, f) - radius * radius;
+var output : RaySphereHit;
+output.hit = false;
+output.t0 = 0.0;
+output.t1 = 0.0;
+if (discriminant < 0.0)
+{
+return output;
+}
+var q: f32 = b;
+if (b < 0.0)
+{
+q -= sqrt(discriminant);
+}
+else
+{
+q += sqrt(discriminant);
+}
+output.hit = true;
+output.t0 = c / q;
+output.t1 = q;
+if (output.t0 > output.t1)
+{
+let temp: f32 = output.t0;
+output.t0 = output.t1;
+output.t1 = temp;
+}
+return output;
+}
+struct RayPlaneHit {
+hit: bool,
+t: f32,
+}
+fn rayPlaneIntersection(
+ray_origin: vec3<f32>,
+ray_direction: vec3<f32>,
+plane_origin: vec3<f32>,
+plane_normal: vec3<f32>
+) -> RayPlaneHit
+{
+var result: RayPlaneHit;
+let perp = dot(plane_normal, ray_direction);
+result.t = dot(plane_origin - ray_origin, plane_normal) / perp;
+result.hit = (abs(perp) > 0.00001) && (result.t > 0.0);
+return result;
+}
+const CASCADE_CAPACITY = 4u;
+struct PlaneWave
+{
+    direction: vec2<f32>,
+    amplitude: f32,
+    wavelength: f32,
+}
+struct WaveCascade
+{
+	padding0: vec3<f32>,
+	patch_size_meters: f32,
+}
+struct WaveSurfaceDisplacementUBO
+{
+	patch_world_half_extent: f32,
+	b_gerstner: u32,
+	b_displacement_map: u32,
+	vertex_size: u32,
+	gbuffer_extent: vec2<f32>,
+	foam_scale: f32,
+	foam_bias: f32,
+	padding_0: vec3<f32>,
+	procedural_wave_count: u32,
+	cascades: array<WaveCascade, CASCADE_CAPACITY>,
+}
+@group(0) @binding(0) var<uniform> u_settings: WaveSurfaceDisplacementUBO;
+@group(0) @binding(1) var<uniform> u_global: GlobalUBO;
+@group(1) @binding(0) var displacement_map_sampler: sampler;
+@group(1) @binding(1) var Dx_Dy_Dz_Dxdz_spatial: texture_2d_array<f32>;
+@group(1) @binding(2) var Dydx_Dydz_Dxdx_Dzdz_spatial: texture_2d_array<f32>;
+@group(1) @binding(3) var<storage> u_waves: array<PlaneWave>;
+@group(2) @binding(0) var turbulence_jacobian: texture_2d_array<f32>;
+struct OceanSurfaceDisplacement
+{
+	displacement: vec3<f32>,
+}
+fn sampleOceanSurfaceDisplacementFromMap(
+	global_uv: vec2<f32>,
+	cascade_position_weights: array<f32,CASCADE_CAPACITY>,
+	gerstner: bool,
+) -> OceanSurfaceDisplacement
+{
+    var result: OceanSurfaceDisplacement;
+	result.displacement = vec3<f32>(0.0);
+	for(var array_layer = 0u; array_layer <= 3u; array_layer++)
+	{
+		let position_lambda = cascade_position_weights[array_layer];
+		let patch_uv = global_uv / u_settings.cascades[array_layer].patch_size_meters;
+		let Dx_Dy_Dz_Dxdz = textureSampleLevel(
+			Dx_Dy_Dz_Dxdz_spatial,
+			displacement_map_sampler,
+			patch_uv,
+			array_layer,
+			0.0
+		);
+		var delta_displacement = Dx_Dy_Dz_Dxdz.xyz;
+		if(!gerstner)
+		{
+			delta_displacement.x = 0.0;
+			delta_displacement.z = 0.0;
+		}
+		result.displacement += position_lambda * delta_displacement;
+	}
+	return result;
+}
+fn sampleOceanSurfaceDisplacementFromWave(
+	wave: PlaneWave,
+	time: f32,
+	coords: vec2<f32>,
+	falloff_distance: f32
+) -> OceanSurfaceDisplacement
+{
+	let falloff_factor = (1.0 - smoothstep(0.0, falloff_distance, length(coords)));
+    let wave_amplitude = falloff_factor * wave.amplitude;
+    let wave_direction = normalize(wave.direction);
+    let wavelength = wave.wavelength;
+    let wave_number = 2.0 * 3.141592653589793 / wavelength;
+    let gravity = 9.8;
+    let angular_frequency = sqrt(gravity * wave_number);
+    let wave_vector = wave_direction * wave_number;
+    let theta = dot(coords, wave_vector) - angular_frequency * time;
+    let sin_theta = sin(theta);
+    let cos_theta = cos(theta);
+    var result: OceanSurfaceDisplacement;
+    let result_xz = -wave_direction * wave_amplitude * sin_theta;
+    let result_y = wave_amplitude * cos_theta;
+    result.displacement = vec3<f32>(result_xz.x, result_y, result_xz.y);
+    return result;
+}
+fn getOceanSurfaceDisplacement(
+	global_uv: vec2<f32>,
+	cascade_position_weights: array<f32,CASCADE_CAPACITY>,
+) -> OceanSurfaceDisplacement
+{
+	var result: OceanSurfaceDisplacement;
+	result.displacement = vec3<f32>(0.0);
+	if(u_settings.b_displacement_map == 1u)
+	{
+    	let uv = (global_uv + vec2<f32>(0.5,0.5));
+		let gerstner = u_settings.b_gerstner == 1u;
+		let sample = sampleOceanSurfaceDisplacementFromMap(uv, cascade_position_weights, gerstner);
+		result.displacement += sample.displacement;
+	}
+	else
+	{
+		var sample: OceanSurfaceDisplacement;
+		for (var i = 0u; i < u_settings.procedural_wave_count; i++)
+		{
+			sample = sampleOceanSurfaceDisplacementFromWave(
+				u_waves[i],
+				u_global.time.time_seconds,
+				global_uv,
+				u_settings.patch_world_half_extent
+			);
+			result.displacement += sample.displacement;
+		}
+	}
+	return result;
+}
+fn projectNDCToOceanSurface(
+	ndc: vec2<f32>,
+	horizon_distance: f32,
+	camera: Camera,
+) -> vec3<f32>
+{
+	let near_plane = 1.0;
+	let direction_view_space = camera.inv_proj * vec4<f32>(
+		ndc,
+		near_plane,
+		1.0
+	);
+	let direction_world = normalize((camera.inv_view * vec4<f32>(direction_view_space.xyz, 0.0)).xyz);
+	let ocean_hit = raySphereIntersection(
+		camera.position.xyz + vec3<f32>(0.0, u_global.atmosphere.planet_radius_Mm * METERS_PER_MM, 0.0),
+		direction_world,
+		u_global.atmosphere.planet_radius_Mm * METERS_PER_MM
+	);
+	if(!ocean_hit.hit)
+	{
+		return vec3<f32>(0.0, -100000.0, 0.0);
+	}
+	let t = mix(
+		ocean_hit.t0,
+		horizon_distance,
+		smoothstep(0.2, 1.0, ocean_hit.t0 / horizon_distance)
+	);
+	let flat_position = camera.position.xyz + t * direction_world;
+	let planet_radius = u_global.atmosphere.planet_radius_Mm * METERS_PER_MM;
+	return planet_radius * normalize(flat_position + vec3<f32>(0.0, planet_radius, 0.0))
+		- vec3<f32>(0.0, planet_radius, 0.0);
+}
+fn projectNDCToOceanSurfaceWithPivot(
+	ndc: vec2<f32>,
+	horizon_distance: f32,
+	camera: Camera,
+	pivot: vec3<f32>,
+) -> vec3<f32>
+{
+	let world_position = projectNDCToOceanSurface(ndc,horizon_distance,camera);
+	let pivot_offset = world_position - pivot;
+	let pivot_distance = length(pivot_offset);
+	const STRETCH_THRESHOLDS = vec2<f32>(2.0,20.0);
+	if(pivot_distance < STRETCH_THRESHOLDS.x || camera.position.y > 100.0)
+	{
+		return world_position;
+	}
+	let stretch_parameter = smoothstep(
+		STRETCH_THRESHOLDS.x,
+		STRETCH_THRESHOLDS.y,
+		pivot_distance
+	);
+	const STRETCH_ABSOLUTE_BIAS = 80.0;
+	let stretch = ((pivot_distance + stretch_parameter * STRETCH_ABSOLUTE_BIAS) / pivot_distance);
+	return pivot + pivot_offset * stretch;
+}
+struct VertexOut {
+    @builtin(position) position             : vec4<f32>,
+	@location(0) surface_normal             : vec3<f32>,
+    @location(1) color                      : vec3<f32>,
+    @location(2) camera_distance            : f32,
+	@location(3) cascade_1234_normal_weights: vec4<f32>,
+	@location(5) global_uv                  : vec2<f32>,
+}
+@vertex
+fn screenSpaceWarped(@builtin(vertex_index) index : u32) -> VertexOut
+{
+	var output : VertexOut;
+	let ocean_camera = u_global.ocean_camera;
+	let vert_coord = vec2<f32>(
+		f32(index % u_settings.vertex_size),
+		f32(index / u_settings.vertex_size)
+	) / f32(u_settings.vertex_size - 1u);
+	let overlap = vec2<f32>(1.05);
+	let ndc_horizon_forward =
+		ocean_camera.proj_view
+		* vec4<f32>(
+			ocean_camera.forward.x,
+			0.0,
+			ocean_camera.forward.z,
+			0.0
+		);
+	let ndc_min = vec2<f32>(-overlap.x, -overlap.y);
+	let ndc_max = vec2<f32>(overlap.x, min(ndc_horizon_forward.y / ndc_horizon_forward.w, overlap.y));
+	let ndc_space_coord = mix(ndc_min, ndc_max, vert_coord);
+	let planet_radius = u_global.atmosphere.planet_radius_Mm * METERS_PER_MM;
+	let camera_radius = length(ocean_camera.position.xyz + vec3<f32>(0.0, planet_radius, 0.0));
+	let horizon_distance = sqrt(camera_radius * camera_radius - planet_radius * planet_radius);
+	let center_position = projectNDCToOceanSurface(
+		mix(ndc_min, ndc_max, 0.5),
+		horizon_distance,
+		ocean_camera,
+	);
+	let cell_world_position = projectNDCToOceanSurfaceWithPivot(
+		ndc_space_coord,
+		horizon_distance,
+		ocean_camera,
+		center_position
+	);
+	let fraction_to_horizon = distance(cell_world_position, ocean_camera.position.xyz) / horizon_distance;
+	let weight = 1.0 - smoothstep(0.3, 0.5, fraction_to_horizon);
+	let cascade_position_weights = array<f32, CASCADE_CAPACITY>(weight,weight,weight,weight);
+	let cascade_normal_weights = array<f32, CASCADE_CAPACITY>(weight,weight,weight,weight);
+	let global_uv = cell_world_position.xz;
+	let displacement_result = getOceanSurfaceDisplacement(
+		global_uv,
+		cascade_position_weights
+	);
+	let world_position = cell_world_position + displacement_result.displacement;
+	output.global_uv = global_uv;
+    output.position = u_global.camera.proj_view * vec4<f32>(world_position, 1.0);
+    output.camera_distance = distance(u_global.camera.position.xyz, world_position);
+	output.position.z /= 1.001;
+	output.color = 0.3 * vec3<f32>(16.0 / 255.0, 97.0 / 255.0, 171.0 / 255.0);
+	output.surface_normal = normalize(
+		world_position
+		+ vec3<f32>(0.0, u_global.atmosphere.planet_radius_Mm * METERS_PER_MM, 0.0)
+	);
+	output.cascade_1234_normal_weights = vec4<f32>(
+		cascade_normal_weights[0],
+		cascade_normal_weights[1],
+		cascade_normal_weights[2],
+		cascade_normal_weights[3],
+	);
+    return output;
+}
+struct FragmentOut
+{
+    @location(0) color_with_surface_world_depth_in_alpha: vec4<f32>,
+    @location(1) world_normal_with_surface_foam_strength_in_alpha: vec4<f32>,
+}
+struct OceanSurfaceTangents
+{
+	tangent: vec3<f32>,
+	bitangent: vec3<f32>,
+	foam_strength: f32,
+}
+fn sampleOceanSurfaceTangentDifferentialFromMap(
+	global_uv: vec2<f32>,
+	cascade_normal_weights: array<f32,CASCADE_CAPACITY>,
+	gerstner: bool,
+) -> OceanSurfaceTangents
+{
+    var result: OceanSurfaceTangents;
+	result.tangent = vec3<f32>(0.0);
+	result.bitangent = vec3<f32>(0.0);
+	var turbulence_accumulated = 0.0;
+	var turbulence_max = 0.0;
+	for(var array_layer = 0u; array_layer < textureNumLayers(Dx_Dy_Dz_Dxdz_spatial); array_layer++)
+	{
+		let normal_lambda = cascade_normal_weights[array_layer];
+		let patch_uv = global_uv / u_settings.cascades[array_layer].patch_size_meters;
+		let Dx_Dy_Dz_Dxdz = textureSample(
+			Dx_Dy_Dz_Dxdz_spatial,
+			displacement_map_sampler,
+			patch_uv,
+			array_layer
+		);
+		let Dydx_Dydz_Dxdx_Dzdz = textureSample(
+			Dydx_Dydz_Dxdx_Dzdz_spatial,
+			displacement_map_sampler,
+			patch_uv,
+			array_layer
+		);
+		let Dydx = Dydx_Dydz_Dxdx_Dzdz.x;
+		let Dydz = Dydx_Dydz_Dxdx_Dzdz.y;
+		let Dxdz = Dx_Dy_Dz_Dxdz.w * f32(gerstner);
+		let Dzdx = Dxdz;
+		var Dxdx = Dydx_Dydz_Dxdx_Dzdz.z * f32(gerstner);
+		var Dzdz = Dydx_Dydz_Dxdx_Dzdz.w * f32(gerstner);
+		result.tangent += normal_lambda * vec3<f32>(Dxdx, Dydx, Dzdx);
+		result.bitangent += normal_lambda * vec3<f32>(Dxdz, Dydz, Dzdz);
+		let turbulence = textureSample(
+			turbulence_jacobian,
+			displacement_map_sampler,
+			patch_uv,
+			array_layer
+		).x;
+		turbulence_accumulated += normal_lambda * clamp(1.0 - turbulence, 0.0, 1.0);
+		turbulence_max += max(normal_lambda, 0.1);
+	}
+	result.foam_strength = clamp(
+		u_settings.foam_scale * (turbulence_accumulated / turbulence_max - u_settings.foam_bias),
+		0.0,
+		1.0
+	);
+	return result;
+}
+fn sampleOceanSurfaceTangentDifferentialFromWave(
+	global_uv: vec2<f32>,
+	wave: PlaneWave,
+	time: f32,
+	falloff_distance: f32,
+	gerstner: bool,
+) -> OceanSurfaceTangents
+{
+	let falloff_factor = (1.0 - smoothstep(0.0, falloff_distance, length(global_uv)));
+    let wave_amplitude = falloff_factor * wave.amplitude;
+    let wave_direction = normalize(wave.direction);
+    let wavelength = wave.wavelength;
+    let wave_number = 2.0 * PI / wavelength;
+    let gravity = 9.8;
+    let angular_frequency = sqrt(gravity * wave_number);
+    let wave_vector = wave_direction * wave_number;
+    let theta = dot(global_uv, wave_vector) - angular_frequency * time;
+    let sin_theta = sin(theta);
+    let cos_theta = cos(theta);
+    var result: OceanSurfaceTangents;
+    result.tangent = vec3<f32>(
+        - wave_amplitude * wave_direction.x * cos_theta * wave_vector.x,
+        - wave_amplitude * sin_theta * wave_vector.x,
+        - wave_amplitude * wave_direction.y * cos_theta * wave_vector.x,
+    );
+    result.bitangent = vec3<f32>(
+        - wave_amplitude * wave_direction.x * cos_theta * wave_vector.y,
+        - wave_amplitude * sin_theta * wave_vector.y,
+        - wave_amplitude * wave_direction.y * cos_theta * wave_vector.y,
+    );
+	result.foam_strength = 0.0;
+	if(!gerstner)
+	{
+		result.tangent.x = 0.0;
+		result.tangent.z = 0.0;
+		result.bitangent.x = 0.0;
+		result.bitangent.z = 0.0;
+	}
+    return result;
+}
+fn getOceanSurfaceTangents(
+	global_uv: vec2<f32>,
+	cascade_normal_weights: array<f32,CASCADE_CAPACITY>,
+) -> OceanSurfaceTangents
+{
+	var result: OceanSurfaceTangents;
+    result.tangent = vec3<f32>(1.0, 0.0, 0.0);
+    result.bitangent = vec3<f32>(0.0, 0.0, 1.0);
+	result.foam_strength = 0.0;
+	let gerstner = u_settings.b_gerstner == 1u;
+	if(u_settings.b_displacement_map == 1u)
+	{
+		let sample: OceanSurfaceTangents = sampleOceanSurfaceTangentDifferentialFromMap(
+			global_uv,
+			cascade_normal_weights,
+			gerstner
+		);
+		result.tangent += sample.tangent;
+		result.bitangent += sample.bitangent;
+		result.foam_strength += sample.foam_strength;
+	}
+	else
+	{
+		var sample: OceanSurfaceTangents;
+		for (var i = 0u; i < u_settings.procedural_wave_count; i++)
+		{
+			sample = sampleOceanSurfaceTangentDifferentialFromWave(
+				global_uv,
+				u_waves[i],
+				u_global.time.time_seconds,
+				u_settings.patch_world_half_extent,
+				gerstner
+			);
+			result.tangent += sample.tangent;
+			result.bitangent += sample.bitangent;
+			result.foam_strength += sample.foam_strength
+				/ f32(u_settings.procedural_wave_count);
+		}
+	}
+	result.tangent = normalize(result.tangent);
+	result.bitangent = normalize(result.bitangent);
+	return result;
+}
+@fragment
+fn rasterizationFragment(frag_interpolated: VertexOut) -> FragmentOut
+{
+    var output : FragmentOut;
+    output.color_with_surface_world_depth_in_alpha = vec4<f32>(
+		frag_interpolated.color,
+		frag_interpolated.camera_distance
+	);
+	var cascade_normal_weights = array<f32, CASCADE_CAPACITY>();
+	cascade_normal_weights[0] = frag_interpolated.cascade_1234_normal_weights.x;
+	cascade_normal_weights[1] = frag_interpolated.cascade_1234_normal_weights.y;
+	cascade_normal_weights[2] = frag_interpolated.cascade_1234_normal_weights.z;
+	cascade_normal_weights[3] = frag_interpolated.cascade_1234_normal_weights.w;
+	let surface = getOceanSurfaceTangents(
+		frag_interpolated.global_uv,
+		cascade_normal_weights,
+	);
+	let normal = normalize(-cross(surface.tangent, surface.bitangent));
+	let surface_normal = normalize(frag_interpolated.surface_normal);
+	let tangent = normalize(-cross(vec3<f32>(0.0,0.0,1.0), surface_normal));
+	let bitangent = normalize(-cross(surface_normal, tangent));
+	let perturbed_normal = normal.x * tangent + normal.y * surface_normal + normal.z * bitangent;
+	output.world_normal_with_surface_foam_strength_in_alpha = vec4<f32>(
+		normalize(perturbed_normal),
+		surface.foam_strength
+	);
+    return output;
+}
+",
+}
+`;
+
+exports[`packShaders 7`] = `
+{
+  "includes": [],
+  "source": "const TWO_PI = 6.28318530717958647693;
+struct DFFTParameters
+{
+	log_2_size: u32,
+	size: u32,
+	b_inverse: f32,
+}
+struct TwoPointButterfly
+{
+	twiddle: vec2<f32>,
+	lower_index: u32,
+	upper_index: u32,
+}
+@group(0) @binding(0) var<uniform> u_parameters: DFFTParameters;
+@group(0) @binding(1) var<storage, read_write> out_butterflies_log2n_by_n: array<TwoPointButterfly>;
+fn butterflyIndex(step: u32, major_index: u32) -> u32
+{
+	return step * u_parameters.size + major_index;
+}
+fn complexExp(imaginary_arg: f32) -> vec2<f32>
+{
+	return vec2<f32>(cos(imaginary_arg),sin(imaginary_arg));
+}
+@compute @workgroup_size(2, 1)
+fn precomputeDFFTInstructions(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+	var major_index = global_id.x;
+	let grid_size = u_parameters.size;
+	for(var step = 0u; step < u_parameters.log_2_size; step += 1u)
+	{
+		let dft_size = 1u << (step + 1u);
+		let dft_count = u32(grid_size / dft_size);
+		let dft = u32(major_index / u32(dft_size / 2u));
+		let n = major_index % u32(dft_size / 2u);
+		var lower_twiddle: TwoPointButterfly;
+		lower_twiddle.twiddle = complexExp(-TWO_PI * f32(n) / f32(dft_size));
+		lower_twiddle.lower_index = dft + n * 2u * dft_count;
+		lower_twiddle.upper_index = lower_twiddle.lower_index + dft_count;
+		var upper_twiddle = lower_twiddle;
+		upper_twiddle.twiddle *= -1.0;
+		let instruction_index = n * dft_count + dft;
+		out_butterflies_log2n_by_n[butterflyIndex(step, instruction_index)] = lower_twiddle;
+		out_butterflies_log2n_by_n[butterflyIndex(step, instruction_index + (grid_size / 2u))] = upper_twiddle;
+	}
+}
+@group(0) @binding(2) var<storage, read> butterflies_log2n_by_n: array<TwoPointButterfly>;
+@group(0) @binding(3) var<storage, read_write> buffer_0: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read_write> buffer_1: array<vec4<f32>>;
+@group(0) @binding(5) var<uniform> step_counter: u32;
+@group(0) @binding(6) var out_texture: texture_storage_2d_array<rgba16float, write>;
+fn complexMult(a: vec2<f32>, b: vec2<f32>) -> vec2<f32>
+{
+	return vec2<f32>(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+fn complexMult2(a: vec4<f32>, b: vec4<f32>) -> vec4<f32>
+{
+	return vec4<f32>(complexMult(a.xy, b.xy), complexMult(a.zw, b.zw));
+}
+fn bufferIndex(x: u32, y: u32, z: u32) -> u32
+{
+	let size = u_parameters.size;
+	return x + y * size + z * size * size;
+}
+fn loadButterfly(major_index: u32) -> TwoPointButterfly
+{
+	var result = butterflies_log2n_by_n[butterflyIndex(step_counter % u_parameters.log_2_size, major_index)];
+	result.twiddle.y *= (1.0 - 2.0 * u_parameters.b_inverse);
+	return result;
+}
+@compute @workgroup_size(16, 16, 1)
+fn performDFFTStep(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+	let ping_pong = (step_counter % 2u) == 1u;
+	if (step_counter < u_parameters.log_2_size)
+	{
+		let two_point_dft = loadButterfly(global_id.x);
+		if(ping_pong)
+		{
+			let lower_input = buffer_1[bufferIndex(two_point_dft.lower_index, global_id.y, global_id.z)];
+			let upper_input = buffer_1[bufferIndex(two_point_dft.upper_index, global_id.y, global_id.z)];
+			let result = lower_input + complexMult2(vec4<f32>(two_point_dft.twiddle, two_point_dft.twiddle), upper_input);
+			buffer_0[bufferIndex(global_id.x, global_id.y, global_id.z)] = result;
+		}
+		else
+		{
+			let lower_input = buffer_0[bufferIndex(two_point_dft.lower_index, global_id.y, global_id.z)];
+			let upper_input = buffer_0[bufferIndex(two_point_dft.upper_index, global_id.y, global_id.z)];
+			let result = lower_input + complexMult2(vec4<f32>(two_point_dft.twiddle, two_point_dft.twiddle), upper_input);
+			buffer_1[bufferIndex(global_id.x, global_id.y, global_id.z)] = result;
+		}
+	}
+	else
+	{
+		let two_point_dft = loadButterfly(global_id.y);
+		if(ping_pong)
+		{
+			let lower_input = buffer_1[bufferIndex(global_id.x, two_point_dft.lower_index, global_id.z)];
+			let upper_input = buffer_1[bufferIndex(global_id.x, two_point_dft.upper_index, global_id.z)];
+			let result = lower_input + complexMult2(vec4<f32>(two_point_dft.twiddle, two_point_dft.twiddle), upper_input);
+			buffer_0[bufferIndex(global_id.x, global_id.y, global_id.z)] = result;
+		}
+		else
+		{
+			let lower_input = buffer_0[bufferIndex(global_id.x, two_point_dft.lower_index, global_id.z)];
+			let upper_input = buffer_0[bufferIndex(global_id.x, two_point_dft.upper_index, global_id.z)];
+			let result = lower_input + complexMult2(vec4<f32>(two_point_dft.twiddle, two_point_dft.twiddle), upper_input);
+			buffer_1[bufferIndex(global_id.x, global_id.y, global_id.z)] = result;
+		}
+	}
+}
+@compute @workgroup_size(16, 16, 1)
+fn performSwapEvenSignsAndCopyToHalfPrecisionOutput(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+	let ping_pong = (step_counter % 2u) == 1u;
+	let factor = 1.0 - 2.0 * f32((global_id.x + global_id.y) % 2);
+	if(ping_pong)
+	{
+		textureStore(
+			out_texture,
+			global_id.xy,
+			global_id.z,
+			buffer_0[bufferIndex(global_id.x, global_id.y, global_id.z)] * factor
+		);
+	}
+	else
+	{
+		textureStore(
+			out_texture,
+			global_id.xy,
+			global_id.z,
+			buffer_1[bufferIndex(global_id.x, global_id.y, global_id.z)] * factor
+		);
+	}
+}
+@group(0) @binding(7) var<storage, read_write> out_step_counter: u32;
+@compute @workgroup_size(1)
+fn incrementStepCounter(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+	if(global_id.x == 0)
+	{
+		out_step_counter = out_step_counter + 1;
+	}
+}
+@compute @workgroup_size(1)
+fn resetStepCounter(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+	if(global_id.x == 0)
+	{
+		out_step_counter = 0;
+	}
+}
+",
+}
+`;
+
+exports[`packShaders 8`] = `
+{
+  "includes": [],
+  "source": "@group(0) @binding(0) var out_next_mip_level: texture_storage_2d_array<rgba16float, write>;
+@group(0) @binding(1) var in_previous_mip_level: texture_2d_array<f32>;
+@compute @workgroup_size(16, 16, 1)
+fn fillMipMap(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+	let array_level = global_id.z;
+	let color = 0.25 * (
+		  textureLoad(in_previous_mip_level, 2 * global_id.xy + vec2<u32>(0,0), array_level, 0)
+		+ textureLoad(in_previous_mip_level, 2 * global_id.xy + vec2<u32>(0,1), array_level, 0)
+		+ textureLoad(in_previous_mip_level, 2 * global_id.xy + vec2<u32>(1,0), array_level, 0)
+		+ textureLoad(in_previous_mip_level, 2 * global_id.xy + vec2<u32>(1,1), array_level, 0)
+	);
+	textureStore(out_next_mip_level, global_id.xy, array_level, color);
+}
+@compute @workgroup_size(1, 1, 1)
+fn fillMipMapSmaller(@builtin(global_invocation_id) global_id: vec3<u32>)
+{
+	let array_level = global_id.z;
+	let color = 0.25 * (
+		  textureLoad(in_previous_mip_level, 2 * global_id.xy + vec2<u32>(0,0), array_level, 0)
+		+ textureLoad(in_previous_mip_level, 2 * global_id.xy + vec2<u32>(0,1), array_level, 0)
+		+ textureLoad(in_previous_mip_level, 2 * global_id.xy + vec2<u32>(1,0), array_level, 0)
+		+ textureLoad(in_previous_mip_level, 2 * global_id.xy + vec2<u32>(1,1), array_level, 0)
+	);
+	textureStore(out_next_mip_level, global_id.xy, array_level, color);
+}
+",
+}
+`;
+
+exports[`packShaders 9`] = `
+{
+  "includes": [
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\types.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\util\\raycast.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_common.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\constants.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\atmosphere\\atmosphere_raymarch.inc.wgsl",
+    "C:\\Users\\LUCAS\\Programming\\Web\\webgpu-samples\\test\\shaders\\sky-sea\\util\\tonemap.inc.wgsl",
+  ],
+  "source": "struct Atmosphere
+{
+scattering_rayleigh_per_Mm : vec3<f32>,
+density_scale_rayleigh_Mm : f32,
+absorption_rayleigh_per_Mm : vec3<f32>,
+planet_radius_Mm : f32,
+scattering_mie_per_Mm : vec3<f32>,
+density_scale_mie_Mm : f32,
+absorption_mie_per_Mm : vec3<f32>,
+atmosphere_radius_Mm : f32,
+ground_albedo : vec3<f32>,
+padding0 : f32,
+scattering_ozone_per_Mm : vec3<f32>,
+padding1 : f32,
+absorption_ozone_per_Mm : vec3<f32>,
+padding2 : f32,
+padding3 : vec4<f32>,
+}
+struct CelestialLight
+{
+color: vec3<f32>,
+strength: f32,
+forward: vec3<f32>,
+angular_radius: f32,
+}
+struct Camera
+{
+inv_proj: mat4x4<f32>,
+inv_view: mat4x4<f32>,
+proj_view: mat4x4<f32>,
+position: vec4<f32>,
+forward: vec4<f32>,
+padding0: mat2x4<f32>,
+}
+struct Time
+{
+padding0: vec2<f32>,
+time_seconds: f32,
+delta_time_seconds: f32,
+}
+struct GlobalUBO
+{
+camera: Camera,
+ocean_camera: Camera,
+atmosphere: Atmosphere,
+light: CelestialLight,
+time: Time,
+}
+struct RaySphereHit
+{
+hit: bool,
+t0: f32,
+t1: f32,
+}
+fn raySphereIntersection(
+ray_origin: vec3<f32>,
+ray_direction_normalized: vec3<f32>,
+radius: f32
+) -> RaySphereHit
+{
+let f: vec3<f32> = ray_origin;
+let d: vec3<f32> = ray_direction_normalized;
+let b: f32 = -1.0 * dot(f, d);
+let center_to_intersection_chord: vec3<f32> = f + b * d;
+let discriminant: f32 = radius * radius - dot(center_to_intersection_chord, center_to_intersection_chord);
+let c: f32 = dot(f, f) - radius * radius;
+var output : RaySphereHit;
+output.hit = false;
+output.t0 = 0.0;
+output.t1 = 0.0;
+if (discriminant < 0.0)
+{
+return output;
+}
+var q: f32 = b;
+if (b < 0.0)
+{
+q -= sqrt(discriminant);
+}
+else
+{
+q += sqrt(discriminant);
+}
+output.hit = true;
+output.t0 = c / q;
+output.t1 = q;
+if (output.t0 > output.t1)
+{
+let temp: f32 = output.t0;
+output.t0 = output.t1;
+output.t1 = temp;
+}
+return output;
+}
+struct RayPlaneHit {
+hit: bool,
+t: f32,
+}
+fn rayPlaneIntersection(
+ray_origin: vec3<f32>,
+ray_direction: vec3<f32>,
+plane_origin: vec3<f32>,
+plane_normal: vec3<f32>
+) -> RayPlaneHit
+{
+var result: RayPlaneHit;
+let perp = dot(plane_normal, ray_direction);
+result.t = dot(plane_origin - ray_origin, plane_normal) / perp;
+result.hit = (abs(perp) > 0.00001) && (result.t > 0.0);
+return result;
+}
+@group(0) @binding(0) var output_color: texture_storage_2d<rgba16float, write>;
+@group(0) @binding(1) var lut_sampler: sampler;
+@group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
+@group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
+@group(0) @binding(4) var skyview_lut: texture_2d<f32>;
+@group(0) @binding(5) var aerial_perspective_lut: texture_3d<f32>;
+@group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+@group(2) @binding(0) var gbuffer_color_with_surface_world_depth_in_alpha: texture_2d<f32>;
+@group(2) @binding(1) var gbuffer_normal_with_surface_foam_strength_in_alpha: texture_2d<f32>;
+const PI = 3.141592653589793;
+const METERS_PER_MM = 1000000;
+const AERIAL_PERSPECTIVE_MM_PER_SLICE = 0.001;
+const ISOTROPIC_PHASE = 1.0 / (4.0 * PI);
+fn safeSqrt(value: f32) -> f32 { return sqrt(max(value, 0.0)); }
+fn textureCoordFromUnitRange(value: f32, length: u32) -> f32
+{
+return 0.5 / f32(length) + value * (1.0 - 1.0 / f32(length));
+}
+fn unitRangeFromTextureCoord(coord: f32 , length: u32) -> f32
+{
+return (coord - 0.5 / f32(length)) / (1.0 - 1.0 / f32(length));
+}
+fn transmittanceLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let atmosphere_radius_Mm_squared: f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared: f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h: f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho: f32 = safeSqrt(radius * radius - planet_radius_Mm_squared);
+let d: f32 = max(-radius * mu + safeSqrt(radius * radius * (mu * mu - 1.0) + atmosphere_radius_Mm_squared), 0.0);
+let d_min: f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max: f32 = rho + h;
+let x_mu: f32 = (d - d_min) / (d_max - d_min);
+let x_radius: f32 = rho / h;
+return vec2<f32>(
+textureCoordFromUnitRange(x_mu, dimensions.x),
+textureCoordFromUnitRange(x_radius, dimensions.y)
+);
+}
+fn transmittanceLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let x_mu : f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let x_radius : f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let atmosphere_radius_Mm_squared : f32 = (*atmosphere).atmosphere_radius_Mm * (*atmosphere).atmosphere_radius_Mm;
+let planet_radius_Mm_squared : f32 = (*atmosphere).planet_radius_Mm * (*atmosphere).planet_radius_Mm;
+let h : f32 = safeSqrt(atmosphere_radius_Mm_squared - planet_radius_Mm_squared);
+let rho : f32 = h * x_radius;
+let radius : f32 = safeSqrt(rho * rho + planet_radius_Mm_squared);
+let d_min : f32 = (*atmosphere).atmosphere_radius_Mm - radius;
+let d_max : f32 = rho + h;
+let d : f32 = (d_max - d_min) * x_mu + d_min;
+let D_EPSILON: f32 = 0.000000001;
+if (d < D_EPSILON)
+{
+return vec2<f32>(radius, 1.0);
+}
+let mu : f32 = (h * h - rho * rho - d * d) / (2.0 * radius * d);
+return vec2<f32>(radius, clamp(mu, -1.0, 1.0));
+}
+fn multiscatterLUT_RMu_to_UV(
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = 0.5 + 0.5 * mu_light;
+let v_unit: f32 = clamp(
+(radius - (*atmosphere).planet_radius_Mm)
+/ ((*atmosphere).atmosphere_radius_Mm - (*atmosphere).planet_radius_Mm),
+0.0, 1.0
+);
+return vec2<f32>(
+textureCoordFromUnitRange(u_unit, dimensions.x),
+textureCoordFromUnitRange(v_unit, dimensions.y)
+);
+}
+fn multiscatterLUT_UV_to_RMu(
+atmosphere: ptr<function,Atmosphere>,
+uv: vec2<f32>,
+dimensions: vec2<u32>,
+) -> vec2<f32>
+{
+let u_unit: f32 = unitRangeFromTextureCoord(uv.x, dimensions.x);
+let v_unit: f32 = unitRangeFromTextureCoord(uv.y, dimensions.y);
+let mu_light: f32 = 2.0 * (u_unit - 0.5);
+let radius: f32 = mix(
+(*atmosphere).planet_radius_Mm * (1.0002),
+(*atmosphere).atmosphere_radius_Mm * (0.9998),
+v_unit
+);
+return vec2<f32>(radius, mu_light);
+}
+fn sampleMultiscatterLUT(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu_light: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = multiscatterLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu_light,
+textureDimensions(lut)
+);
+return textureSampleLevel(lut, s, uv, 0.0).xyz;
+}
+fn sampleTransmittanceLUT_RadiusMu(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+radius: f32,
+mu: f32
+) -> vec3<f32>
+{
+let uv: vec2<f32> = transmittanceLUT_RMu_to_UV(
+atmosphere,
+radius,
+mu,
+textureDimensions(lut)
+);
+let sample = textureSampleLevel(lut, s, uv, 0.0).xyz;
+return sample;
+}
+fn sampleTransmittanceLUT_Ray(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+position: vec3<f32>,
+direction: vec3<f32>
+) -> vec3<f32>
+{
+let radius: f32 = length(position);
+let mu: f32 = (dot(position, direction) / (length(position) * length(direction)));
+return sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, radius, mu);
+}
+fn sampleTransmittanceLUT_Segment(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+r_start: f32,
+mu_start: f32,
+d: f32,
+intersects_ground: bool
+) -> vec3<f32>
+{
+let r_end = clamp(
+safeSqrt(d * d + 2.0 * r_start * mu_start * d + r_start * r_start),
+(*atmosphere).planet_radius_Mm, (*atmosphere).atmosphere_radius_Mm
+);
+let mu_end = clamp((r_start * mu_start + d) / r_end, -1.0, 1.0);
+if(intersects_ground)
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, -mu_end)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, -mu_start),
+vec3<f32>(1.0)
+);
+}
+else
+{
+return min(
+sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_start, mu_start)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, r_end, mu_end),
+vec3<f32>(1.0)
+);
+}
+}
+struct ExtinctionSample
+{
+scattering_rayleigh: vec3<f32>,
+scattering_mie: vec3<f32>,
+scattering_ozone: vec3<f32>,
+absorption_rayleigh: vec3<f32>,
+absorption_mie: vec3<f32>,
+absorption_ozone: vec3<f32>,
+scattering: vec3<f32>,
+extinction: vec3<f32>,
+}
+fn densityExponential(altitude: f32, density_scale: f32) -> f32
+{ return exp(-altitude / density_scale); }
+fn densityTent(altitude_km: f32) -> f32
+{ return max(0.0, 1.0 - abs(altitude_km - 25.0) / 15.0); }
+fn sampleExtinction(atmosphere: ptr<function,Atmosphere>, altitude_Mm: f32) -> ExtinctionSample
+{
+let density_rayleigh: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_rayleigh_Mm);
+let scattering_rayleigh: vec3<f32> = (*atmosphere).scattering_rayleigh_per_Mm * density_rayleigh;
+let absorption_rayleigh: vec3<f32> = (*atmosphere).absorption_rayleigh_per_Mm * density_rayleigh;
+let density_mie: f32 = densityExponential(altitude_Mm, (*atmosphere).density_scale_mie_Mm);
+let scattering_mie: vec3<f32> = (*atmosphere).scattering_mie_per_Mm * density_mie;
+let absorption_mie: vec3<f32> = (*atmosphere).absorption_mie_per_Mm * density_mie;
+let density_ozone: f32 = densityTent(altitude_Mm * 1000.0);
+let scattering_ozone: vec3<f32> = (*atmosphere).scattering_ozone_per_Mm * density_ozone;
+let absorption_ozone: vec3<f32> = (*atmosphere).absorption_ozone_per_Mm * density_ozone;
+var extinction_sample: ExtinctionSample;
+extinction_sample.scattering_rayleigh = scattering_rayleigh;
+extinction_sample.scattering_mie = scattering_mie;
+extinction_sample.scattering_ozone = scattering_ozone;
+extinction_sample.absorption_rayleigh = absorption_rayleigh;
+extinction_sample.absorption_mie = absorption_mie;
+extinction_sample.absorption_ozone = absorption_ozone;
+extinction_sample.scattering = scattering_rayleigh + scattering_mie + scattering_ozone;
+extinction_sample.extinction = extinction_sample.scattering + absorption_rayleigh + absorption_mie + absorption_ozone;
+return extinction_sample;
+}
+fn phaseRayleigh(cosine: f32) -> f32
+{
+let scalar: f32 = 3.0 / (16.0 * PI);
+let numerator: f32 = (1.0 + cosine * cosine);
+return scalar * numerator;
+}
+fn phaseMie(cosine: f32, g: f32) -> f32
+{
+let scalar: f32 = 3.0 / (8.0 * PI);
+let numerator: f32 = (1.0 - g * g) * (1.0 + cosine * cosine);
+let denominator: f32 = (2.0 + g * g) * pow(1.0 + g * g - 2.0 * g * cosine, 1.5);
+return scalar * numerator / denominator;
+}
+struct RaymarchStep
+{
+radius: f32,
+mu: f32,
+mu_light: f32,
+nu: f32,
+};
+fn stepRadiusMu(
+start: RaymarchStep,
+step_distance: f32,
+) -> RaymarchStep
+{
+var result: RaymarchStep;
+result.radius = safeSqrt(
+step_distance * step_distance + 2.0 * start.radius * start.mu * step_distance
++ start.radius * start.radius
+);
+result.mu = (start.radius * start.mu + step_distance) / result.radius;
+result.nu = start.nu;
+result.mu_light = (start.radius * start.mu_light + step_distance * start.nu) / result.radius;
+return result;
+}
+fn sampleTransmittanceLUT_RayMarchStep(
+lut: texture_2d<f32>,
+s: sampler,
+atmosphere: ptr<function,Atmosphere>,
+start: RaymarchStep,
+step_distance: f32
+) -> vec3<f32>
+{
+const STEP_DISTANCE_EPSILON = 0.0000001;
+if (step_distance < STEP_DISTANCE_EPSILON)
+{
+return vec3<f32>(1.0);
+}
+let end: RaymarchStep = stepRadiusMu(start, step_distance);
+var transmittance = vec3<f32>(0.0);
+if (start.mu > 0.0)
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, start.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, end.mu);
+}
+else
+{
+transmittance = sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, end.radius, -end.mu)
+/ sampleTransmittanceLUT_RadiusMu(lut, s, atmosphere, start.radius, -start.mu);
+}
+return clamp(transmittance, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+struct AtmosphereRaycastResult
+{
+intersects_ground: bool,
+t_min: f32,
+t_max: f32,
+}
+fn raycastAtmosphere(atmosphere: ptr<function, Atmosphere>, origin: vec3<f32>, direction: vec3<f32>) -> AtmosphereRaycastResult
+{
+var result: AtmosphereRaycastResult;
+let planet_hit = raySphereIntersection(origin, direction, (*atmosphere).planet_radius_Mm);
+let atmosphere_hit = raySphereIntersection(origin, direction, (*atmosphere).atmosphere_radius_Mm);
+let inside_planet = planet_hit.hit && planet_hit.t0 < 0.0 && planet_hit.t1 > 0.0;
+let intersects_atmosphere = atmosphere_hit.hit && atmosphere_hit.t1 > 0.0;
+if (!intersects_atmosphere || inside_planet)
+{
+result.intersects_ground = true;
+result.t_min = 0.0;
+result.t_max = 0.0;
+return result;
+}
+result.t_min = max(atmosphere_hit.t0, 0.0);
+result.t_max = atmosphere_hit.t1;
+if (planet_hit.hit && planet_hit.t0 > 0.0)
+{
+result.intersects_ground = true;
+result.t_max = planet_hit.t0;
+}
+return result;
+}
+struct ScatteringResult
+{
+luminance: vec3<f32>,
+transmittance: vec3<f32>,
+multiscattering_transfer: vec3<f32>,
+}
+fn computeLuminanceScatteringIntegral(
+atmosphere: ptr<function, Atmosphere>,
+light:  ptr<function, CelestialLight>,
+lut_sampler: sampler,
+transmittance_lut: texture_2d<f32>,
+multiscatter_lut: texture_2d<f32>,
+origin: vec3<f32>,
+direction: vec3<f32>,
+include_ground: bool,
+intersects_ground: bool,
+sample_distance: f32,
+) -> ScatteringResult
+{
+var result: ScatteringResult;
+result.luminance = vec3<f32>(0.0);
+result.transmittance = vec3<f32>(1.0);
+result.multiscattering_transfer = vec3<f32>(0.0);
+if(sample_distance <= 0.0)
+{
+result.luminance = vec3<f32>(1.0, 1.0, 0.0);
+return result;
+}
+let incident_cosine = dot((*light).forward, -direction);
+let start_radius: f32 = length(origin);
+let start_mu: f32 = dot(origin, direction) / (length(origin) * length(direction));
+let start_mu_light: f32 = dot(origin, -(*light).forward) / (length(origin) * length((*light).forward));
+let nu: f32 = dot(-(*light).forward, direction) / (length((*light).forward) * length(direction));
+let origin_step = RaymarchStep(start_radius, start_mu, start_mu_light, nu);
+var transmittance_accumulated = vec3<f32>(1.0);
+const SAMPLE_COUNT = 64.0;
+const T_SUBSTEP = 0.4;
+var t: f32 = 0.0;
+var d_t: f32 = 0.0;
+for (var s = 0.0; s < SAMPLE_COUNT; s += 1.0)
+{
+{
+var t_begin = s / SAMPLE_COUNT;
+var t_end = (s + 1.0) / SAMPLE_COUNT;
+t_begin = sample_distance * t_begin * t_begin;
+t_end = sample_distance * t_end * t_end;
+d_t = t_end - t_begin;
+t = mix(t_begin, t_end, T_SUBSTEP);
+}
+let sample_step: RaymarchStep = stepRadiusMu(origin_step, t);
+let altitude = sample_step.radius - (*atmosphere).planet_radius_Mm;
+let extinction_sample: ExtinctionSample = sampleExtinction(atmosphere, altitude);
+let transmittance_to_t_begin = transmittance_accumulated;
+let transmittance_along_path = exp(-extinction_sample.extinction * d_t);
+transmittance_accumulated *= transmittance_along_path;
+let phase_times_scattering: vec3<f32> =
+extinction_sample.scattering_rayleigh * phaseRayleigh(incident_cosine)
++ extinction_sample.scattering_mie * phaseMie(incident_cosine, 0.8)
++ extinction_sample.scattering_ozone * phaseRayleigh(incident_cosine);
+let multiscatter = sampleMultiscatterLUT(multiscatter_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+var occlusion_planet: f32 = 0.0;
+{
+let horizon_sin = (*atmosphere).planet_radius_Mm / sample_step.radius;
+let horizon_cos = -safeSqrt(1.0 - horizon_sin * horizon_sin);
+occlusion_planet = f32(sample_step.mu_light < horizon_cos);
+}
+let transmittance_to_sun = sampleTransmittanceLUT_RadiusMu(transmittance_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+var shadowing = vec3<f32>(transmittance_to_sun * (1.0 - f32(occlusion_planet)));
+let scattering_illuminance_integral = (vec3(1.0) - transmittance_along_path) / extinction_sample.extinction;
+result.luminance +=
+(phase_times_scattering * shadowing + multiscatter * extinction_sample.scattering)
+* scattering_illuminance_integral * transmittance_to_t_begin
+* 1.0;
+result.multiscattering_transfer += extinction_sample.scattering * scattering_illuminance_integral * transmittance_to_t_begin;
+}
+if (include_ground && intersects_ground)
+{
+let sample_step: RaymarchStep = stepRadiusMu(origin_step, sample_distance);
+let transmittance_to_surface = sampleTransmittanceLUT_RayMarchStep(transmittance_lut, lut_sampler, atmosphere, origin_step, sample_distance);
+let transmittance_to_sun = sampleTransmittanceLUT_RadiusMu(transmittance_lut, lut_sampler, atmosphere, sample_step.radius, sample_step.mu_light);
+let normal_dot_light = clamp(sample_step.mu_light, 0.0, 1.0);
+let diffuse = (*atmosphere).ground_albedo / PI;
+result.luminance +=
+transmittance_to_surface * transmittance_to_sun * normal_dot_light * diffuse
+* 1.0;
+}
+result.transmittance = transmittance_accumulated;
+return result;
+}
+fn sRGB_EOTF(color_nonlinear: vec3<f32>) -> vec3<f32>
+{
+let piecewise_boundary = color_nonlinear < vec3<f32>(0.0031308 * 12.92);
+let piecewise_linear = color_nonlinear / vec3<f32>(12.92);
+let piecewise_nonlinear = pow(
+(color_nonlinear + vec3<f32>(0.055)) / vec3<f32>(1.055), vec3<f32>(2.4)
+);
+return 0.95 * select(piecewise_nonlinear, piecewise_linear, piecewise_boundary);
+}
+fn sRGB_OETF(color_linear: vec3<f32>) -> vec3<f32>
+{
+let piecewise_boundary = color_linear <= vec3<f32>(0.0031308);
+let piecewise_linear = vec3<f32>(12.92) * color_linear;
+let piecewise_nonlinear = vec3<f32>(1.055) * pow(color_linear, vec3<f32>(1 / 2.4)) - vec3<f32>(0.055);
+return select(piecewise_nonlinear, piecewise_linear, piecewise_boundary);
+}
+fn RRTAndODTFit(v: vec3<f32>) -> vec3<f32>
+{
+let a = v * (v + 0.0245786) - 0.000090537;
+let b = v * (0.983729 * v + 0.4329510) + 0.238081;
+return a / b;
+}
+fn HDRtoSRGB_ACES(color_hdr: vec3<f32>) -> vec3<f32>
+{
+const ACES_INPUT_MAT = mat3x3<f32>(
+vec3<f32>(0.59719, 0.07600, 0.02840),
+vec3<f32>(0.35458, 0.90834, 0.13383),
+vec3<f32>(0.04823, 0.01566, 0.83777)
+);
+const ACES_OUTPUT_MAT = mat3x3<f32>
+(
+vec3<f32>(1.60475, -0.10208, -0.00327),
+vec3<f32>(-0.53108,  1.10813, -0.07276),
+vec3<f32>(-0.07367, -0.00605,  1.07602)
+);
+var color = ACES_INPUT_MAT * sRGB_OETF(color_hdr);
+color = RRTAndODTFit(color);
+color = ACES_OUTPUT_MAT * color;
+color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
+return color;
+}
+fn tonemapPBRNeutral(color: vec3<f32>) -> vec3<f32>
+{
+let x = min(min(color.r, color.g), color.b);
+let F_normal = 0.04;
+var f = F_normal;
+if (x <= 2.0 * F_normal)
+{
+f = x - x * x / (4.0 * F_normal);
+}
+var color_minus_f = color - vec3<f32>(f);
+let K_s = 0.8 - F_normal;
+let p = max(max(color_minus_f.r, color_minus_f.g), color_minus_f.b);
+if (p <= K_s)
+{
+return color_minus_f;
+}
+let K_d = 0.15;
+let p_n = 1.0 - (1.0 - K_s) * (1.0 - K_s) / (p + 1.0 - 2.0 * K_s);
+let g = 1.0 / (K_d * (p - p_n) + 1.0);
+return mix(vec3(p_n), color_minus_f * p_n / p, g);
+}
+fn max3(value: vec3<f32>) -> f32
+{
+    return max(max(value.x, value.y), value.z);
+}
+struct PBRTexel
+{
+    normal: vec3<f32>,
+    subscattering_albedo: vec3<f32>,
+    normal_reflectance: vec3<f32>,
+    specular_power: f32,
+    metallic: f32,
+};
+fn convertPBRPropertiesWater(color: vec3<f32>, normal: vec3<f32>, foam: f32) -> PBRTexel
+{
+    const METALLIC_WATER = 0.5;
+	const SPECULAR_POWER = 160.0;
+	const ROUGHNESS_WATER = 0.05;
+	const ROUGHNESS_FOAM = 1.0;
+    let roughness = mix(
+		ROUGHNESS_WATER,
+		ROUGHNESS_FOAM,
+		foam
+	);
+	const FOAM_COLOR = vec3<f32>(1.0);
+	let albedo = mix(color, FOAM_COLOR, foam);
+    const DIELECTRIC_REFLECTANCE = vec3<f32>(0.04);
+    const METALLIC_REFLECTANCE = vec3<f32>(0.5);
+	const FOAM_REFLECTANCE = vec3<f32>(0.8);
+    let normal_reflectance = mix(
+		mix(
+			DIELECTRIC_REFLECTANCE,
+			METALLIC_REFLECTANCE * color / max3(color),
+			METALLIC_WATER
+		),
+		FOAM_REFLECTANCE,
+		foam
+	);
+    var texel = PBRTexel();
+    texel.normal = normal;
+    texel.subscattering_albedo = albedo;
+    texel.normal_reflectance = normal_reflectance;
+    texel.specular_power = pow(SPECULAR_POWER, 1.0 - roughness);
+    texel.metallic = METALLIC_WATER;
+    return texel;
+}
+fn computeFresnelMicrofacet(material: PBRTexel, light_outgoing: vec3<f32>, view_outgoing: vec3<f32>) -> vec3<f32>
+{
+    let halfway_direction = normalize(light_outgoing + view_outgoing);
+    let fresnel =
+        material.normal_reflectance
+        + (1.0 - material.normal_reflectance) * pow(1.0 - clamp(dot(halfway_direction, light_outgoing), 0.0, 1.0), 5.0);
+    return fresnel;
+}
+fn computeFresnelPerfectReflection(material: PBRTexel, light_outgoing: vec3<f32>) -> vec3<f32>
+{
+    let fresnel =
+        material.normal_reflectance
+        + (1.0 - material.normal_reflectance) * pow(1.0 - clamp(dot(light_outgoing, material.normal), 0.0, 1.0), 5.0);
+    return fresnel;
+}
+fn diffuseBRDF(material: PBRTexel) -> vec3<f32>
+{
+    return material.subscattering_albedo / 3.14159265359;
+}
+fn specularBRDF(material: PBRTexel, light_outgoing: vec3<f32>, view_outgoing: vec3<f32>) -> vec3<f32>
+{
+    let halfway_direction = normalize(light_outgoing + view_outgoing);
+    let specular_power = material.specular_power;
+    let microfacet_distribution = pow(clamp(dot(halfway_direction, material.normal), 0.0, 1.0), specular_power);
+    let normalization_term = (specular_power + 2.0) / 8.0;
+    return vec3<f32>(normalization_term * microfacet_distribution);
+}
+fn sampleSkyViewLUT(
+    atmosphere: ptr<function, Atmosphere>,
+    position: vec3<f32>,
+    direction: vec3<f32>
+) -> vec3<f32>
+{
+    let sin_horizon_zenith = clamp((*atmosphere).planet_radius_Mm / length(position), -1.0, 1.0);
+    let horizon_zenith = PI - asin(sin_horizon_zenith);
+    let cos_view_zenith = clamp(dot(position, direction) / (length(position) * length(direction)), -1.0, 1.0);
+    let cos_horizon_zenith = -safeSqrt(1.0 - sin_horizon_zenith * sin_horizon_zenith);
+    let view_zenith = acos(cos_view_zenith);
+    var u = 0.0;
+    var v = 0.0;
+    if (cos_view_zenith > cos_horizon_zenith)
+    {
+        let angle_fraction = view_zenith / horizon_zenith;
+        v = (1.0 - sqrt(1.0 - angle_fraction)) * 0.5;
+    }
+    else
+    {
+        let angle_fraction = (view_zenith - horizon_zenith) / (PI - horizon_zenith);
+        v = sqrt(angle_fraction) * 0.5 + 0.5;
+    }
+    {
+        var azimuth = 0.0;
+        if (direction.z == 0.0)
+        {
+            azimuth = sign(direction.x) * PI / 2.0;
+        }
+        else
+        {
+            azimuth = atan2(direction.x, direction.z);
+        }
+        u = (azimuth / (2.0 * PI)) + 0.5;
+    }
+	const V_SAFE_OFFSET = 2.5;
+	let lut_height = textureDimensions(skyview_lut).y;
+	let v_safe = (0.5 * f32(lut_height) - V_SAFE_OFFSET) / f32(lut_height);
+	v = min(v, v_safe);
+    return textureSampleLevel(skyview_lut, lut_sampler, vec2<f32>(u, v), 0.0).xyz;
+}
+fn sunFractionOfRadianceVisible(
+    atmosphere: ptr<function, Atmosphere>,
+	light: ptr<function, CelestialLight>,
+	position: vec3<f32>,
+    direction: vec3<f32>
+) -> f32
+{
+    let sin_horizon: f32 = atmosphere.planet_radius_Mm / length(position);
+    let cos_horizon: f32 = -safeSqrt(1.0 - sin_horizon * sin_horizon);
+	let mu = dot(normalize(position), normalize(direction));
+	let intersects_ground = mu < cos_horizon;
+	let light_direction = normalize(-(*light).forward);
+	let mu_light = dot(normalize(position), normalize(light_direction));
+	let cos_light_radius = cos((*light).angular_radius);
+	let sin_light_radius = safeSqrt(1.0 - cos_light_radius * cos_light_radius);
+	let horizon_factor = smoothstep(-sin_light_radius, sin_light_radius, mu_light - cos_horizon);
+	let cos_direction_light = dot(normalize(direction), light_direction);
+	let direction_factor = f32(cos_direction_light > cos_light_radius);
+	return direction_factor * horizon_factor;
+}
+fn sampleSunDisk(
+    atmosphere: ptr<function, Atmosphere>,
+    light: ptr<function, CelestialLight>,
+	position: vec3<f32>,
+    direction: vec3<f32>
+) -> vec3<f32>
+{
+	let light_direction = normalize(-(*light).forward);
+	let cos_direction_light = dot(normalize(direction), light_direction);
+	let cos_light_radius = cos((*light).angular_radius);
+	let sin_theta = acos(cos_direction_light) / (*light).angular_radius;
+	if (sin_theta > 1.0)
+	{
+		return vec3<f32>(0.0);
+	}
+	let limb_darkening_intensity_exponent = vec3<f32>(0.482, 0.522, 0.643);
+	let cos_theta = safeSqrt(1.0 - sin_theta * sin_theta);
+	let limb_darkening_intensity = pow(vec3<f32>(cos_theta), limb_darkening_intensity_exponent);
+	let radius = length(position);
+	let mu_light = dot(position, light_direction) / radius;
+	let transmittance_to_light = sampleTransmittanceLUT_RadiusMu(
+		transmittance_lut,
+		lut_sampler,
+		atmosphere,
+		radius,
+		mu_light
+	);
+	let solid_angle_from_space = 2.0 * PI * (1.0 - cos_light_radius);
+	let light_luminance_from_space = vec3<f32>(1.0) / solid_angle_from_space;
+	return limb_darkening_intensity * transmittance_to_light * light_luminance_from_space;
+}
+fn sampleSkyLuminance(
+    atmosphere: ptr<function, Atmosphere>,
+    light: ptr<function, CelestialLight>,
+    position: vec3<f32>,
+    direction: vec3<f32>
+) -> vec3<f32>
+{
+    var luminance = sampleSkyViewLUT(atmosphere, position, direction) + sampleSunDisk(atmosphere, light, position, direction);
+    return luminance;
+}
+fn sampleGeometryLuminance(
+    atmosphere: ptr<function, Atmosphere>,
+    light: ptr<function, CelestialLight>,
+	screen_texture_uv: vec2<f32>,
+    material: PBRTexel,
+    position: vec3<f32>,
+    direction: vec3<f32>,
+    distance: f32,
+    intersects_ground: bool
+) -> vec3<f32>
+{
+    let light_direction = normalize(-(*light).forward);
+    var origin_step = RaymarchStep();
+    origin_step.radius = length(position);
+    origin_step.mu = dot(position, direction) / origin_step.radius;
+    origin_step.mu_light = dot(position, light_direction) / origin_step.radius;
+    origin_step.nu = dot(direction, light_direction);
+    let surface_step: RaymarchStep = stepRadiusMu(origin_step, distance);
+	let aerial_perspective_scale = f32(textureDimensions(aerial_perspective_lut).z)
+		* AERIAL_PERSPECTIVE_MM_PER_SLICE
+		* METERS_PER_MM;
+	let aerial_perspective = textureSampleLevel(
+		aerial_perspective_lut,
+		lut_sampler,
+		vec3<f32>(screen_texture_uv,clamp(distance / aerial_perspective_scale, 0.0, 1.0)),
+		0.0
+	);
+    let transmittance_to_surface = vec3<f32>(aerial_perspective.w);
+    var light_luminance_transfer = aerial_perspective.xyz;
+    let surface_position = position + direction * distance;
+	let sea_subscattering_factor = 0.3;
+	let sea_brdf = sea_subscattering_factor * diffuseBRDF(material);
+	let sky_reflection_lobe_solid_angle = (4.0 * PI) / 200;
+    let reflection_direction = reflect(normalize(direction), normalize(material.normal));
+	let sky_reflection_luminance = sampleSkyViewLUT(atmosphere, surface_position, reflection_direction);
+	light_luminance_transfer +=
+		transmittance_to_surface
+		* sky_reflection_lobe_solid_angle
+		* sky_reflection_luminance
+		* specularBRDF(material, reflection_direction, -direction)
+		* computeFresnelPerfectReflection(material, reflection_direction);
+	var sky_diffuse_lobe_solid_angle = 2.0 * PI;
+	let diffuse_sample_direction = normalize(light_direction + vec3<f32>(0.0,1.0,0.0));
+	let sky_indirect_luminance = sampleSkyViewLUT(atmosphere, surface_position, diffuse_sample_direction);
+	light_luminance_transfer +=
+		transmittance_to_surface
+		* sky_diffuse_lobe_solid_angle
+		* sky_indirect_luminance
+		* sea_brdf
+		* (1.0 - computeFresnelMicrofacet(material, light_direction, -direction));
+	let surface_transmittance_to_sun = sampleTransmittanceLUT_Ray(
+		transmittance_lut,
+        lut_sampler,
+		atmosphere,
+		surface_position,
+		light_direction
+	);
+	let light_illuminance = surface_transmittance_to_sun
+		* sunFractionOfRadianceVisible(atmosphere, light, surface_position, light_direction);
+	light_luminance_transfer +=
+		transmittance_to_surface
+		* light_illuminance
+		* mix(
+			sea_brdf,
+			specularBRDF(material, light_direction, -direction),
+			computeFresnelMicrofacet(material, light_direction, -direction)
+		);
+    return light_luminance_transfer;
+}
+@compute @workgroup_size(16,16,1)
+fn renderCompositedAtmosphere(@builtin(global_invocation_id) global_id : vec3<u32>)
+{
+    let texel_coord = vec2<u32>(global_id.xy);
+    let size = textureDimensions(gbuffer_color_with_surface_world_depth_in_alpha);
+    if(texel_coord.x >= size.x || texel_coord.y >= size.y)
+    {
+        return;
+    }
+    var atmosphere = u_global.atmosphere;
+    var light = u_global.light;
+	var camera = u_global.camera;
+    let offset = vec2<f32>(0.5, 0.5);
+    let uv = (vec2<f32>(texel_coord) + offset) / vec2<f32>(size);
+    let origin = vec3<f32>(0.0, atmosphere.planet_radius_Mm, 0.0) + camera.position.xyz / METERS_PER_MM;
+    let ndc_space_coord = (uv - vec2<f32>(0.5)) * 2.0 * vec2<f32>(1.0, -1.0);
+    let near_plane_depth = 1.0;
+    let direction_view_space = camera.inv_proj * vec4(ndc_space_coord, near_plane_depth, 1.0);
+    let direction_world = normalize((camera.inv_view * vec4<f32>(direction_view_space.xyz, 0.0)).xyz);
+    let color_with_surface_world_depth_in_alpha = textureLoad(gbuffer_color_with_surface_world_depth_in_alpha, texel_coord, 0);
+    let normal_with_surface_foam_strength_in_alpha = textureLoad(gbuffer_normal_with_surface_foam_strength_in_alpha, texel_coord, 0);
+	var normal = normal_with_surface_foam_strength_in_alpha.xyz;
+	if(dot(normal, -direction_world) < 0.0)
+	{
+		normal -= 2.0 * dot(normal, -direction_world) * (-direction_world);
+	}
+	let foam_strength = normal_with_surface_foam_strength_in_alpha.w;
+    let depth = color_with_surface_world_depth_in_alpha.a / METERS_PER_MM;
+    var luminance_transfer = vec3<f32>(0.0);
+    let sin_horizon: f32 = atmosphere.planet_radius_Mm / length(origin);
+    let cos_horizon: f32 = -safeSqrt(1.0 - sin_horizon * sin_horizon);
+	let mu = dot(normalize(origin), normalize(direction_world));
+	let intersects_ground = mu < cos_horizon;
+    if (depth <= 0.0)
+    {
+        if (intersects_ground)
+        {
+            let material: PBRTexel = convertPBRPropertiesWater(
+				vec3<f32>(1.0),
+				vec3<f32>(0.0,1.0,0.0),
+				1.0
+			);
+            luminance_transfer = sampleGeometryLuminance(
+				&atmosphere,
+				&light,
+				uv,
+				material,
+				origin,
+				direction_world,
+				depth,
+				intersects_ground
+			);
+        }
+        else
+        {
+            luminance_transfer = sampleSkyLuminance(&atmosphere, &light, origin, direction_world);
+        }
+		*/
+		luminance_transfer = sampleSkyLuminance(&atmosphere, &light, origin, direction_world);
+    }
+    else
+    {
+		let color = color_with_surface_world_depth_in_alpha.xyz;
+        let material: PBRTexel = convertPBRPropertiesWater(
+			color,
+			normal.xyz,
+			foam_strength
+		);
+		luminance_transfer = sampleGeometryLuminance(
+			&atmosphere,
+			&light,
+			uv,
+			material,
+			origin,
+			direction_world,
+			depth,
+			true
+		);
+    }
+    let luminance = light.strength * light.color * luminance_transfer;
+    let output = vec4<f32>(sRGB_EOTF(HDRtoSRGB_ACES(luminance)),1.0);
+    textureStore(output_color, texel_coord, output);
+}
+",
+}
+`;
+
+exports[`packShaders 10`] = `
+{
+  "includes": [],
+  "source": "@group(0) @binding(0) var b_texture: texture_2d<f32>;
+@group(0) @binding(0) var b_texture_array: texture_2d_array<f32>;
+@group(0) @binding(0) var b_texture_3d: texture_3d<f32>;
+@group(0) @binding(1) var b_sampler: sampler;
+struct FullscreenQuadUBO
+{
+    color_gain: vec4<f32>,
+    vertex_scale: vec4<f32>,
+	swap_ba_rg: u32,
+	channel_mask: u32,
+	depth_or_array_layer: f32,
+	mip_level: u32,
+}
+@group(1) @binding(0) var<uniform> u_fullscreen_quad: FullscreenQuadUBO;
+const QUAD_VERTICES: array<vec4<f32>, 4> = array<vec4<f32>,4>(
+    vec4<f32>(-1.0, -1.0, 0.0, 1.0),
+    vec4<f32>(1.0, -1.0, 0.0, 1.0),
+    vec4<f32>(1.0, 1.0, 0.0, 1.0),
+    vec4<f32>(-1.0, 1.0, 0.0, 1.0),
+);
+const QUAD_UVS: array<vec2<f32>,4> = array<vec2<f32>,4>(
+    vec2<f32>(0.0, 1.0),
+    vec2<f32>(1.0, 1.0),
+    vec2<f32>(1.0, 0.0),
+    vec2<f32>(0.0, 0.0),
+);
+struct VertexOut {
+    @builtin(position) position : vec4<f32>,
+    @location(0) uv : vec2<f32>
+}
+@vertex
+fn vertexMain(@builtin(vertex_index) index : u32) -> VertexOut
+{
+    var output : VertexOut;
+    output.position = u_fullscreen_quad.vertex_scale * QUAD_VERTICES[index];
+    output.uv = QUAD_UVS[index];
+    return output;
+}
+struct FragmentOut {
+	@location(0) color: vec4<f32>
+}
+fn doFragment(rgba: vec4<f32>) -> FragmentOut
+{
+	var result: FragmentOut;
+	result.color = rgba;
+	if(u_fullscreen_quad.swap_ba_rg == 1)
+	{
+		result.color = result.color.barg;
+	}
+	result.color.r *= f32((u_fullscreen_quad.channel_mask & 1) > 0);
+	result.color.g *= f32((u_fullscreen_quad.channel_mask & 2) > 0);
+	result.color.b *= f32((u_fullscreen_quad.channel_mask & 4) > 0);
+	result.color *= u_fullscreen_quad.color_gain;
+	result.color.a = 1.0;
+	return result;
+}
+@fragment
+fn fragmentMain(frag_interpolated: VertexOut) -> FragmentOut
+{
+    return doFragment(
+		textureSampleLevel(
+			b_texture,
+			b_sampler,
+			frag_interpolated.uv,
+			f32(u_fullscreen_quad.mip_level)
+		)
+	);
+}
+@fragment
+fn fragmentMainArray(frag_interpolated: VertexOut) -> FragmentOut
+{
+	return doFragment(
+		textureSampleLevel(
+			b_texture_array,
+			b_sampler,
+			frag_interpolated.uv,
+			u32(u_fullscreen_quad.depth_or_array_layer),
+			f32(u_fullscreen_quad.mip_level)
+		)
+	);
+}
+@fragment
+fn fragmentMain3D(frag_interpolated: VertexOut) -> FragmentOut
+{
+	let coord = vec3<f32>(frag_interpolated.uv, u_fullscreen_quad.depth_or_array_layer / f32(textureDimensions(b_texture_3d).z));
+	return doFragment(
+		textureSampleLevel(
+			b_texture_3d,
+			b_sampler,
+			coord,
+			f32(u_fullscreen_quad.mip_level)
+		)
+	);
+}
+",
+}
+`;
