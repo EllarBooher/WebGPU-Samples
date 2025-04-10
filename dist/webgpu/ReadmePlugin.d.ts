@@ -4,9 +4,13 @@ interface ReadmePluginOptions {
     exclude?: string;
 }
 /**
- * Formatting of the markdown READMEs in a style specific to this project.
- * This means handling a subset of embedded html, formatting citations that
- * appear in a certain style, etc.
+ * Processes imported .md READMEs in a style specific to this project, turning
+ * them into HTML that can be embedded. We do various project-specific steps
+ * like handling inline HTML, formatting citations that occur in a specific
+ * hierarchy, and more.
+ *
+ * We inline the HTML assets into the .js modules. The assets come directly from
+ * the package and are sanitized before being serialized, so this is relatively safe.
  *
  * @see {@link https://vite.dev/config/} for how to use this plugin.
  * @returns The Vite {@link PluginOption}.

@@ -1,26 +1,22 @@
-import React2, { memo, useState, useEffect, useRef, useCallback } from "react";
-import { NavLink, Link } from "react-router";
-const __variableDynamicImportRuntimeHelper = (glob, path, segs) => {
-  const v = glob[path];
-  if (v) {
-    return typeof v === "function" ? v() : Promise.resolve(v);
-  }
-  return new Promise((_, reject) => {
-    (typeof queueMicrotask === "function" ? queueMicrotask : setTimeout)(
-      reject.bind(
+import Se, { memo as Xr, useState as Ye, useEffect as je, useRef as he, useCallback as ut } from "react";
+import { NavLink as pr, Link as Jr } from "react-router";
+const Kr = (t, e, a) => {
+  const r = t[e];
+  return r ? typeof r == "function" ? r() : Promise.resolve(r) : new Promise((c, d) => {
+    (typeof queueMicrotask == "function" ? queueMicrotask : setTimeout)(
+      d.bind(
         null,
         new Error(
-          "Unknown variable dynamic import: " + path + (path.split("/").length !== segs ? ". Note that variables only represent file names one level deep." : "")
+          "Unknown variable dynamic import: " + e + (e.split("/").length !== a ? ". Note that variables only represent file names one level deep." : "")
         )
       )
     );
   });
 };
-function getDefaultExportFromCjs(x) {
-  return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
+function vr(t) {
+  return t && t.__esModule && Object.prototype.hasOwnProperty.call(t, "default") ? t.default : t;
 }
-var jsxRuntime = { exports: {} };
-var reactJsxRuntime_production_min = {};
+var qe = { exports: {} }, Pe = {};
 /**
  * @license React
  * react-jsx-runtime.production.min.js
@@ -30,26 +26,21 @@ var reactJsxRuntime_production_min = {};
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var hasRequiredReactJsxRuntime_production_min;
-function requireReactJsxRuntime_production_min() {
-  if (hasRequiredReactJsxRuntime_production_min) return reactJsxRuntime_production_min;
-  hasRequiredReactJsxRuntime_production_min = 1;
-  var f = React2, k = Symbol.for("react.element"), l = Symbol.for("react.fragment"), m = Object.prototype.hasOwnProperty, n = f.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner, p = { key: true, ref: true, __self: true, __source: true };
-  function q(c, a, g) {
-    var b, d = {}, e = null, h = null;
-    void 0 !== g && (e = "" + g);
-    void 0 !== a.key && (e = "" + a.key);
-    void 0 !== a.ref && (h = a.ref);
-    for (b in a) m.call(a, b) && !p.hasOwnProperty(b) && (d[b] = a[b]);
-    if (c && c.defaultProps) for (b in a = c.defaultProps, a) void 0 === d[b] && (d[b] = a[b]);
-    return { $$typeof: k, type: c, key: e, ref: h, props: d, _owner: n.current };
+var kt;
+function Zr() {
+  if (kt) return Pe;
+  kt = 1;
+  var t = Se, e = Symbol.for("react.element"), a = Symbol.for("react.fragment"), r = Object.prototype.hasOwnProperty, c = t.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner, d = { key: !0, ref: !0, __self: !0, __source: !0 };
+  function p(u, o, s) {
+    var l, h = {}, b = null, R = null;
+    s !== void 0 && (b = "" + s), o.key !== void 0 && (b = "" + o.key), o.ref !== void 0 && (R = o.ref);
+    for (l in o) r.call(o, l) && !d.hasOwnProperty(l) && (h[l] = o[l]);
+    if (u && u.defaultProps) for (l in o = u.defaultProps, o) h[l] === void 0 && (h[l] = o[l]);
+    return { $$typeof: e, type: u, key: b, ref: R, props: h, _owner: c.current };
   }
-  reactJsxRuntime_production_min.Fragment = l;
-  reactJsxRuntime_production_min.jsx = q;
-  reactJsxRuntime_production_min.jsxs = q;
-  return reactJsxRuntime_production_min;
+  return Pe.Fragment = a, Pe.jsx = p, Pe.jsxs = p, Pe;
 }
-var reactJsxRuntime_development = {};
+var ke = {};
 /**
  * @license React
  * react-jsx-runtime.development.js
@@ -59,984 +50,652 @@ var reactJsxRuntime_development = {};
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var hasRequiredReactJsxRuntime_development;
-function requireReactJsxRuntime_development() {
-  if (hasRequiredReactJsxRuntime_development) return reactJsxRuntime_development;
-  hasRequiredReactJsxRuntime_development = 1;
-  if (process.env.NODE_ENV !== "production") {
-    (function() {
-      var React = React2;
-      var REACT_ELEMENT_TYPE = Symbol.for("react.element");
-      var REACT_PORTAL_TYPE = Symbol.for("react.portal");
-      var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
-      var REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode");
-      var REACT_PROFILER_TYPE = Symbol.for("react.profiler");
-      var REACT_PROVIDER_TYPE = Symbol.for("react.provider");
-      var REACT_CONTEXT_TYPE = Symbol.for("react.context");
-      var REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref");
-      var REACT_SUSPENSE_TYPE = Symbol.for("react.suspense");
-      var REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list");
-      var REACT_MEMO_TYPE = Symbol.for("react.memo");
-      var REACT_LAZY_TYPE = Symbol.for("react.lazy");
-      var REACT_OFFSCREEN_TYPE = Symbol.for("react.offscreen");
-      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
-      var FAUX_ITERATOR_SYMBOL = "@@iterator";
-      function getIteratorFn(maybeIterable) {
-        if (maybeIterable === null || typeof maybeIterable !== "object") {
-          return null;
-        }
-        var maybeIterator = MAYBE_ITERATOR_SYMBOL && maybeIterable[MAYBE_ITERATOR_SYMBOL] || maybeIterable[FAUX_ITERATOR_SYMBOL];
-        if (typeof maybeIterator === "function") {
-          return maybeIterator;
-        }
+var Dt;
+function Qr() {
+  return Dt || (Dt = 1, process.env.NODE_ENV !== "production" && function() {
+    var t = Se, e = Symbol.for("react.element"), a = Symbol.for("react.portal"), r = Symbol.for("react.fragment"), c = Symbol.for("react.strict_mode"), d = Symbol.for("react.profiler"), p = Symbol.for("react.provider"), u = Symbol.for("react.context"), o = Symbol.for("react.forward_ref"), s = Symbol.for("react.suspense"), l = Symbol.for("react.suspense_list"), h = Symbol.for("react.memo"), b = Symbol.for("react.lazy"), R = Symbol.for("react.offscreen"), w = Symbol.iterator, _ = "@@iterator";
+    function A(n) {
+      if (n === null || typeof n != "object")
         return null;
-      }
-      var ReactSharedInternals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-      function error(format) {
-        {
-          {
-            for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-              args[_key2 - 1] = arguments[_key2];
-            }
-            printWarning("error", format, args);
-          }
-        }
-      }
-      function printWarning(level, format, args) {
-        {
-          var ReactDebugCurrentFrame2 = ReactSharedInternals.ReactDebugCurrentFrame;
-          var stack = ReactDebugCurrentFrame2.getStackAddendum();
-          if (stack !== "") {
-            format += "%s";
-            args = args.concat([stack]);
-          }
-          var argsWithFormat = args.map(function(item) {
-            return String(item);
-          });
-          argsWithFormat.unshift("Warning: " + format);
-          Function.prototype.apply.call(console[level], console, argsWithFormat);
-        }
-      }
-      var enableScopeAPI = false;
-      var enableCacheElement = false;
-      var enableTransitionTracing = false;
-      var enableLegacyHidden = false;
-      var enableDebugTracing = false;
-      var REACT_MODULE_REFERENCE;
+      var m = w && n[w] || n[_];
+      return typeof m == "function" ? m : null;
+    }
+    var g = t.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    function v(n) {
       {
-        REACT_MODULE_REFERENCE = Symbol.for("react.module.reference");
+        for (var m = arguments.length, C = new Array(m > 1 ? m - 1 : 0), P = 1; P < m; P++)
+          C[P - 1] = arguments[P];
+        S("error", n, C);
       }
-      function isValidElementType(type) {
-        if (typeof type === "string" || typeof type === "function") {
-          return true;
-        }
-        if (type === REACT_FRAGMENT_TYPE || type === REACT_PROFILER_TYPE || enableDebugTracing || type === REACT_STRICT_MODE_TYPE || type === REACT_SUSPENSE_TYPE || type === REACT_SUSPENSE_LIST_TYPE || enableLegacyHidden || type === REACT_OFFSCREEN_TYPE || enableScopeAPI || enableCacheElement || enableTransitionTracing) {
-          return true;
-        }
-        if (typeof type === "object" && type !== null) {
-          if (type.$$typeof === REACT_LAZY_TYPE || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || // This needs to include all possible module reference object
-          // types supported by any Flight configuration anywhere since
-          // we don't know which Flight build this will end up being used
-          // with.
-          type.$$typeof === REACT_MODULE_REFERENCE || type.getModuleId !== void 0) {
-            return true;
-          }
-        }
-        return false;
+    }
+    function S(n, m, C) {
+      {
+        var P = g.ReactDebugCurrentFrame, Y = P.getStackAddendum();
+        Y !== "" && (m += "%s", C = C.concat([Y]));
+        var J = C.map(function(B) {
+          return String(B);
+        });
+        J.unshift("Warning: " + m), Function.prototype.apply.call(console[n], console, J);
       }
-      function getWrappedName(outerType, innerType, wrapperName) {
-        var displayName = outerType.displayName;
-        if (displayName) {
-          return displayName;
-        }
-        var functionName = innerType.displayName || innerType.name || "";
-        return functionName !== "" ? wrapperName + "(" + functionName + ")" : wrapperName;
-      }
-      function getContextName(type) {
-        return type.displayName || "Context";
-      }
-      function getComponentNameFromType(type) {
-        if (type == null) {
-          return null;
-        }
-        {
-          if (typeof type.tag === "number") {
-            error("Received an unexpected object in getComponentNameFromType(). This is likely a bug in React. Please file an issue.");
-          }
-        }
-        if (typeof type === "function") {
-          return type.displayName || type.name || null;
-        }
-        if (typeof type === "string") {
-          return type;
-        }
-        switch (type) {
-          case REACT_FRAGMENT_TYPE:
-            return "Fragment";
-          case REACT_PORTAL_TYPE:
-            return "Portal";
-          case REACT_PROFILER_TYPE:
-            return "Profiler";
-          case REACT_STRICT_MODE_TYPE:
-            return "StrictMode";
-          case REACT_SUSPENSE_TYPE:
-            return "Suspense";
-          case REACT_SUSPENSE_LIST_TYPE:
-            return "SuspenseList";
-        }
-        if (typeof type === "object") {
-          switch (type.$$typeof) {
-            case REACT_CONTEXT_TYPE:
-              var context = type;
-              return getContextName(context) + ".Consumer";
-            case REACT_PROVIDER_TYPE:
-              var provider = type;
-              return getContextName(provider._context) + ".Provider";
-            case REACT_FORWARD_REF_TYPE:
-              return getWrappedName(type, type.render, "ForwardRef");
-            case REACT_MEMO_TYPE:
-              var outerName = type.displayName || null;
-              if (outerName !== null) {
-                return outerName;
-              }
-              return getComponentNameFromType(type.type) || "Memo";
-            case REACT_LAZY_TYPE: {
-              var lazyComponent = type;
-              var payload = lazyComponent._payload;
-              var init = lazyComponent._init;
-              try {
-                return getComponentNameFromType(init(payload));
-              } catch (x) {
-                return null;
-              }
-            }
-          }
-        }
+    }
+    var D = !1, i = !1, f = !1, y = !1, k = !1, F;
+    F = Symbol.for("react.module.reference");
+    function K(n) {
+      return !!(typeof n == "string" || typeof n == "function" || n === r || n === d || k || n === c || n === s || n === l || y || n === R || D || i || f || typeof n == "object" && n !== null && (n.$$typeof === b || n.$$typeof === h || n.$$typeof === p || n.$$typeof === u || n.$$typeof === o || // This needs to include all possible module reference object
+      // types supported by any Flight configuration anywhere since
+      // we don't know which Flight build this will end up being used
+      // with.
+      n.$$typeof === F || n.getModuleId !== void 0));
+    }
+    function re(n, m, C) {
+      var P = n.displayName;
+      if (P)
+        return P;
+      var Y = m.displayName || m.name || "";
+      return Y !== "" ? C + "(" + Y + ")" : C;
+    }
+    function se(n) {
+      return n.displayName || "Context";
+    }
+    function I(n) {
+      if (n == null)
         return null;
+      if (typeof n.tag == "number" && v("Received an unexpected object in getComponentNameFromType(). This is likely a bug in React. Please file an issue."), typeof n == "function")
+        return n.displayName || n.name || null;
+      if (typeof n == "string")
+        return n;
+      switch (n) {
+        case r:
+          return "Fragment";
+        case a:
+          return "Portal";
+        case d:
+          return "Profiler";
+        case c:
+          return "StrictMode";
+        case s:
+          return "Suspense";
+        case l:
+          return "SuspenseList";
       }
-      var assign = Object.assign;
-      var disabledDepth = 0;
-      var prevLog;
-      var prevInfo;
-      var prevWarn;
-      var prevError;
-      var prevGroup;
-      var prevGroupCollapsed;
-      var prevGroupEnd;
-      function disabledLog() {
-      }
-      disabledLog.__reactDisabledLog = true;
-      function disableLogs() {
-        {
-          if (disabledDepth === 0) {
-            prevLog = console.log;
-            prevInfo = console.info;
-            prevWarn = console.warn;
-            prevError = console.error;
-            prevGroup = console.group;
-            prevGroupCollapsed = console.groupCollapsed;
-            prevGroupEnd = console.groupEnd;
-            var props = {
-              configurable: true,
-              enumerable: true,
-              value: disabledLog,
-              writable: true
-            };
-            Object.defineProperties(console, {
-              info: props,
-              log: props,
-              warn: props,
-              error: props,
-              group: props,
-              groupCollapsed: props,
-              groupEnd: props
-            });
-          }
-          disabledDepth++;
-        }
-      }
-      function reenableLogs() {
-        {
-          disabledDepth--;
-          if (disabledDepth === 0) {
-            var props = {
-              configurable: true,
-              enumerable: true,
-              writable: true
-            };
-            Object.defineProperties(console, {
-              log: assign({}, props, {
-                value: prevLog
-              }),
-              info: assign({}, props, {
-                value: prevInfo
-              }),
-              warn: assign({}, props, {
-                value: prevWarn
-              }),
-              error: assign({}, props, {
-                value: prevError
-              }),
-              group: assign({}, props, {
-                value: prevGroup
-              }),
-              groupCollapsed: assign({}, props, {
-                value: prevGroupCollapsed
-              }),
-              groupEnd: assign({}, props, {
-                value: prevGroupEnd
-              })
-            });
-          }
-          if (disabledDepth < 0) {
-            error("disabledDepth fell below zero. This is a bug in React. Please file an issue.");
-          }
-        }
-      }
-      var ReactCurrentDispatcher = ReactSharedInternals.ReactCurrentDispatcher;
-      var prefix;
-      function describeBuiltInComponentFrame(name, source, ownerFn) {
-        {
-          if (prefix === void 0) {
+      if (typeof n == "object")
+        switch (n.$$typeof) {
+          case u:
+            var m = n;
+            return se(m) + ".Consumer";
+          case p:
+            var C = n;
+            return se(C._context) + ".Provider";
+          case o:
+            return re(n, n.render, "ForwardRef");
+          case h:
+            var P = n.displayName || null;
+            return P !== null ? P : I(n.type) || "Memo";
+          case b: {
+            var Y = n, J = Y._payload, B = Y._init;
             try {
-              throw Error();
-            } catch (x) {
-              var match = x.stack.trim().match(/\n( *(at )?)/);
-              prefix = match && match[1] || "";
+              return I(B(J));
+            } catch {
+              return null;
             }
           }
-          return "\n" + prefix + name;
         }
-      }
-      var reentry = false;
-      var componentFrameCache;
+      return null;
+    }
+    var O = Object.assign, Z = 0, ne, de, ve, Ee, E, x, H;
+    function N() {
+    }
+    N.__reactDisabledLog = !0;
+    function $() {
       {
-        var PossiblyWeakMap = typeof WeakMap === "function" ? WeakMap : Map;
-        componentFrameCache = new PossiblyWeakMap();
+        if (Z === 0) {
+          ne = console.log, de = console.info, ve = console.warn, Ee = console.error, E = console.group, x = console.groupCollapsed, H = console.groupEnd;
+          var n = {
+            configurable: !0,
+            enumerable: !0,
+            value: N,
+            writable: !0
+          };
+          Object.defineProperties(console, {
+            info: n,
+            log: n,
+            warn: n,
+            error: n,
+            group: n,
+            groupCollapsed: n,
+            groupEnd: n
+          });
+        }
+        Z++;
       }
-      function describeNativeComponentFrame(fn, construct) {
-        if (!fn || reentry) {
-          return "";
+    }
+    function z() {
+      {
+        if (Z--, Z === 0) {
+          var n = {
+            configurable: !0,
+            enumerable: !0,
+            writable: !0
+          };
+          Object.defineProperties(console, {
+            log: O({}, n, {
+              value: ne
+            }),
+            info: O({}, n, {
+              value: de
+            }),
+            warn: O({}, n, {
+              value: ve
+            }),
+            error: O({}, n, {
+              value: Ee
+            }),
+            group: O({}, n, {
+              value: E
+            }),
+            groupCollapsed: O({}, n, {
+              value: x
+            }),
+            groupEnd: O({}, n, {
+              value: H
+            })
+          });
         }
-        {
-          var frame = componentFrameCache.get(fn);
-          if (frame !== void 0) {
-            return frame;
+        Z < 0 && v("disabledDepth fell below zero. This is a bug in React. Please file an issue.");
+      }
+    }
+    var L = g.ReactCurrentDispatcher, j;
+    function q(n, m, C) {
+      {
+        if (j === void 0)
+          try {
+            throw Error();
+          } catch (Y) {
+            var P = Y.stack.trim().match(/\n( *(at )?)/);
+            j = P && P[1] || "";
           }
-        }
-        var control;
-        reentry = true;
-        var previousPrepareStackTrace = Error.prepareStackTrace;
-        Error.prepareStackTrace = void 0;
-        var previousDispatcher;
-        {
-          previousDispatcher = ReactCurrentDispatcher.current;
-          ReactCurrentDispatcher.current = null;
-          disableLogs();
-        }
-        try {
-          if (construct) {
-            var Fake = function() {
+        return `
+` + j + n;
+      }
+    }
+    var G = !1, U;
+    {
+      var ie = typeof WeakMap == "function" ? WeakMap : Map;
+      U = new ie();
+    }
+    function T(n, m) {
+      if (!n || G)
+        return "";
+      {
+        var C = U.get(n);
+        if (C !== void 0)
+          return C;
+      }
+      var P;
+      G = !0;
+      var Y = Error.prepareStackTrace;
+      Error.prepareStackTrace = void 0;
+      var J;
+      J = L.current, L.current = null, $();
+      try {
+        if (m) {
+          var B = function() {
+            throw Error();
+          };
+          if (Object.defineProperty(B.prototype, "props", {
+            set: function() {
               throw Error();
-            };
-            Object.defineProperty(Fake.prototype, "props", {
-              set: function() {
-                throw Error();
-              }
-            });
-            if (typeof Reflect === "object" && Reflect.construct) {
-              try {
-                Reflect.construct(Fake, []);
-              } catch (x) {
-                control = x;
-              }
-              Reflect.construct(fn, [], Fake);
-            } else {
-              try {
-                Fake.call();
-              } catch (x) {
-                control = x;
-              }
-              fn.call(Fake.prototype);
             }
+          }), typeof Reflect == "object" && Reflect.construct) {
+            try {
+              Reflect.construct(B, []);
+            } catch (oe) {
+              P = oe;
+            }
+            Reflect.construct(n, [], B);
           } else {
             try {
-              throw Error();
-            } catch (x) {
-              control = x;
+              B.call();
+            } catch (oe) {
+              P = oe;
             }
-            fn();
+            n.call(B.prototype);
           }
-        } catch (sample) {
-          if (sample && control && typeof sample.stack === "string") {
-            var sampleLines = sample.stack.split("\n");
-            var controlLines = control.stack.split("\n");
-            var s = sampleLines.length - 1;
-            var c = controlLines.length - 1;
-            while (s >= 1 && c >= 0 && sampleLines[s] !== controlLines[c]) {
-              c--;
+        } else {
+          try {
+            throw Error();
+          } catch (oe) {
+            P = oe;
+          }
+          n();
+        }
+      } catch (oe) {
+        if (oe && P && typeof oe.stack == "string") {
+          for (var V = oe.stack.split(`
+`), ae = P.stack.split(`
+`), Q = V.length - 1, ee = ae.length - 1; Q >= 1 && ee >= 0 && V[Q] !== ae[ee]; )
+            ee--;
+          for (; Q >= 1 && ee >= 0; Q--, ee--)
+            if (V[Q] !== ae[ee]) {
+              if (Q !== 1 || ee !== 1)
+                do
+                  if (Q--, ee--, ee < 0 || V[Q] !== ae[ee]) {
+                    var ue = `
+` + V[Q].replace(" at new ", " at ");
+                    return n.displayName && ue.includes("<anonymous>") && (ue = ue.replace("<anonymous>", n.displayName)), typeof n == "function" && U.set(n, ue), ue;
+                  }
+                while (Q >= 1 && ee >= 0);
+              break;
             }
-            for (; s >= 1 && c >= 0; s--, c--) {
-              if (sampleLines[s] !== controlLines[c]) {
-                if (s !== 1 || c !== 1) {
-                  do {
-                    s--;
-                    c--;
-                    if (c < 0 || sampleLines[s] !== controlLines[c]) {
-                      var _frame = "\n" + sampleLines[s].replace(" at new ", " at ");
-                      if (fn.displayName && _frame.includes("<anonymous>")) {
-                        _frame = _frame.replace("<anonymous>", fn.displayName);
-                      }
-                      {
-                        if (typeof fn === "function") {
-                          componentFrameCache.set(fn, _frame);
-                        }
-                      }
-                      return _frame;
-                    }
-                  } while (s >= 1 && c >= 0);
-                }
-                break;
+        }
+      } finally {
+        G = !1, L.current = J, z(), Error.prepareStackTrace = Y;
+      }
+      var we = n ? n.displayName || n.name : "", ge = we ? q(we) : "";
+      return typeof n == "function" && U.set(n, ge), ge;
+    }
+    function le(n, m, C) {
+      return T(n, !1);
+    }
+    function _e(n) {
+      var m = n.prototype;
+      return !!(m && m.isReactComponent);
+    }
+    function me(n, m, C) {
+      if (n == null)
+        return "";
+      if (typeof n == "function")
+        return T(n, _e(n));
+      if (typeof n == "string")
+        return q(n);
+      switch (n) {
+        case s:
+          return q("Suspense");
+        case l:
+          return q("SuspenseList");
+      }
+      if (typeof n == "object")
+        switch (n.$$typeof) {
+          case o:
+            return le(n.render);
+          case h:
+            return me(n.type, m, C);
+          case b: {
+            var P = n, Y = P._payload, J = P._init;
+            try {
+              return me(J(Y), m, C);
+            } catch {
+            }
+          }
+        }
+      return "";
+    }
+    var Oe = Object.prototype.hasOwnProperty, gt = {}, yt = g.ReactDebugCurrentFrame;
+    function He(n) {
+      if (n) {
+        var m = n._owner, C = me(n.type, n._source, m ? m.type : null);
+        yt.setExtraStackFrame(C);
+      } else
+        yt.setExtraStackFrame(null);
+    }
+    function xr(n, m, C, P, Y) {
+      {
+        var J = Function.call.bind(Oe);
+        for (var B in n)
+          if (J(n, B)) {
+            var V = void 0;
+            try {
+              if (typeof n[B] != "function") {
+                var ae = Error((P || "React class") + ": " + C + " type `" + B + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + typeof n[B] + "`.This often happens because of typos such as `PropTypes.function` instead of `PropTypes.func`.");
+                throw ae.name = "Invariant Violation", ae;
               }
+              V = n[B](m, B, P, C, null, "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED");
+            } catch (Q) {
+              V = Q;
             }
+            V && !(V instanceof Error) && (He(Y), v("%s: type specification of %s `%s` is invalid; the type checker function must return `null` or an `Error` but returned a %s. You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument).", P || "React class", C, B, typeof V), He(null)), V instanceof Error && !(V.message in gt) && (gt[V.message] = !0, He(Y), v("Failed %s type: %s", C, V.message), He(null));
           }
-        } finally {
-          reentry = false;
-          {
-            ReactCurrentDispatcher.current = previousDispatcher;
-            reenableLogs();
-          }
-          Error.prepareStackTrace = previousPrepareStackTrace;
-        }
-        var name = fn ? fn.displayName || fn.name : "";
-        var syntheticFrame = name ? describeBuiltInComponentFrame(name) : "";
-        {
-          if (typeof fn === "function") {
-            componentFrameCache.set(fn, syntheticFrame);
-          }
-        }
-        return syntheticFrame;
       }
-      function describeFunctionComponentFrame(fn, source, ownerFn) {
-        {
-          return describeNativeComponentFrame(fn, false);
-        }
+    }
+    var Sr = Array.isArray;
+    function We(n) {
+      return Sr(n);
+    }
+    function Or(n) {
+      {
+        var m = typeof Symbol == "function" && Symbol.toStringTag, C = m && n[Symbol.toStringTag] || n.constructor.name || "Object";
+        return C;
       }
-      function shouldConstruct(Component) {
-        var prototype = Component.prototype;
-        return !!(prototype && prototype.isReactComponent);
+    }
+    function Pr(n) {
+      try {
+        return bt(n), !1;
+      } catch {
+        return !0;
       }
-      function describeUnknownElementTypeFrameInDEV(type, source, ownerFn) {
-        if (type == null) {
-          return "";
+    }
+    function bt(n) {
+      return "" + n;
+    }
+    function Et(n) {
+      if (Pr(n))
+        return v("The provided key is an unsupported type %s. This value must be coerced to a string before before using it here.", Or(n)), bt(n);
+    }
+    var _t = g.ReactCurrentOwner, kr = {
+      key: !0,
+      ref: !0,
+      __self: !0,
+      __source: !0
+    }, At, wt;
+    function Dr(n) {
+      if (Oe.call(n, "ref")) {
+        var m = Object.getOwnPropertyDescriptor(n, "ref").get;
+        if (m && m.isReactWarning)
+          return !1;
+      }
+      return n.ref !== void 0;
+    }
+    function Ir(n) {
+      if (Oe.call(n, "key")) {
+        var m = Object.getOwnPropertyDescriptor(n, "key").get;
+        if (m && m.isReactWarning)
+          return !1;
+      }
+      return n.key !== void 0;
+    }
+    function $r(n, m) {
+      typeof n.ref == "string" && _t.current;
+    }
+    function Lr(n, m) {
+      {
+        var C = function() {
+          At || (At = !0, v("%s: `key` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://reactjs.org/link/special-props)", m));
+        };
+        C.isReactWarning = !0, Object.defineProperty(n, "key", {
+          get: C,
+          configurable: !0
+        });
+      }
+    }
+    function Mr(n, m) {
+      {
+        var C = function() {
+          wt || (wt = !0, v("%s: `ref` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://reactjs.org/link/special-props)", m));
+        };
+        C.isReactWarning = !0, Object.defineProperty(n, "ref", {
+          get: C,
+          configurable: !0
+        });
+      }
+    }
+    var jr = function(n, m, C, P, Y, J, B) {
+      var V = {
+        // This tag allows us to uniquely identify this as a React Element
+        $$typeof: e,
+        // Built-in properties that belong on the element
+        type: n,
+        key: m,
+        ref: C,
+        props: B,
+        // Record the component responsible for creating this element.
+        _owner: J
+      };
+      return V._store = {}, Object.defineProperty(V._store, "validated", {
+        configurable: !1,
+        enumerable: !1,
+        writable: !0,
+        value: !1
+      }), Object.defineProperty(V, "_self", {
+        configurable: !1,
+        enumerable: !1,
+        writable: !1,
+        value: P
+      }), Object.defineProperty(V, "_source", {
+        configurable: !1,
+        enumerable: !1,
+        writable: !1,
+        value: Y
+      }), Object.freeze && (Object.freeze(V.props), Object.freeze(V)), V;
+    };
+    function Fr(n, m, C, P, Y) {
+      {
+        var J, B = {}, V = null, ae = null;
+        C !== void 0 && (Et(C), V = "" + C), Ir(m) && (Et(m.key), V = "" + m.key), Dr(m) && (ae = m.ref, $r(m, Y));
+        for (J in m)
+          Oe.call(m, J) && !kr.hasOwnProperty(J) && (B[J] = m[J]);
+        if (n && n.defaultProps) {
+          var Q = n.defaultProps;
+          for (J in Q)
+            B[J] === void 0 && (B[J] = Q[J]);
         }
-        if (typeof type === "function") {
-          {
-            return describeNativeComponentFrame(type, shouldConstruct(type));
-          }
+        if (V || ae) {
+          var ee = typeof n == "function" ? n.displayName || n.name || "Unknown" : n;
+          V && Lr(B, ee), ae && Mr(B, ee);
         }
-        if (typeof type === "string") {
-          return describeBuiltInComponentFrame(type);
-        }
-        switch (type) {
-          case REACT_SUSPENSE_TYPE:
-            return describeBuiltInComponentFrame("Suspense");
-          case REACT_SUSPENSE_LIST_TYPE:
-            return describeBuiltInComponentFrame("SuspenseList");
-        }
-        if (typeof type === "object") {
-          switch (type.$$typeof) {
-            case REACT_FORWARD_REF_TYPE:
-              return describeFunctionComponentFrame(type.render);
-            case REACT_MEMO_TYPE:
-              return describeUnknownElementTypeFrameInDEV(type.type, source, ownerFn);
-            case REACT_LAZY_TYPE: {
-              var lazyComponent = type;
-              var payload = lazyComponent._payload;
-              var init = lazyComponent._init;
-              try {
-                return describeUnknownElementTypeFrameInDEV(init(payload), source, ownerFn);
-              } catch (x) {
-              }
-            }
-          }
+        return jr(n, V, ae, Y, P, _t.current, B);
+      }
+    }
+    var Xe = g.ReactCurrentOwner, Tt = g.ReactDebugCurrentFrame;
+    function Ae(n) {
+      if (n) {
+        var m = n._owner, C = me(n.type, n._source, m ? m.type : null);
+        Tt.setExtraStackFrame(C);
+      } else
+        Tt.setExtraStackFrame(null);
+    }
+    var Je;
+    Je = !1;
+    function Ke(n) {
+      return typeof n == "object" && n !== null && n.$$typeof === e;
+    }
+    function Ct() {
+      {
+        if (Xe.current) {
+          var n = I(Xe.current.type);
+          if (n)
+            return `
+
+Check the render method of \`` + n + "`.";
         }
         return "";
       }
-      var hasOwnProperty = Object.prototype.hasOwnProperty;
-      var loggedTypeFailures = {};
-      var ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
-      function setCurrentlyValidatingElement(element) {
-        {
-          if (element) {
-            var owner = element._owner;
-            var stack = describeUnknownElementTypeFrameInDEV(element.type, element._source, owner ? owner.type : null);
-            ReactDebugCurrentFrame.setExtraStackFrame(stack);
-          } else {
-            ReactDebugCurrentFrame.setExtraStackFrame(null);
-          }
-        }
-      }
-      function checkPropTypes(typeSpecs, values, location, componentName, element) {
-        {
-          var has2 = Function.call.bind(hasOwnProperty);
-          for (var typeSpecName in typeSpecs) {
-            if (has2(typeSpecs, typeSpecName)) {
-              var error$1 = void 0;
-              try {
-                if (typeof typeSpecs[typeSpecName] !== "function") {
-                  var err = Error((componentName || "React class") + ": " + location + " type `" + typeSpecName + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + typeof typeSpecs[typeSpecName] + "`.This often happens because of typos such as `PropTypes.function` instead of `PropTypes.func`.");
-                  err.name = "Invariant Violation";
-                  throw err;
-                }
-                error$1 = typeSpecs[typeSpecName](values, typeSpecName, componentName, location, null, "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED");
-              } catch (ex) {
-                error$1 = ex;
-              }
-              if (error$1 && !(error$1 instanceof Error)) {
-                setCurrentlyValidatingElement(element);
-                error("%s: type specification of %s `%s` is invalid; the type checker function must return `null` or an `Error` but returned a %s. You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument).", componentName || "React class", location, typeSpecName, typeof error$1);
-                setCurrentlyValidatingElement(null);
-              }
-              if (error$1 instanceof Error && !(error$1.message in loggedTypeFailures)) {
-                loggedTypeFailures[error$1.message] = true;
-                setCurrentlyValidatingElement(element);
-                error("Failed %s type: %s", location, error$1.message);
-                setCurrentlyValidatingElement(null);
-              }
-            }
-          }
-        }
-      }
-      var isArrayImpl = Array.isArray;
-      function isArray(a) {
-        return isArrayImpl(a);
-      }
-      function typeName(value) {
-        {
-          var hasToStringTag = typeof Symbol === "function" && Symbol.toStringTag;
-          var type = hasToStringTag && value[Symbol.toStringTag] || value.constructor.name || "Object";
-          return type;
-        }
-      }
-      function willCoercionThrow(value) {
-        {
-          try {
-            testStringCoercion(value);
-            return false;
-          } catch (e) {
-            return true;
-          }
-        }
-      }
-      function testStringCoercion(value) {
-        return "" + value;
-      }
-      function checkKeyStringCoercion(value) {
-        {
-          if (willCoercionThrow(value)) {
-            error("The provided key is an unsupported type %s. This value must be coerced to a string before before using it here.", typeName(value));
-            return testStringCoercion(value);
-          }
-        }
-      }
-      var ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
-      var RESERVED_PROPS = {
-        key: true,
-        ref: true,
-        __self: true,
-        __source: true
-      };
-      var specialPropKeyWarningShown;
-      var specialPropRefWarningShown;
-      function hasValidRef(config) {
-        {
-          if (hasOwnProperty.call(config, "ref")) {
-            var getter = Object.getOwnPropertyDescriptor(config, "ref").get;
-            if (getter && getter.isReactWarning) {
-              return false;
-            }
-          }
-        }
-        return config.ref !== void 0;
-      }
-      function hasValidKey(config) {
-        {
-          if (hasOwnProperty.call(config, "key")) {
-            var getter = Object.getOwnPropertyDescriptor(config, "key").get;
-            if (getter && getter.isReactWarning) {
-              return false;
-            }
-          }
-        }
-        return config.key !== void 0;
-      }
-      function warnIfStringRefCannotBeAutoConverted(config, self) {
-        {
-          if (typeof config.ref === "string" && ReactCurrentOwner.current && self) ;
-        }
-      }
-      function defineKeyPropWarningGetter(props, displayName) {
-        {
-          var warnAboutAccessingKey = function() {
-            if (!specialPropKeyWarningShown) {
-              specialPropKeyWarningShown = true;
-              error("%s: `key` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://reactjs.org/link/special-props)", displayName);
-            }
-          };
-          warnAboutAccessingKey.isReactWarning = true;
-          Object.defineProperty(props, "key", {
-            get: warnAboutAccessingKey,
-            configurable: true
-          });
-        }
-      }
-      function defineRefPropWarningGetter(props, displayName) {
-        {
-          var warnAboutAccessingRef = function() {
-            if (!specialPropRefWarningShown) {
-              specialPropRefWarningShown = true;
-              error("%s: `ref` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://reactjs.org/link/special-props)", displayName);
-            }
-          };
-          warnAboutAccessingRef.isReactWarning = true;
-          Object.defineProperty(props, "ref", {
-            get: warnAboutAccessingRef,
-            configurable: true
-          });
-        }
-      }
-      var ReactElement = function(type, key, ref, self, source, owner, props) {
-        var element = {
-          // This tag allows us to uniquely identify this as a React Element
-          $$typeof: REACT_ELEMENT_TYPE,
-          // Built-in properties that belong on the element
-          type,
-          key,
-          ref,
-          props,
-          // Record the component responsible for creating this element.
-          _owner: owner
-        };
-        {
-          element._store = {};
-          Object.defineProperty(element._store, "validated", {
-            configurable: false,
-            enumerable: false,
-            writable: true,
-            value: false
-          });
-          Object.defineProperty(element, "_self", {
-            configurable: false,
-            enumerable: false,
-            writable: false,
-            value: self
-          });
-          Object.defineProperty(element, "_source", {
-            configurable: false,
-            enumerable: false,
-            writable: false,
-            value: source
-          });
-          if (Object.freeze) {
-            Object.freeze(element.props);
-            Object.freeze(element);
-          }
-        }
-        return element;
-      };
-      function jsxDEV(type, config, maybeKey, source, self) {
-        {
-          var propName;
-          var props = {};
-          var key = null;
-          var ref = null;
-          if (maybeKey !== void 0) {
-            {
-              checkKeyStringCoercion(maybeKey);
-            }
-            key = "" + maybeKey;
-          }
-          if (hasValidKey(config)) {
-            {
-              checkKeyStringCoercion(config.key);
-            }
-            key = "" + config.key;
-          }
-          if (hasValidRef(config)) {
-            ref = config.ref;
-            warnIfStringRefCannotBeAutoConverted(config, self);
-          }
-          for (propName in config) {
-            if (hasOwnProperty.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
-              props[propName] = config[propName];
-            }
-          }
-          if (type && type.defaultProps) {
-            var defaultProps = type.defaultProps;
-            for (propName in defaultProps) {
-              if (props[propName] === void 0) {
-                props[propName] = defaultProps[propName];
-              }
-            }
-          }
-          if (key || ref) {
-            var displayName = typeof type === "function" ? type.displayName || type.name || "Unknown" : type;
-            if (key) {
-              defineKeyPropWarningGetter(props, displayName);
-            }
-            if (ref) {
-              defineRefPropWarningGetter(props, displayName);
-            }
-          }
-          return ReactElement(type, key, ref, self, source, ReactCurrentOwner.current, props);
-        }
-      }
-      var ReactCurrentOwner$1 = ReactSharedInternals.ReactCurrentOwner;
-      var ReactDebugCurrentFrame$1 = ReactSharedInternals.ReactDebugCurrentFrame;
-      function setCurrentlyValidatingElement$1(element) {
-        {
-          if (element) {
-            var owner = element._owner;
-            var stack = describeUnknownElementTypeFrameInDEV(element.type, element._source, owner ? owner.type : null);
-            ReactDebugCurrentFrame$1.setExtraStackFrame(stack);
-          } else {
-            ReactDebugCurrentFrame$1.setExtraStackFrame(null);
-          }
-        }
-      }
-      var propTypesMisspellWarningShown;
-      {
-        propTypesMisspellWarningShown = false;
-      }
-      function isValidElement(object) {
-        {
-          return typeof object === "object" && object !== null && object.$$typeof === REACT_ELEMENT_TYPE;
-        }
-      }
-      function getDeclarationErrorAddendum() {
-        {
-          if (ReactCurrentOwner$1.current) {
-            var name = getComponentNameFromType(ReactCurrentOwner$1.current.type);
-            if (name) {
-              return "\n\nCheck the render method of `" + name + "`.";
-            }
-          }
-          return "";
-        }
-      }
-      function getSourceInfoErrorAddendum(source) {
-        {
-          return "";
-        }
-      }
-      var ownerHasKeyUseWarning = {};
-      function getCurrentComponentErrorInfo(parentType) {
-        {
-          var info = getDeclarationErrorAddendum();
-          if (!info) {
-            var parentName = typeof parentType === "string" ? parentType : parentType.displayName || parentType.name;
-            if (parentName) {
-              info = "\n\nCheck the top-level render call using <" + parentName + ">.";
-            }
-          }
-          return info;
-        }
-      }
-      function validateExplicitKey(element, parentType) {
-        {
-          if (!element._store || element._store.validated || element.key != null) {
-            return;
-          }
-          element._store.validated = true;
-          var currentComponentErrorInfo = getCurrentComponentErrorInfo(parentType);
-          if (ownerHasKeyUseWarning[currentComponentErrorInfo]) {
-            return;
-          }
-          ownerHasKeyUseWarning[currentComponentErrorInfo] = true;
-          var childOwner = "";
-          if (element && element._owner && element._owner !== ReactCurrentOwner$1.current) {
-            childOwner = " It was passed a child from " + getComponentNameFromType(element._owner.type) + ".";
-          }
-          setCurrentlyValidatingElement$1(element);
-          error('Each child in a list should have a unique "key" prop.%s%s See https://reactjs.org/link/warning-keys for more information.', currentComponentErrorInfo, childOwner);
-          setCurrentlyValidatingElement$1(null);
-        }
-      }
-      function validateChildKeys(node2, parentType) {
-        {
-          if (typeof node2 !== "object") {
-            return;
-          }
-          if (isArray(node2)) {
-            for (var i = 0; i < node2.length; i++) {
-              var child = node2[i];
-              if (isValidElement(child)) {
-                validateExplicitKey(child, parentType);
-              }
-            }
-          } else if (isValidElement(node2)) {
-            if (node2._store) {
-              node2._store.validated = true;
-            }
-          } else if (node2) {
-            var iteratorFn = getIteratorFn(node2);
-            if (typeof iteratorFn === "function") {
-              if (iteratorFn !== node2.entries) {
-                var iterator = iteratorFn.call(node2);
-                var step;
-                while (!(step = iterator.next()).done) {
-                  if (isValidElement(step.value)) {
-                    validateExplicitKey(step.value, parentType);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      function validatePropTypes(element) {
-        {
-          var type = element.type;
-          if (type === null || type === void 0 || typeof type === "string") {
-            return;
-          }
-          var propTypes;
-          if (typeof type === "function") {
-            propTypes = type.propTypes;
-          } else if (typeof type === "object" && (type.$$typeof === REACT_FORWARD_REF_TYPE || // Note: Memo only checks outer props here.
-          // Inner props are checked in the reconciler.
-          type.$$typeof === REACT_MEMO_TYPE)) {
-            propTypes = type.propTypes;
-          } else {
-            return;
-          }
-          if (propTypes) {
-            var name = getComponentNameFromType(type);
-            checkPropTypes(propTypes, element.props, "prop", name, element);
-          } else if (type.PropTypes !== void 0 && !propTypesMisspellWarningShown) {
-            propTypesMisspellWarningShown = true;
-            var _name = getComponentNameFromType(type);
-            error("Component %s declared `PropTypes` instead of `propTypes`. Did you misspell the property assignment?", _name || "Unknown");
-          }
-          if (typeof type.getDefaultProps === "function" && !type.getDefaultProps.isReactClassApproved) {
-            error("getDefaultProps is only used on classic React.createClass definitions. Use a static property named `defaultProps` instead.");
-          }
-        }
-      }
-      function validateFragmentProps(fragment) {
-        {
-          var keys = Object.keys(fragment.props);
-          for (var i = 0; i < keys.length; i++) {
-            var key = keys[i];
-            if (key !== "children" && key !== "key") {
-              setCurrentlyValidatingElement$1(fragment);
-              error("Invalid prop `%s` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.", key);
-              setCurrentlyValidatingElement$1(null);
-              break;
-            }
-          }
-          if (fragment.ref !== null) {
-            setCurrentlyValidatingElement$1(fragment);
-            error("Invalid attribute `ref` supplied to `React.Fragment`.");
-            setCurrentlyValidatingElement$1(null);
-          }
-        }
-      }
-      var didWarnAboutKeySpread = {};
-      function jsxWithValidation(type, props, key, isStaticChildren, source, self) {
-        {
-          var validType = isValidElementType(type);
-          if (!validType) {
-            var info = "";
-            if (type === void 0 || typeof type === "object" && type !== null && Object.keys(type).length === 0) {
-              info += " You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.";
-            }
-            var sourceInfo = getSourceInfoErrorAddendum();
-            if (sourceInfo) {
-              info += sourceInfo;
-            } else {
-              info += getDeclarationErrorAddendum();
-            }
-            var typeString;
-            if (type === null) {
-              typeString = "null";
-            } else if (isArray(type)) {
-              typeString = "array";
-            } else if (type !== void 0 && type.$$typeof === REACT_ELEMENT_TYPE) {
-              typeString = "<" + (getComponentNameFromType(type.type) || "Unknown") + " />";
-              info = " Did you accidentally export a JSX literal instead of a component?";
-            } else {
-              typeString = typeof type;
-            }
-            error("React.jsx: type is invalid -- expected a string (for built-in components) or a class/function (for composite components) but got: %s.%s", typeString, info);
-          }
-          var element = jsxDEV(type, props, key, source, self);
-          if (element == null) {
-            return element;
-          }
-          if (validType) {
-            var children = props.children;
-            if (children !== void 0) {
-              if (isStaticChildren) {
-                if (isArray(children)) {
-                  for (var i = 0; i < children.length; i++) {
-                    validateChildKeys(children[i], type);
-                  }
-                  if (Object.freeze) {
-                    Object.freeze(children);
-                  }
-                } else {
-                  error("React.jsx: Static children should always be an array. You are likely explicitly calling React.jsxs or React.jsxDEV. Use the Babel transform instead.");
-                }
-              } else {
-                validateChildKeys(children, type);
-              }
-            }
-          }
-          {
-            if (hasOwnProperty.call(props, "key")) {
-              var componentName = getComponentNameFromType(type);
-              var keys = Object.keys(props).filter(function(k) {
-                return k !== "key";
-              });
-              var beforeExample = keys.length > 0 ? "{key: someKey, " + keys.join(": ..., ") + ": ...}" : "{key: someKey}";
-              if (!didWarnAboutKeySpread[componentName + beforeExample]) {
-                var afterExample = keys.length > 0 ? "{" + keys.join(": ..., ") + ": ...}" : "{}";
-                error('A props object containing a "key" prop is being spread into JSX:\n  let props = %s;\n  <%s {...props} />\nReact keys must be passed directly to JSX without using spread:\n  let props = %s;\n  <%s key={someKey} {...props} />', beforeExample, componentName, afterExample, componentName);
-                didWarnAboutKeySpread[componentName + beforeExample] = true;
-              }
-            }
-          }
-          if (type === REACT_FRAGMENT_TYPE) {
-            validateFragmentProps(element);
-          } else {
-            validatePropTypes(element);
-          }
-          return element;
-        }
-      }
-      function jsxWithValidationStatic(type, props, key) {
-        {
-          return jsxWithValidation(type, props, key, true);
-        }
-      }
-      function jsxWithValidationDynamic(type, props, key) {
-        {
-          return jsxWithValidation(type, props, key, false);
-        }
-      }
-      var jsx = jsxWithValidationDynamic;
-      var jsxs = jsxWithValidationStatic;
-      reactJsxRuntime_development.Fragment = REACT_FRAGMENT_TYPE;
-      reactJsxRuntime_development.jsx = jsx;
-      reactJsxRuntime_development.jsxs = jsxs;
-    })();
-  }
-  return reactJsxRuntime_development;
-}
-var hasRequiredJsxRuntime;
-function requireJsxRuntime() {
-  if (hasRequiredJsxRuntime) return jsxRuntime.exports;
-  hasRequiredJsxRuntime = 1;
-  if (process.env.NODE_ENV === "production") {
-    jsxRuntime.exports = requireReactJsxRuntime_production_min();
-  } else {
-    jsxRuntime.exports = requireReactJsxRuntime_development();
-  }
-  return jsxRuntime.exports;
-}
-var jsxRuntimeExports = requireJsxRuntime();
-var lib$3 = {};
-var htmlToDom = {};
-var domparser = {};
-var utilities$2 = {};
-var lib$2 = {};
-var lib$1 = {};
-var hasRequiredLib$3;
-function requireLib$3() {
-  if (hasRequiredLib$3) return lib$1;
-  hasRequiredLib$3 = 1;
-  (function(exports) {
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Doctype = exports.CDATA = exports.Tag = exports.Style = exports.Script = exports.Comment = exports.Directive = exports.Text = exports.Root = exports.isTag = exports.ElementType = void 0;
-    var ElementType;
-    (function(ElementType2) {
-      ElementType2["Root"] = "root";
-      ElementType2["Text"] = "text";
-      ElementType2["Directive"] = "directive";
-      ElementType2["Comment"] = "comment";
-      ElementType2["Script"] = "script";
-      ElementType2["Style"] = "style";
-      ElementType2["Tag"] = "tag";
-      ElementType2["CDATA"] = "cdata";
-      ElementType2["Doctype"] = "doctype";
-    })(ElementType = exports.ElementType || (exports.ElementType = {}));
-    function isTag(elem) {
-      return elem.type === ElementType.Tag || elem.type === ElementType.Script || elem.type === ElementType.Style;
     }
-    exports.isTag = isTag;
-    exports.Root = ElementType.Root;
-    exports.Text = ElementType.Text;
-    exports.Directive = ElementType.Directive;
-    exports.Comment = ElementType.Comment;
-    exports.Script = ElementType.Script;
-    exports.Style = ElementType.Style;
-    exports.Tag = ElementType.Tag;
-    exports.CDATA = ElementType.CDATA;
-    exports.Doctype = ElementType.Doctype;
-  })(lib$1);
-  return lib$1;
+    function Nr(n) {
+      return "";
+    }
+    var Rt = {};
+    function Hr(n) {
+      {
+        var m = Ct();
+        if (!m) {
+          var C = typeof n == "string" ? n : n.displayName || n.name;
+          C && (m = `
+
+Check the top-level render call using <` + C + ">.");
+        }
+        return m;
+      }
+    }
+    function xt(n, m) {
+      {
+        if (!n._store || n._store.validated || n.key != null)
+          return;
+        n._store.validated = !0;
+        var C = Hr(m);
+        if (Rt[C])
+          return;
+        Rt[C] = !0;
+        var P = "";
+        n && n._owner && n._owner !== Xe.current && (P = " It was passed a child from " + I(n._owner.type) + "."), Ae(n), v('Each child in a list should have a unique "key" prop.%s%s See https://reactjs.org/link/warning-keys for more information.', C, P), Ae(null);
+      }
+    }
+    function St(n, m) {
+      {
+        if (typeof n != "object")
+          return;
+        if (We(n))
+          for (var C = 0; C < n.length; C++) {
+            var P = n[C];
+            Ke(P) && xt(P, m);
+          }
+        else if (Ke(n))
+          n._store && (n._store.validated = !0);
+        else if (n) {
+          var Y = A(n);
+          if (typeof Y == "function" && Y !== n.entries)
+            for (var J = Y.call(n), B; !(B = J.next()).done; )
+              Ke(B.value) && xt(B.value, m);
+        }
+      }
+    }
+    function qr(n) {
+      {
+        var m = n.type;
+        if (m == null || typeof m == "string")
+          return;
+        var C;
+        if (typeof m == "function")
+          C = m.propTypes;
+        else if (typeof m == "object" && (m.$$typeof === o || // Note: Memo only checks outer props here.
+        // Inner props are checked in the reconciler.
+        m.$$typeof === h))
+          C = m.propTypes;
+        else
+          return;
+        if (C) {
+          var P = I(m);
+          xr(C, n.props, "prop", P, n);
+        } else if (m.PropTypes !== void 0 && !Je) {
+          Je = !0;
+          var Y = I(m);
+          v("Component %s declared `PropTypes` instead of `propTypes`. Did you misspell the property assignment?", Y || "Unknown");
+        }
+        typeof m.getDefaultProps == "function" && !m.getDefaultProps.isReactClassApproved && v("getDefaultProps is only used on classic React.createClass definitions. Use a static property named `defaultProps` instead.");
+      }
+    }
+    function Ur(n) {
+      {
+        for (var m = Object.keys(n.props), C = 0; C < m.length; C++) {
+          var P = m[C];
+          if (P !== "children" && P !== "key") {
+            Ae(n), v("Invalid prop `%s` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.", P), Ae(null);
+            break;
+          }
+        }
+        n.ref !== null && (Ae(n), v("Invalid attribute `ref` supplied to `React.Fragment`."), Ae(null));
+      }
+    }
+    var Ot = {};
+    function Pt(n, m, C, P, Y, J) {
+      {
+        var B = K(n);
+        if (!B) {
+          var V = "";
+          (n === void 0 || typeof n == "object" && n !== null && Object.keys(n).length === 0) && (V += " You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.");
+          var ae = Nr();
+          ae ? V += ae : V += Ct();
+          var Q;
+          n === null ? Q = "null" : We(n) ? Q = "array" : n !== void 0 && n.$$typeof === e ? (Q = "<" + (I(n.type) || "Unknown") + " />", V = " Did you accidentally export a JSX literal instead of a component?") : Q = typeof n, v("React.jsx: type is invalid -- expected a string (for built-in components) or a class/function (for composite components) but got: %s.%s", Q, V);
+        }
+        var ee = Fr(n, m, C, Y, J);
+        if (ee == null)
+          return ee;
+        if (B) {
+          var ue = m.children;
+          if (ue !== void 0)
+            if (P)
+              if (We(ue)) {
+                for (var we = 0; we < ue.length; we++)
+                  St(ue[we], n);
+                Object.freeze && Object.freeze(ue);
+              } else
+                v("React.jsx: Static children should always be an array. You are likely explicitly calling React.jsxs or React.jsxDEV. Use the Babel transform instead.");
+            else
+              St(ue, n);
+        }
+        if (Oe.call(m, "key")) {
+          var ge = I(n), oe = Object.keys(m).filter(function(Wr) {
+            return Wr !== "key";
+          }), Ze = oe.length > 0 ? "{key: someKey, " + oe.join(": ..., ") + ": ...}" : "{key: someKey}";
+          if (!Ot[ge + Ze]) {
+            var Yr = oe.length > 0 ? "{" + oe.join(": ..., ") + ": ...}" : "{}";
+            v(`A props object containing a "key" prop is being spread into JSX:
+  let props = %s;
+  <%s {...props} />
+React keys must be passed directly to JSX without using spread:
+  let props = %s;
+  <%s key={someKey} {...props} />`, Ze, ge, Yr, ge), Ot[ge + Ze] = !0;
+          }
+        }
+        return n === r ? Ur(ee) : qr(ee), ee;
+      }
+    }
+    function Vr(n, m, C) {
+      return Pt(n, m, C, !0);
+    }
+    function zr(n, m, C) {
+      return Pt(n, m, C, !1);
+    }
+    var Br = zr, Gr = Vr;
+    ke.Fragment = r, ke.jsx = Br, ke.jsxs = Gr;
+  }()), ke;
 }
-var node = {};
-var hasRequiredNode;
-function requireNode() {
-  if (hasRequiredNode) return node;
-  hasRequiredNode = 1;
-  var __extends = node && node.__extends || /* @__PURE__ */ function() {
-    var extendStatics = function(d, b) {
-      extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
-        d2.__proto__ = b2;
-      } || function(d2, b2) {
-        for (var p in b2) if (Object.prototype.hasOwnProperty.call(b2, p)) d2[p] = b2[p];
-      };
-      return extendStatics(d, b);
+var It;
+function ei() {
+  return It || (It = 1, process.env.NODE_ENV === "production" ? qe.exports = Zr() : qe.exports = Qr()), qe.exports;
+}
+var te = ei(), De = {}, Te = {}, Ue = {}, ye = {}, be = {}, Qe = {}, $t;
+function mr() {
+  return $t || ($t = 1, function(t) {
+    Object.defineProperty(t, "__esModule", { value: !0 }), t.Doctype = t.CDATA = t.Tag = t.Style = t.Script = t.Comment = t.Directive = t.Text = t.Root = t.isTag = t.ElementType = void 0;
+    var e;
+    (function(r) {
+      r.Root = "root", r.Text = "text", r.Directive = "directive", r.Comment = "comment", r.Script = "script", r.Style = "style", r.Tag = "tag", r.CDATA = "cdata", r.Doctype = "doctype";
+    })(e = t.ElementType || (t.ElementType = {}));
+    function a(r) {
+      return r.type === e.Tag || r.type === e.Script || r.type === e.Style;
+    }
+    t.isTag = a, t.Root = e.Root, t.Text = e.Text, t.Directive = e.Directive, t.Comment = e.Comment, t.Script = e.Script, t.Style = e.Style, t.Tag = e.Tag, t.CDATA = e.CDATA, t.Doctype = e.Doctype;
+  }(Qe)), Qe;
+}
+var M = {}, Lt;
+function Mt() {
+  if (Lt) return M;
+  Lt = 1;
+  var t = M && M.__extends || /* @__PURE__ */ function() {
+    var i = function(f, y) {
+      return i = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(k, F) {
+        k.__proto__ = F;
+      } || function(k, F) {
+        for (var K in F) Object.prototype.hasOwnProperty.call(F, K) && (k[K] = F[K]);
+      }, i(f, y);
     };
-    return function(d, b) {
-      if (typeof b !== "function" && b !== null)
-        throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-      extendStatics(d, b);
-      function __() {
-        this.constructor = d;
+    return function(f, y) {
+      if (typeof y != "function" && y !== null)
+        throw new TypeError("Class extends value " + String(y) + " is not a constructor or null");
+      i(f, y);
+      function k() {
+        this.constructor = f;
       }
-      d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+      f.prototype = y === null ? Object.create(y) : (k.prototype = y.prototype, new k());
     };
-  }();
-  var __assign2 = node && node.__assign || function() {
-    __assign2 = Object.assign || function(t) {
-      for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-          t[p] = s[p];
+  }(), e = M && M.__assign || function() {
+    return e = Object.assign || function(i) {
+      for (var f, y = 1, k = arguments.length; y < k; y++) {
+        f = arguments[y];
+        for (var F in f) Object.prototype.hasOwnProperty.call(f, F) && (i[F] = f[F]);
       }
-      return t;
-    };
-    return __assign2.apply(this, arguments);
+      return i;
+    }, e.apply(this, arguments);
   };
-  Object.defineProperty(node, "__esModule", { value: true });
-  node.cloneNode = node.hasChildren = node.isDocument = node.isDirective = node.isComment = node.isText = node.isCDATA = node.isTag = node.Element = node.Document = node.CDATA = node.NodeWithChildren = node.ProcessingInstruction = node.Comment = node.Text = node.DataNode = node.Node = void 0;
-  var domelementtype_1 = /* @__PURE__ */ requireLib$3();
-  var Node = (
+  Object.defineProperty(M, "__esModule", { value: !0 }), M.cloneNode = M.hasChildren = M.isDocument = M.isDirective = M.isComment = M.isText = M.isCDATA = M.isTag = M.Element = M.Document = M.CDATA = M.NodeWithChildren = M.ProcessingInstruction = M.Comment = M.Text = M.DataNode = M.Node = void 0;
+  var a = /* @__PURE__ */ mr(), r = (
     /** @class */
     function() {
-      function Node2() {
-        this.parent = null;
-        this.prev = null;
-        this.next = null;
-        this.startIndex = null;
-        this.endIndex = null;
+      function i() {
+        this.parent = null, this.prev = null, this.next = null, this.startIndex = null, this.endIndex = null;
       }
-      Object.defineProperty(Node2.prototype, "parentNode", {
+      return Object.defineProperty(i.prototype, "parentNode", {
         // Read-write aliases for properties
         /**
          * Same as {@link parent}.
@@ -1045,13 +704,12 @@ function requireNode() {
         get: function() {
           return this.parent;
         },
-        set: function(parent) {
-          this.parent = parent;
+        set: function(f) {
+          this.parent = f;
         },
-        enumerable: false,
-        configurable: true
-      });
-      Object.defineProperty(Node2.prototype, "previousSibling", {
+        enumerable: !1,
+        configurable: !0
+      }), Object.defineProperty(i.prototype, "previousSibling", {
         /**
          * Same as {@link prev}.
          * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
@@ -1059,13 +717,12 @@ function requireNode() {
         get: function() {
           return this.prev;
         },
-        set: function(prev) {
-          this.prev = prev;
+        set: function(f) {
+          this.prev = f;
         },
-        enumerable: false,
-        configurable: true
-      });
-      Object.defineProperty(Node2.prototype, "nextSibling", {
+        enumerable: !1,
+        configurable: !0
+      }), Object.defineProperty(i.prototype, "nextSibling", {
         /**
          * Same as {@link next}.
          * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
@@ -1073,32 +730,26 @@ function requireNode() {
         get: function() {
           return this.next;
         },
-        set: function(next) {
-          this.next = next;
+        set: function(f) {
+          this.next = f;
         },
-        enumerable: false,
-        configurable: true
-      });
-      Node2.prototype.cloneNode = function(recursive) {
-        if (recursive === void 0) {
-          recursive = false;
-        }
-        return cloneNode(this, recursive);
-      };
-      return Node2;
+        enumerable: !1,
+        configurable: !0
+      }), i.prototype.cloneNode = function(f) {
+        return f === void 0 && (f = !1), S(this, f);
+      }, i;
     }()
   );
-  node.Node = Node;
-  var DataNode = (
+  M.Node = r;
+  var c = (
     /** @class */
-    function(_super) {
-      __extends(DataNode2, _super);
-      function DataNode2(data) {
-        var _this = _super.call(this) || this;
-        _this.data = data;
-        return _this;
+    function(i) {
+      t(f, i);
+      function f(y) {
+        var k = i.call(this) || this;
+        return k.data = y, k;
       }
-      Object.defineProperty(DataNode2.prototype, "nodeValue", {
+      return Object.defineProperty(f.prototype, "nodeValue", {
         /**
          * Same as {@link data}.
          * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
@@ -1106,105 +757,94 @@ function requireNode() {
         get: function() {
           return this.data;
         },
-        set: function(data) {
-          this.data = data;
+        set: function(y) {
+          this.data = y;
         },
-        enumerable: false,
-        configurable: true
-      });
-      return DataNode2;
-    }(Node)
+        enumerable: !1,
+        configurable: !0
+      }), f;
+    }(r)
   );
-  node.DataNode = DataNode;
-  var Text = (
+  M.DataNode = c;
+  var d = (
     /** @class */
-    function(_super) {
-      __extends(Text2, _super);
-      function Text2() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.type = domelementtype_1.ElementType.Text;
-        return _this;
+    function(i) {
+      t(f, i);
+      function f() {
+        var y = i !== null && i.apply(this, arguments) || this;
+        return y.type = a.ElementType.Text, y;
       }
-      Object.defineProperty(Text2.prototype, "nodeType", {
+      return Object.defineProperty(f.prototype, "nodeType", {
         get: function() {
           return 3;
         },
-        enumerable: false,
-        configurable: true
-      });
-      return Text2;
-    }(DataNode)
+        enumerable: !1,
+        configurable: !0
+      }), f;
+    }(c)
   );
-  node.Text = Text;
-  var Comment = (
+  M.Text = d;
+  var p = (
     /** @class */
-    function(_super) {
-      __extends(Comment2, _super);
-      function Comment2() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.type = domelementtype_1.ElementType.Comment;
-        return _this;
+    function(i) {
+      t(f, i);
+      function f() {
+        var y = i !== null && i.apply(this, arguments) || this;
+        return y.type = a.ElementType.Comment, y;
       }
-      Object.defineProperty(Comment2.prototype, "nodeType", {
+      return Object.defineProperty(f.prototype, "nodeType", {
         get: function() {
           return 8;
         },
-        enumerable: false,
-        configurable: true
-      });
-      return Comment2;
-    }(DataNode)
+        enumerable: !1,
+        configurable: !0
+      }), f;
+    }(c)
   );
-  node.Comment = Comment;
-  var ProcessingInstruction = (
+  M.Comment = p;
+  var u = (
     /** @class */
-    function(_super) {
-      __extends(ProcessingInstruction2, _super);
-      function ProcessingInstruction2(name, data) {
-        var _this = _super.call(this, data) || this;
-        _this.name = name;
-        _this.type = domelementtype_1.ElementType.Directive;
-        return _this;
+    function(i) {
+      t(f, i);
+      function f(y, k) {
+        var F = i.call(this, k) || this;
+        return F.name = y, F.type = a.ElementType.Directive, F;
       }
-      Object.defineProperty(ProcessingInstruction2.prototype, "nodeType", {
+      return Object.defineProperty(f.prototype, "nodeType", {
         get: function() {
           return 1;
         },
-        enumerable: false,
-        configurable: true
-      });
-      return ProcessingInstruction2;
-    }(DataNode)
+        enumerable: !1,
+        configurable: !0
+      }), f;
+    }(c)
   );
-  node.ProcessingInstruction = ProcessingInstruction;
-  var NodeWithChildren = (
+  M.ProcessingInstruction = u;
+  var o = (
     /** @class */
-    function(_super) {
-      __extends(NodeWithChildren2, _super);
-      function NodeWithChildren2(children) {
-        var _this = _super.call(this) || this;
-        _this.children = children;
-        return _this;
+    function(i) {
+      t(f, i);
+      function f(y) {
+        var k = i.call(this) || this;
+        return k.children = y, k;
       }
-      Object.defineProperty(NodeWithChildren2.prototype, "firstChild", {
+      return Object.defineProperty(f.prototype, "firstChild", {
         // Aliases
         /** First child of the node. */
         get: function() {
-          var _a;
-          return (_a = this.children[0]) !== null && _a !== void 0 ? _a : null;
+          var y;
+          return (y = this.children[0]) !== null && y !== void 0 ? y : null;
         },
-        enumerable: false,
-        configurable: true
-      });
-      Object.defineProperty(NodeWithChildren2.prototype, "lastChild", {
+        enumerable: !1,
+        configurable: !0
+      }), Object.defineProperty(f.prototype, "lastChild", {
         /** Last child of the node. */
         get: function() {
           return this.children.length > 0 ? this.children[this.children.length - 1] : null;
         },
-        enumerable: false,
-        configurable: true
-      });
-      Object.defineProperty(NodeWithChildren2.prototype, "childNodes", {
+        enumerable: !1,
+        configurable: !0
+      }), Object.defineProperty(f.prototype, "childNodes", {
         /**
          * Same as {@link children}.
          * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
@@ -1212,81 +852,67 @@ function requireNode() {
         get: function() {
           return this.children;
         },
-        set: function(children) {
-          this.children = children;
+        set: function(y) {
+          this.children = y;
         },
-        enumerable: false,
-        configurable: true
-      });
-      return NodeWithChildren2;
-    }(Node)
+        enumerable: !1,
+        configurable: !0
+      }), f;
+    }(r)
   );
-  node.NodeWithChildren = NodeWithChildren;
-  var CDATA = (
+  M.NodeWithChildren = o;
+  var s = (
     /** @class */
-    function(_super) {
-      __extends(CDATA2, _super);
-      function CDATA2() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.type = domelementtype_1.ElementType.CDATA;
-        return _this;
+    function(i) {
+      t(f, i);
+      function f() {
+        var y = i !== null && i.apply(this, arguments) || this;
+        return y.type = a.ElementType.CDATA, y;
       }
-      Object.defineProperty(CDATA2.prototype, "nodeType", {
+      return Object.defineProperty(f.prototype, "nodeType", {
         get: function() {
           return 4;
         },
-        enumerable: false,
-        configurable: true
-      });
-      return CDATA2;
-    }(NodeWithChildren)
+        enumerable: !1,
+        configurable: !0
+      }), f;
+    }(o)
   );
-  node.CDATA = CDATA;
-  var Document = (
+  M.CDATA = s;
+  var l = (
     /** @class */
-    function(_super) {
-      __extends(Document2, _super);
-      function Document2() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.type = domelementtype_1.ElementType.Root;
-        return _this;
+    function(i) {
+      t(f, i);
+      function f() {
+        var y = i !== null && i.apply(this, arguments) || this;
+        return y.type = a.ElementType.Root, y;
       }
-      Object.defineProperty(Document2.prototype, "nodeType", {
+      return Object.defineProperty(f.prototype, "nodeType", {
         get: function() {
           return 9;
         },
-        enumerable: false,
-        configurable: true
-      });
-      return Document2;
-    }(NodeWithChildren)
+        enumerable: !1,
+        configurable: !0
+      }), f;
+    }(o)
   );
-  node.Document = Document;
-  var Element = (
+  M.Document = l;
+  var h = (
     /** @class */
-    function(_super) {
-      __extends(Element2, _super);
-      function Element2(name, attribs, children, type) {
-        if (children === void 0) {
-          children = [];
-        }
-        if (type === void 0) {
-          type = name === "script" ? domelementtype_1.ElementType.Script : name === "style" ? domelementtype_1.ElementType.Style : domelementtype_1.ElementType.Tag;
-        }
-        var _this = _super.call(this, children) || this;
-        _this.name = name;
-        _this.attribs = attribs;
-        _this.type = type;
-        return _this;
+    function(i) {
+      t(f, i);
+      function f(y, k, F, K) {
+        F === void 0 && (F = []), K === void 0 && (K = y === "script" ? a.ElementType.Script : y === "style" ? a.ElementType.Style : a.ElementType.Tag);
+        var re = i.call(this, F) || this;
+        return re.name = y, re.attribs = k, re.type = K, re;
       }
-      Object.defineProperty(Element2.prototype, "nodeType", {
+      return Object.defineProperty(f.prototype, "nodeType", {
         get: function() {
           return 1;
         },
-        enumerable: false,
-        configurable: true
-      });
-      Object.defineProperty(Element2.prototype, "tagName", {
+        enumerable: !1,
+        configurable: !0
+      }), Object.defineProperty(f.prototype, "tagName", {
         // DOM Level 1 aliases
         /**
          * Same as {@link name}.
@@ -1295,302 +921,182 @@ function requireNode() {
         get: function() {
           return this.name;
         },
-        set: function(name) {
-          this.name = name;
+        set: function(y) {
+          this.name = y;
         },
-        enumerable: false,
-        configurable: true
-      });
-      Object.defineProperty(Element2.prototype, "attributes", {
+        enumerable: !1,
+        configurable: !0
+      }), Object.defineProperty(f.prototype, "attributes", {
         get: function() {
-          var _this = this;
-          return Object.keys(this.attribs).map(function(name) {
-            var _a, _b;
+          var y = this;
+          return Object.keys(this.attribs).map(function(k) {
+            var F, K;
             return {
-              name,
-              value: _this.attribs[name],
-              namespace: (_a = _this["x-attribsNamespace"]) === null || _a === void 0 ? void 0 : _a[name],
-              prefix: (_b = _this["x-attribsPrefix"]) === null || _b === void 0 ? void 0 : _b[name]
+              name: k,
+              value: y.attribs[k],
+              namespace: (F = y["x-attribsNamespace"]) === null || F === void 0 ? void 0 : F[k],
+              prefix: (K = y["x-attribsPrefix"]) === null || K === void 0 ? void 0 : K[k]
             };
           });
         },
-        enumerable: false,
-        configurable: true
-      });
-      return Element2;
-    }(NodeWithChildren)
+        enumerable: !1,
+        configurable: !0
+      }), f;
+    }(o)
   );
-  node.Element = Element;
-  function isTag(node2) {
-    return (0, domelementtype_1.isTag)(node2);
+  M.Element = h;
+  function b(i) {
+    return (0, a.isTag)(i);
   }
-  node.isTag = isTag;
-  function isCDATA(node2) {
-    return node2.type === domelementtype_1.ElementType.CDATA;
+  M.isTag = b;
+  function R(i) {
+    return i.type === a.ElementType.CDATA;
   }
-  node.isCDATA = isCDATA;
-  function isText(node2) {
-    return node2.type === domelementtype_1.ElementType.Text;
+  M.isCDATA = R;
+  function w(i) {
+    return i.type === a.ElementType.Text;
   }
-  node.isText = isText;
-  function isComment(node2) {
-    return node2.type === domelementtype_1.ElementType.Comment;
+  M.isText = w;
+  function _(i) {
+    return i.type === a.ElementType.Comment;
   }
-  node.isComment = isComment;
-  function isDirective(node2) {
-    return node2.type === domelementtype_1.ElementType.Directive;
+  M.isComment = _;
+  function A(i) {
+    return i.type === a.ElementType.Directive;
   }
-  node.isDirective = isDirective;
-  function isDocument(node2) {
-    return node2.type === domelementtype_1.ElementType.Root;
+  M.isDirective = A;
+  function g(i) {
+    return i.type === a.ElementType.Root;
   }
-  node.isDocument = isDocument;
-  function hasChildren(node2) {
-    return Object.prototype.hasOwnProperty.call(node2, "children");
+  M.isDocument = g;
+  function v(i) {
+    return Object.prototype.hasOwnProperty.call(i, "children");
   }
-  node.hasChildren = hasChildren;
-  function cloneNode(node2, recursive) {
-    if (recursive === void 0) {
-      recursive = false;
-    }
-    var result;
-    if (isText(node2)) {
-      result = new Text(node2.data);
-    } else if (isComment(node2)) {
-      result = new Comment(node2.data);
-    } else if (isTag(node2)) {
-      var children = recursive ? cloneChildren(node2.children) : [];
-      var clone_1 = new Element(node2.name, __assign2({}, node2.attribs), children);
-      children.forEach(function(child) {
-        return child.parent = clone_1;
-      });
-      if (node2.namespace != null) {
-        clone_1.namespace = node2.namespace;
-      }
-      if (node2["x-attribsNamespace"]) {
-        clone_1["x-attribsNamespace"] = __assign2({}, node2["x-attribsNamespace"]);
-      }
-      if (node2["x-attribsPrefix"]) {
-        clone_1["x-attribsPrefix"] = __assign2({}, node2["x-attribsPrefix"]);
-      }
-      result = clone_1;
-    } else if (isCDATA(node2)) {
-      var children = recursive ? cloneChildren(node2.children) : [];
-      var clone_2 = new CDATA(children);
-      children.forEach(function(child) {
-        return child.parent = clone_2;
-      });
-      result = clone_2;
-    } else if (isDocument(node2)) {
-      var children = recursive ? cloneChildren(node2.children) : [];
-      var clone_3 = new Document(children);
-      children.forEach(function(child) {
-        return child.parent = clone_3;
-      });
-      if (node2["x-mode"]) {
-        clone_3["x-mode"] = node2["x-mode"];
-      }
-      result = clone_3;
-    } else if (isDirective(node2)) {
-      var instruction = new ProcessingInstruction(node2.name, node2.data);
-      if (node2["x-name"] != null) {
-        instruction["x-name"] = node2["x-name"];
-        instruction["x-publicId"] = node2["x-publicId"];
-        instruction["x-systemId"] = node2["x-systemId"];
-      }
-      result = instruction;
-    } else {
-      throw new Error("Not implemented yet: ".concat(node2.type));
-    }
-    result.startIndex = node2.startIndex;
-    result.endIndex = node2.endIndex;
-    if (node2.sourceCodeLocation != null) {
-      result.sourceCodeLocation = node2.sourceCodeLocation;
-    }
-    return result;
+  M.hasChildren = v;
+  function S(i, f) {
+    f === void 0 && (f = !1);
+    var y;
+    if (w(i))
+      y = new d(i.data);
+    else if (_(i))
+      y = new p(i.data);
+    else if (b(i)) {
+      var k = f ? D(i.children) : [], F = new h(i.name, e({}, i.attribs), k);
+      k.forEach(function(I) {
+        return I.parent = F;
+      }), i.namespace != null && (F.namespace = i.namespace), i["x-attribsNamespace"] && (F["x-attribsNamespace"] = e({}, i["x-attribsNamespace"])), i["x-attribsPrefix"] && (F["x-attribsPrefix"] = e({}, i["x-attribsPrefix"])), y = F;
+    } else if (R(i)) {
+      var k = f ? D(i.children) : [], K = new s(k);
+      k.forEach(function(O) {
+        return O.parent = K;
+      }), y = K;
+    } else if (g(i)) {
+      var k = f ? D(i.children) : [], re = new l(k);
+      k.forEach(function(O) {
+        return O.parent = re;
+      }), i["x-mode"] && (re["x-mode"] = i["x-mode"]), y = re;
+    } else if (A(i)) {
+      var se = new u(i.name, i.data);
+      i["x-name"] != null && (se["x-name"] = i["x-name"], se["x-publicId"] = i["x-publicId"], se["x-systemId"] = i["x-systemId"]), y = se;
+    } else
+      throw new Error("Not implemented yet: ".concat(i.type));
+    return y.startIndex = i.startIndex, y.endIndex = i.endIndex, i.sourceCodeLocation != null && (y.sourceCodeLocation = i.sourceCodeLocation), y;
   }
-  node.cloneNode = cloneNode;
-  function cloneChildren(childs) {
-    var children = childs.map(function(child) {
-      return cloneNode(child, true);
-    });
-    for (var i = 1; i < children.length; i++) {
-      children[i].prev = children[i - 1];
-      children[i - 1].next = children[i];
-    }
-    return children;
+  M.cloneNode = S;
+  function D(i) {
+    for (var f = i.map(function(k) {
+      return S(k, !0);
+    }), y = 1; y < f.length; y++)
+      f[y].prev = f[y - 1], f[y - 1].next = f[y];
+    return f;
   }
-  return node;
+  return M;
 }
-var hasRequiredLib$2;
-function requireLib$2() {
-  if (hasRequiredLib$2) return lib$2;
-  hasRequiredLib$2 = 1;
-  (function(exports) {
-    var __createBinding = lib$2 && lib$2.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
-    });
-    var __exportStar = lib$2 && lib$2.__exportStar || function(m, exports2) {
-      for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+var jt;
+function gr() {
+  return jt || (jt = 1, function(t) {
+    var e = be && be.__createBinding || (Object.create ? function(u, o, s, l) {
+      l === void 0 && (l = s);
+      var h = Object.getOwnPropertyDescriptor(o, s);
+      (!h || ("get" in h ? !o.__esModule : h.writable || h.configurable)) && (h = { enumerable: !0, get: function() {
+        return o[s];
+      } }), Object.defineProperty(u, l, h);
+    } : function(u, o, s, l) {
+      l === void 0 && (l = s), u[l] = o[s];
+    }), a = be && be.__exportStar || function(u, o) {
+      for (var s in u) s !== "default" && !Object.prototype.hasOwnProperty.call(o, s) && e(o, u, s);
     };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.DomHandler = void 0;
-    var domelementtype_1 = /* @__PURE__ */ requireLib$3();
-    var node_js_1 = /* @__PURE__ */ requireNode();
-    __exportStar(/* @__PURE__ */ requireNode(), exports);
-    var defaultOpts = {
-      withStartIndices: false,
-      withEndIndices: false,
-      xmlMode: false
-    };
-    var DomHandler = (
+    Object.defineProperty(t, "__esModule", { value: !0 }), t.DomHandler = void 0;
+    var r = /* @__PURE__ */ mr(), c = /* @__PURE__ */ Mt();
+    a(/* @__PURE__ */ Mt(), t);
+    var d = {
+      withStartIndices: !1,
+      withEndIndices: !1,
+      xmlMode: !1
+    }, p = (
       /** @class */
       function() {
-        function DomHandler2(callback, options, elementCB) {
-          this.dom = [];
-          this.root = new node_js_1.Document(this.dom);
-          this.done = false;
-          this.tagStack = [this.root];
-          this.lastNode = null;
-          this.parser = null;
-          if (typeof options === "function") {
-            elementCB = options;
-            options = defaultOpts;
-          }
-          if (typeof callback === "object") {
-            options = callback;
-            callback = void 0;
-          }
-          this.callback = callback !== null && callback !== void 0 ? callback : null;
-          this.options = options !== null && options !== void 0 ? options : defaultOpts;
-          this.elementCB = elementCB !== null && elementCB !== void 0 ? elementCB : null;
+        function u(o, s, l) {
+          this.dom = [], this.root = new c.Document(this.dom), this.done = !1, this.tagStack = [this.root], this.lastNode = null, this.parser = null, typeof s == "function" && (l = s, s = d), typeof o == "object" && (s = o, o = void 0), this.callback = o ?? null, this.options = s ?? d, this.elementCB = l ?? null;
         }
-        DomHandler2.prototype.onparserinit = function(parser) {
-          this.parser = parser;
-        };
-        DomHandler2.prototype.onreset = function() {
-          this.dom = [];
-          this.root = new node_js_1.Document(this.dom);
-          this.done = false;
-          this.tagStack = [this.root];
+        return u.prototype.onparserinit = function(o) {
+          this.parser = o;
+        }, u.prototype.onreset = function() {
+          this.dom = [], this.root = new c.Document(this.dom), this.done = !1, this.tagStack = [this.root], this.lastNode = null, this.parser = null;
+        }, u.prototype.onend = function() {
+          this.done || (this.done = !0, this.parser = null, this.handleCallback(null));
+        }, u.prototype.onerror = function(o) {
+          this.handleCallback(o);
+        }, u.prototype.onclosetag = function() {
           this.lastNode = null;
-          this.parser = null;
-        };
-        DomHandler2.prototype.onend = function() {
-          if (this.done)
-            return;
-          this.done = true;
-          this.parser = null;
-          this.handleCallback(null);
-        };
-        DomHandler2.prototype.onerror = function(error) {
-          this.handleCallback(error);
-        };
-        DomHandler2.prototype.onclosetag = function() {
-          this.lastNode = null;
-          var elem = this.tagStack.pop();
-          if (this.options.withEndIndices) {
-            elem.endIndex = this.parser.endIndex;
+          var o = this.tagStack.pop();
+          this.options.withEndIndices && (o.endIndex = this.parser.endIndex), this.elementCB && this.elementCB(o);
+        }, u.prototype.onopentag = function(o, s) {
+          var l = this.options.xmlMode ? r.ElementType.Tag : void 0, h = new c.Element(o, s, void 0, l);
+          this.addNode(h), this.tagStack.push(h);
+        }, u.prototype.ontext = function(o) {
+          var s = this.lastNode;
+          if (s && s.type === r.ElementType.Text)
+            s.data += o, this.options.withEndIndices && (s.endIndex = this.parser.endIndex);
+          else {
+            var l = new c.Text(o);
+            this.addNode(l), this.lastNode = l;
           }
-          if (this.elementCB)
-            this.elementCB(elem);
-        };
-        DomHandler2.prototype.onopentag = function(name, attribs) {
-          var type = this.options.xmlMode ? domelementtype_1.ElementType.Tag : void 0;
-          var element = new node_js_1.Element(name, attribs, void 0, type);
-          this.addNode(element);
-          this.tagStack.push(element);
-        };
-        DomHandler2.prototype.ontext = function(data) {
-          var lastNode = this.lastNode;
-          if (lastNode && lastNode.type === domelementtype_1.ElementType.Text) {
-            lastNode.data += data;
-            if (this.options.withEndIndices) {
-              lastNode.endIndex = this.parser.endIndex;
-            }
-          } else {
-            var node2 = new node_js_1.Text(data);
-            this.addNode(node2);
-            this.lastNode = node2;
-          }
-        };
-        DomHandler2.prototype.oncomment = function(data) {
-          if (this.lastNode && this.lastNode.type === domelementtype_1.ElementType.Comment) {
-            this.lastNode.data += data;
+        }, u.prototype.oncomment = function(o) {
+          if (this.lastNode && this.lastNode.type === r.ElementType.Comment) {
+            this.lastNode.data += o;
             return;
           }
-          var node2 = new node_js_1.Comment(data);
-          this.addNode(node2);
-          this.lastNode = node2;
-        };
-        DomHandler2.prototype.oncommentend = function() {
+          var s = new c.Comment(o);
+          this.addNode(s), this.lastNode = s;
+        }, u.prototype.oncommentend = function() {
           this.lastNode = null;
-        };
-        DomHandler2.prototype.oncdatastart = function() {
-          var text = new node_js_1.Text("");
-          var node2 = new node_js_1.CDATA([text]);
-          this.addNode(node2);
-          text.parent = node2;
-          this.lastNode = text;
-        };
-        DomHandler2.prototype.oncdataend = function() {
+        }, u.prototype.oncdatastart = function() {
+          var o = new c.Text(""), s = new c.CDATA([o]);
+          this.addNode(s), o.parent = s, this.lastNode = o;
+        }, u.prototype.oncdataend = function() {
           this.lastNode = null;
-        };
-        DomHandler2.prototype.onprocessinginstruction = function(name, data) {
-          var node2 = new node_js_1.ProcessingInstruction(name, data);
-          this.addNode(node2);
-        };
-        DomHandler2.prototype.handleCallback = function(error) {
-          if (typeof this.callback === "function") {
-            this.callback(error, this.dom);
-          } else if (error) {
-            throw error;
-          }
-        };
-        DomHandler2.prototype.addNode = function(node2) {
-          var parent = this.tagStack[this.tagStack.length - 1];
-          var previousSibling = parent.children[parent.children.length - 1];
-          if (this.options.withStartIndices) {
-            node2.startIndex = this.parser.startIndex;
-          }
-          if (this.options.withEndIndices) {
-            node2.endIndex = this.parser.endIndex;
-          }
-          parent.children.push(node2);
-          if (previousSibling) {
-            node2.prev = previousSibling;
-            previousSibling.next = node2;
-          }
-          node2.parent = parent;
-          this.lastNode = null;
-        };
-        return DomHandler2;
+        }, u.prototype.onprocessinginstruction = function(o, s) {
+          var l = new c.ProcessingInstruction(o, s);
+          this.addNode(l);
+        }, u.prototype.handleCallback = function(o) {
+          if (typeof this.callback == "function")
+            this.callback(o, this.dom);
+          else if (o)
+            throw o;
+        }, u.prototype.addNode = function(o) {
+          var s = this.tagStack[this.tagStack.length - 1], l = s.children[s.children.length - 1];
+          this.options.withStartIndices && (o.startIndex = this.parser.startIndex), this.options.withEndIndices && (o.endIndex = this.parser.endIndex), s.children.push(o), l && (o.prev = l, l.next = o), o.parent = s, this.lastNode = null;
+        }, u;
       }()
     );
-    exports.DomHandler = DomHandler;
-    exports.default = DomHandler;
-  })(lib$2);
-  return lib$2;
+    t.DomHandler = p, t.default = p;
+  }(be)), be;
 }
-var constants = {};
-var hasRequiredConstants;
-function requireConstants() {
-  if (hasRequiredConstants) return constants;
-  hasRequiredConstants = 1;
-  (function(exports) {
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.CARRIAGE_RETURN_PLACEHOLDER_REGEX = exports.CARRIAGE_RETURN_PLACEHOLDER = exports.CARRIAGE_RETURN_REGEX = exports.CARRIAGE_RETURN = exports.CASE_SENSITIVE_TAG_NAMES_MAP = exports.CASE_SENSITIVE_TAG_NAMES = void 0;
-    exports.CASE_SENSITIVE_TAG_NAMES = [
+var et = {}, Ft;
+function ti() {
+  return Ft || (Ft = 1, function(t) {
+    Object.defineProperty(t, "__esModule", { value: !0 }), t.CARRIAGE_RETURN_PLACEHOLDER_REGEX = t.CARRIAGE_RETURN_PLACEHOLDER = t.CARRIAGE_RETURN_REGEX = t.CARRIAGE_RETURN = t.CASE_SENSITIVE_TAG_NAMES_MAP = t.CASE_SENSITIVE_TAG_NAMES = void 0, t.CASE_SENSITIVE_TAG_NAMES = [
       "animateMotion",
       "animateTransform",
       "clipPath",
@@ -1622,236 +1128,156 @@ function requireConstants() {
       "linearGradient",
       "radialGradient",
       "textPath"
-    ];
-    exports.CASE_SENSITIVE_TAG_NAMES_MAP = exports.CASE_SENSITIVE_TAG_NAMES.reduce(function(accumulator, tagName) {
-      accumulator[tagName.toLowerCase()] = tagName;
-      return accumulator;
-    }, {});
-    exports.CARRIAGE_RETURN = "\r";
-    exports.CARRIAGE_RETURN_REGEX = new RegExp(exports.CARRIAGE_RETURN, "g");
-    exports.CARRIAGE_RETURN_PLACEHOLDER = "__HTML_DOM_PARSER_CARRIAGE_RETURN_PLACEHOLDER_".concat(Date.now(), "__");
-    exports.CARRIAGE_RETURN_PLACEHOLDER_REGEX = new RegExp(exports.CARRIAGE_RETURN_PLACEHOLDER, "g");
-  })(constants);
-  return constants;
+    ], t.CASE_SENSITIVE_TAG_NAMES_MAP = t.CASE_SENSITIVE_TAG_NAMES.reduce(function(e, a) {
+      return e[a.toLowerCase()] = a, e;
+    }, {}), t.CARRIAGE_RETURN = "\r", t.CARRIAGE_RETURN_REGEX = new RegExp(t.CARRIAGE_RETURN, "g"), t.CARRIAGE_RETURN_PLACEHOLDER = "__HTML_DOM_PARSER_CARRIAGE_RETURN_PLACEHOLDER_".concat(Date.now(), "__"), t.CARRIAGE_RETURN_PLACEHOLDER_REGEX = new RegExp(t.CARRIAGE_RETURN_PLACEHOLDER, "g");
+  }(et)), et;
 }
-var hasRequiredUtilities$2;
-function requireUtilities$2() {
-  if (hasRequiredUtilities$2) return utilities$2;
-  hasRequiredUtilities$2 = 1;
-  Object.defineProperty(utilities$2, "__esModule", { value: true });
-  utilities$2.formatAttributes = formatAttributes;
-  utilities$2.escapeSpecialCharacters = escapeSpecialCharacters;
-  utilities$2.revertEscapedCharacters = revertEscapedCharacters;
-  utilities$2.formatDOM = formatDOM;
-  var domhandler_1 = /* @__PURE__ */ requireLib$2();
-  var constants_1 = requireConstants();
-  function getCaseSensitiveTagName(tagName) {
-    return constants_1.CASE_SENSITIVE_TAG_NAMES_MAP[tagName];
+var Nt;
+function yr() {
+  if (Nt) return ye;
+  Nt = 1, Object.defineProperty(ye, "__esModule", { value: !0 }), ye.formatAttributes = r, ye.escapeSpecialCharacters = d, ye.revertEscapedCharacters = p, ye.formatDOM = u;
+  var t = /* @__PURE__ */ gr(), e = ti();
+  function a(o) {
+    return e.CASE_SENSITIVE_TAG_NAMES_MAP[o];
   }
-  function formatAttributes(attributes) {
-    var map = {};
-    var index = 0;
-    var attributesLength = attributes.length;
-    for (; index < attributesLength; index++) {
-      var attribute = attributes[index];
-      map[attribute.name] = attribute.value;
+  function r(o) {
+    for (var s = {}, l = 0, h = o.length; l < h; l++) {
+      var b = o[l];
+      s[b.name] = b.value;
     }
-    return map;
+    return s;
   }
-  function formatTagName(tagName) {
-    tagName = tagName.toLowerCase();
-    var caseSensitiveTagName = getCaseSensitiveTagName(tagName);
-    if (caseSensitiveTagName) {
-      return caseSensitiveTagName;
-    }
-    return tagName;
+  function c(o) {
+    o = o.toLowerCase();
+    var s = a(o);
+    return s || o;
   }
-  function escapeSpecialCharacters(html) {
-    return html.replace(constants_1.CARRIAGE_RETURN_REGEX, constants_1.CARRIAGE_RETURN_PLACEHOLDER);
+  function d(o) {
+    return o.replace(e.CARRIAGE_RETURN_REGEX, e.CARRIAGE_RETURN_PLACEHOLDER);
   }
-  function revertEscapedCharacters(text) {
-    return text.replace(constants_1.CARRIAGE_RETURN_PLACEHOLDER_REGEX, constants_1.CARRIAGE_RETURN);
+  function p(o) {
+    return o.replace(e.CARRIAGE_RETURN_PLACEHOLDER_REGEX, e.CARRIAGE_RETURN);
   }
-  function formatDOM(nodes, parent, directive) {
-    if (parent === void 0) {
-      parent = null;
-    }
-    var domNodes = [];
-    var current;
-    var index = 0;
-    var nodesLength = nodes.length;
-    for (; index < nodesLength; index++) {
-      var node2 = nodes[index];
-      switch (node2.nodeType) {
+  function u(o, s, l) {
+    s === void 0 && (s = null);
+    for (var h = [], b, R = 0, w = o.length; R < w; R++) {
+      var _ = o[R];
+      switch (_.nodeType) {
         case 1: {
-          var tagName = formatTagName(node2.nodeName);
-          current = new domhandler_1.Element(tagName, formatAttributes(node2.attributes));
-          current.children = formatDOM(
+          var A = c(_.nodeName);
+          b = new t.Element(A, r(_.attributes)), b.children = u(
             // template children are on content
-            tagName === "template" ? node2.content.childNodes : node2.childNodes,
-            current
+            A === "template" ? _.content.childNodes : _.childNodes,
+            b
           );
           break;
         }
         case 3:
-          current = new domhandler_1.Text(revertEscapedCharacters(node2.nodeValue));
+          b = new t.Text(p(_.nodeValue));
           break;
         case 8:
-          current = new domhandler_1.Comment(node2.nodeValue);
+          b = new t.Comment(_.nodeValue);
           break;
         default:
           continue;
       }
-      var prev = domNodes[index - 1] || null;
-      if (prev) {
-        prev.next = current;
-      }
-      current.parent = parent;
-      current.prev = prev;
-      current.next = null;
-      domNodes.push(current);
+      var g = h[R - 1] || null;
+      g && (g.next = b), b.parent = s, b.prev = g, b.next = null, h.push(b);
     }
-    if (directive) {
-      current = new domhandler_1.ProcessingInstruction(directive.substring(0, directive.indexOf(" ")).toLowerCase(), directive);
-      current.next = domNodes[0] || null;
-      current.parent = parent;
-      domNodes.unshift(current);
-      if (domNodes[1]) {
-        domNodes[1].prev = domNodes[0];
-      }
-    }
-    return domNodes;
+    return l && (b = new t.ProcessingInstruction(l.substring(0, l.indexOf(" ")).toLowerCase(), l), b.next = h[0] || null, b.parent = s, h.unshift(b), h[1] && (h[1].prev = h[0])), h;
   }
-  return utilities$2;
+  return ye;
 }
-var hasRequiredDomparser;
-function requireDomparser() {
-  if (hasRequiredDomparser) return domparser;
-  hasRequiredDomparser = 1;
-  Object.defineProperty(domparser, "__esModule", { value: true });
-  domparser.default = domparser$1;
-  var utilities_1 = requireUtilities$2();
-  var HTML = "html";
-  var HEAD = "head";
-  var BODY = "body";
-  var FIRST_TAG_REGEX = /<([a-zA-Z]+[0-9]?)/;
-  var HEAD_TAG_REGEX = /<head[^]*>/i;
-  var BODY_TAG_REGEX = /<body[^]*>/i;
-  var parseFromDocument = function(html, tagName) {
+var Ht;
+function ri() {
+  if (Ht) return Ue;
+  Ht = 1, Object.defineProperty(Ue, "__esModule", { value: !0 }), Ue.default = _;
+  var t = yr(), e = "html", a = "head", r = "body", c = /<([a-zA-Z]+[0-9]?)/, d = /<head[^]*>/i, p = /<body[^]*>/i, u = function(A, g) {
     throw new Error("This browser does not support `document.implementation.createHTMLDocument`");
-  };
-  var parseFromString = function(html, tagName) {
+  }, o = function(A, g) {
     throw new Error("This browser does not support `DOMParser.prototype.parseFromString`");
-  };
-  var DOMParser = typeof window === "object" && window.DOMParser;
-  if (typeof DOMParser === "function") {
-    var domParser_1 = new DOMParser();
-    var mimeType_1 = "text/html";
-    parseFromString = function(html, tagName) {
-      if (tagName) {
-        html = "<".concat(tagName, ">").concat(html, "</").concat(tagName, ">");
-      }
-      return domParser_1.parseFromString(html, mimeType_1);
-    };
-    parseFromDocument = parseFromString;
+  }, s = typeof window == "object" && window.DOMParser;
+  if (typeof s == "function") {
+    var l = new s(), h = "text/html";
+    o = function(A, g) {
+      return g && (A = "<".concat(g, ">").concat(A, "</").concat(g, ">")), l.parseFromString(A, h);
+    }, u = o;
   }
-  if (typeof document === "object" && document.implementation) {
-    var htmlDocument_1 = document.implementation.createHTMLDocument();
-    parseFromDocument = function(html, tagName) {
-      if (tagName) {
-        var element = htmlDocument_1.documentElement.querySelector(tagName);
-        if (element) {
-          element.innerHTML = html;
-        }
-        return htmlDocument_1;
+  if (typeof document == "object" && document.implementation) {
+    var b = document.implementation.createHTMLDocument();
+    u = function(A, g) {
+      if (g) {
+        var v = b.documentElement.querySelector(g);
+        return v && (v.innerHTML = A), b;
       }
-      htmlDocument_1.documentElement.innerHTML = html;
-      return htmlDocument_1;
+      return b.documentElement.innerHTML = A, b;
     };
   }
-  var template = typeof document === "object" && document.createElement("template");
-  var parseFromTemplate;
-  if (template && template.content) {
-    parseFromTemplate = function(html) {
-      template.innerHTML = html;
-      return template.content.childNodes;
-    };
-  }
-  function domparser$1(html) {
-    var _a, _b;
-    html = (0, utilities_1.escapeSpecialCharacters)(html);
-    var match = html.match(FIRST_TAG_REGEX);
-    var firstTagName = match && match[1] ? match[1].toLowerCase() : "";
-    switch (firstTagName) {
-      case HTML: {
-        var doc = parseFromString(html);
-        if (!HEAD_TAG_REGEX.test(html)) {
-          var element = doc.querySelector(HEAD);
-          (_a = element === null || element === void 0 ? void 0 : element.parentNode) === null || _a === void 0 ? void 0 : _a.removeChild(element);
+  var R = typeof document == "object" && document.createElement("template"), w;
+  R && R.content && (w = function(A) {
+    return R.innerHTML = A, R.content.childNodes;
+  });
+  function _(A) {
+    var g, v;
+    A = (0, t.escapeSpecialCharacters)(A);
+    var S = A.match(c), D = S && S[1] ? S[1].toLowerCase() : "";
+    switch (D) {
+      case e: {
+        var i = o(A);
+        if (!d.test(A)) {
+          var f = i.querySelector(a);
+          (g = f == null ? void 0 : f.parentNode) === null || g === void 0 || g.removeChild(f);
         }
-        if (!BODY_TAG_REGEX.test(html)) {
-          var element = doc.querySelector(BODY);
-          (_b = element === null || element === void 0 ? void 0 : element.parentNode) === null || _b === void 0 ? void 0 : _b.removeChild(element);
+        if (!p.test(A)) {
+          var f = i.querySelector(r);
+          (v = f == null ? void 0 : f.parentNode) === null || v === void 0 || v.removeChild(f);
         }
-        return doc.querySelectorAll(HTML);
+        return i.querySelectorAll(e);
       }
-      case HEAD:
-      case BODY: {
-        var elements = parseFromDocument(html).querySelectorAll(firstTagName);
-        if (BODY_TAG_REGEX.test(html) && HEAD_TAG_REGEX.test(html)) {
-          return elements[0].parentNode.childNodes;
-        }
-        return elements;
+      case a:
+      case r: {
+        var y = u(A).querySelectorAll(D);
+        return p.test(A) && d.test(A) ? y[0].parentNode.childNodes : y;
       }
       // low-level tag or text
       default: {
-        if (parseFromTemplate) {
-          return parseFromTemplate(html);
-        }
-        var element = parseFromDocument(html, BODY).querySelector(BODY);
-        return element.childNodes;
+        if (w)
+          return w(A);
+        var f = u(A, r).querySelector(r);
+        return f.childNodes;
       }
     }
   }
-  return domparser;
+  return Ue;
 }
-var hasRequiredHtmlToDom;
-function requireHtmlToDom() {
-  if (hasRequiredHtmlToDom) return htmlToDom;
-  hasRequiredHtmlToDom = 1;
-  var __importDefault = htmlToDom && htmlToDom.__importDefault || function(mod) {
-    return mod && mod.__esModule ? mod : { "default": mod };
+var qt;
+function ii() {
+  if (qt) return Te;
+  qt = 1;
+  var t = Te && Te.__importDefault || function(d) {
+    return d && d.__esModule ? d : { default: d };
   };
-  Object.defineProperty(htmlToDom, "__esModule", { value: true });
-  htmlToDom.default = HTMLDOMParser;
-  var domparser_1 = __importDefault(requireDomparser());
-  var utilities_1 = requireUtilities$2();
-  var DIRECTIVE_REGEX = /<(![a-zA-Z\s]+)>/;
-  function HTMLDOMParser(html) {
-    if (typeof html !== "string") {
+  Object.defineProperty(Te, "__esModule", { value: !0 }), Te.default = c;
+  var e = t(ri()), a = yr(), r = /<(![a-zA-Z\s]+)>/;
+  function c(d) {
+    if (typeof d != "string")
       throw new TypeError("First argument must be a string");
-    }
-    if (!html) {
+    if (!d)
       return [];
-    }
-    var match = html.match(DIRECTIVE_REGEX);
-    var directive = match ? match[1] : void 0;
-    return (0, utilities_1.formatDOM)((0, domparser_1.default)(html), null, directive);
+    var p = d.match(r), u = p ? p[1] : void 0;
+    return (0, a.formatDOM)((0, e.default)(d), null, u);
   }
-  return htmlToDom;
+  return Te;
 }
-var attributesToProps = {};
-var lib = {};
-var possibleStandardNamesOptimized = {};
-var hasRequiredPossibleStandardNamesOptimized;
-function requirePossibleStandardNamesOptimized() {
-  if (hasRequiredPossibleStandardNamesOptimized) return possibleStandardNamesOptimized;
-  hasRequiredPossibleStandardNamesOptimized = 1;
-  var SAME = 0;
-  possibleStandardNamesOptimized.SAME = SAME;
-  var CAMELCASE = 1;
-  possibleStandardNamesOptimized.CAMELCASE = CAMELCASE;
-  possibleStandardNamesOptimized.possibleStandardNames = {
+var Ve = {}, ce = {}, Ie = {}, Ut;
+function ni() {
+  if (Ut) return Ie;
+  Ut = 1;
+  var t = 0;
+  Ie.SAME = t;
+  var e = 1;
+  return Ie.CAMELCASE = e, Ie.possibleStandardNames = {
     accept: 0,
     acceptCharset: 1,
     "accept-charset": "acceptCharset",
@@ -2335,35 +1761,21 @@ function requirePossibleStandardNamesOptimized() {
     yChannelSelector: 1,
     z: 0,
     zoomAndPan: 1
-  };
-  return possibleStandardNamesOptimized;
+  }, Ie;
 }
-var hasRequiredLib$1;
-function requireLib$1() {
-  if (hasRequiredLib$1) return lib;
-  hasRequiredLib$1 = 1;
-  const RESERVED = 0;
-  const STRING2 = 1;
-  const BOOLEANISH_STRING = 2;
-  const BOOLEAN = 3;
-  const OVERLOADED_BOOLEAN = 4;
-  const NUMERIC = 5;
-  const POSITIVE_NUMERIC = 6;
-  function getPropertyInfo(name) {
-    return properties.hasOwnProperty(name) ? properties[name] : null;
+var Vt;
+function ai() {
+  if (Vt) return ce;
+  Vt = 1;
+  const t = 0, e = 1, a = 2, r = 3, c = 4, d = 5, p = 6;
+  function u(i) {
+    return s.hasOwnProperty(i) ? s[i] : null;
   }
-  function PropertyInfoRecord(name, type, mustUseProperty, attributeName, attributeNamespace, sanitizeURL, removeEmptyString) {
-    this.acceptsBooleans = type === BOOLEANISH_STRING || type === BOOLEAN || type === OVERLOADED_BOOLEAN;
-    this.attributeName = attributeName;
-    this.attributeNamespace = attributeNamespace;
-    this.mustUseProperty = mustUseProperty;
-    this.propertyName = name;
-    this.type = type;
-    this.sanitizeURL = sanitizeURL;
-    this.removeEmptyString = removeEmptyString;
+  function o(i, f, y, k, F, K, re) {
+    this.acceptsBooleans = f === a || f === r || f === c, this.attributeName = k, this.attributeNamespace = F, this.mustUseProperty = y, this.propertyName = i, this.type = f, this.sanitizeURL = K, this.removeEmptyString = re;
   }
-  const properties = {};
-  const reservedProps = [
+  const s = {};
+  [
     "children",
     "dangerouslySetInnerHTML",
     // TODO: This prevents the assignment of defaultValue to regular
@@ -2375,82 +1787,77 @@ function requireLib$1() {
     "suppressContentEditableWarning",
     "suppressHydrationWarning",
     "style"
-  ];
-  reservedProps.forEach((name) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      RESERVED,
-      false,
+  ].forEach((i) => {
+    s[i] = new o(
+      i,
+      t,
+      !1,
       // mustUseProperty
-      name,
+      i,
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  [
+  }), [
     ["acceptCharset", "accept-charset"],
     ["className", "class"],
     ["htmlFor", "for"],
     ["httpEquiv", "http-equiv"]
-  ].forEach(([name, attributeName]) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      STRING2,
-      false,
+  ].forEach(([i, f]) => {
+    s[i] = new o(
+      i,
+      e,
+      !1,
       // mustUseProperty
-      attributeName,
+      f,
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  ["contentEditable", "draggable", "spellCheck", "value"].forEach((name) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      BOOLEANISH_STRING,
-      false,
+  }), ["contentEditable", "draggable", "spellCheck", "value"].forEach((i) => {
+    s[i] = new o(
+      i,
+      a,
+      !1,
       // mustUseProperty
-      name.toLowerCase(),
+      i.toLowerCase(),
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  [
+  }), [
     "autoReverse",
     "externalResourcesRequired",
     "focusable",
     "preserveAlpha"
-  ].forEach((name) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      BOOLEANISH_STRING,
-      false,
+  ].forEach((i) => {
+    s[i] = new o(
+      i,
+      a,
+      !1,
       // mustUseProperty
-      name,
+      i,
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  [
+  }), [
     "allowFullScreen",
     "async",
     // Note: there is a special case that prevents it from being written to the DOM
@@ -2477,23 +1884,22 @@ function requireLib$1() {
     "seamless",
     // Microdata
     "itemScope"
-  ].forEach((name) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      BOOLEAN,
-      false,
+  ].forEach((i) => {
+    s[i] = new o(
+      i,
+      r,
+      !1,
       // mustUseProperty
-      name.toLowerCase(),
+      i.toLowerCase(),
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  [
+  }), [
     "checked",
     // Note: `option.selected` is not updated if `select.multiple` is
     // disabled with `removeAttribute`. We have special logic for handling this.
@@ -2503,45 +1909,43 @@ function requireLib$1() {
     // NOTE: if you add a camelCased prop to this list,
     // you'll need to set attributeName to name.toLowerCase()
     // instead in the assignment below.
-  ].forEach((name) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      BOOLEAN,
-      true,
+  ].forEach((i) => {
+    s[i] = new o(
+      i,
+      r,
+      !0,
       // mustUseProperty
-      name,
+      i,
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  [
+  }), [
     "capture",
     "download"
     // NOTE: if you add a camelCased prop to this list,
     // you'll need to set attributeName to name.toLowerCase()
     // instead in the assignment below.
-  ].forEach((name) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      OVERLOADED_BOOLEAN,
-      false,
+  ].forEach((i) => {
+    s[i] = new o(
+      i,
+      c,
+      !1,
       // mustUseProperty
-      name,
+      i,
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  [
+  }), [
     "cols",
     "rows",
     "size",
@@ -2549,40 +1953,38 @@ function requireLib$1() {
     // NOTE: if you add a camelCased prop to this list,
     // you'll need to set attributeName to name.toLowerCase()
     // instead in the assignment below.
-  ].forEach((name) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      POSITIVE_NUMERIC,
-      false,
+  ].forEach((i) => {
+    s[i] = new o(
+      i,
+      p,
+      !1,
       // mustUseProperty
-      name,
+      i,
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  ["rowSpan", "start"].forEach((name) => {
-    properties[name] = new PropertyInfoRecord(
-      name,
-      NUMERIC,
-      false,
+  }), ["rowSpan", "start"].forEach((i) => {
+    s[i] = new o(
+      i,
+      d,
+      !1,
       // mustUseProperty
-      name.toLowerCase(),
+      i.toLowerCase(),
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
   });
-  const CAMELIZE = /[\-\:]([a-z])/g;
-  const capitalize = (token) => token[1].toUpperCase();
+  const h = /[\-\:]([a-z])/g, b = (i) => i[1].toUpperCase();
   [
     "accent-height",
     "alignment-baseline",
@@ -2660,23 +2062,22 @@ function requireLib$1() {
     // NOTE: if you add a camelCased prop to this list,
     // you'll need to set attributeName to name.toLowerCase()
     // instead in the assignment below.
-  ].forEach((attributeName) => {
-    const name = attributeName.replace(CAMELIZE, capitalize);
-    properties[name] = new PropertyInfoRecord(
-      name,
-      STRING2,
-      false,
+  ].forEach((i) => {
+    const f = i.replace(h, b);
+    s[f] = new o(
+      f,
+      e,
+      !1,
       // mustUseProperty
-      attributeName,
+      i,
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  [
+  }), [
     "xlink:actuate",
     "xlink:arcrole",
     "xlink:role",
@@ -2686,377 +2087,251 @@ function requireLib$1() {
     // NOTE: if you add a camelCased prop to this list,
     // you'll need to set attributeName to name.toLowerCase()
     // instead in the assignment below.
-  ].forEach((attributeName) => {
-    const name = attributeName.replace(CAMELIZE, capitalize);
-    properties[name] = new PropertyInfoRecord(
-      name,
-      STRING2,
-      false,
+  ].forEach((i) => {
+    const f = i.replace(h, b);
+    s[f] = new o(
+      f,
+      e,
+      !1,
       // mustUseProperty
-      attributeName,
+      i,
       "http://www.w3.org/1999/xlink",
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  [
+  }), [
     "xml:base",
     "xml:lang",
     "xml:space"
     // NOTE: if you add a camelCased prop to this list,
     // you'll need to set attributeName to name.toLowerCase()
     // instead in the assignment below.
-  ].forEach((attributeName) => {
-    const name = attributeName.replace(CAMELIZE, capitalize);
-    properties[name] = new PropertyInfoRecord(
-      name,
-      STRING2,
-      false,
+  ].forEach((i) => {
+    const f = i.replace(h, b);
+    s[f] = new o(
+      f,
+      e,
+      !1,
       // mustUseProperty
-      attributeName,
+      i,
       "http://www.w3.org/XML/1998/namespace",
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
-  });
-  ["tabIndex", "crossOrigin"].forEach((attributeName) => {
-    properties[attributeName] = new PropertyInfoRecord(
-      attributeName,
-      STRING2,
-      false,
+  }), ["tabIndex", "crossOrigin"].forEach((i) => {
+    s[i] = new o(
+      i,
+      e,
+      !1,
       // mustUseProperty
-      attributeName.toLowerCase(),
+      i.toLowerCase(),
       // attributeName
       null,
       // attributeNamespace
-      false,
+      !1,
       // sanitizeURL
-      false
+      !1
       // removeEmptyString
     );
   });
-  const xlinkHref = "xlinkHref";
-  properties[xlinkHref] = new PropertyInfoRecord(
+  const R = "xlinkHref";
+  s[R] = new o(
     "xlinkHref",
-    STRING2,
-    false,
+    e,
+    !1,
     // mustUseProperty
     "xlink:href",
     "http://www.w3.org/1999/xlink",
-    true,
+    !0,
     // sanitizeURL
-    false
+    !1
     // removeEmptyString
-  );
-  ["src", "href", "action", "formAction"].forEach((attributeName) => {
-    properties[attributeName] = new PropertyInfoRecord(
-      attributeName,
-      STRING2,
-      false,
+  ), ["src", "href", "action", "formAction"].forEach((i) => {
+    s[i] = new o(
+      i,
+      e,
+      !1,
       // mustUseProperty
-      attributeName.toLowerCase(),
+      i.toLowerCase(),
       // attributeName
       null,
       // attributeNamespace
-      true,
+      !0,
       // sanitizeURL
-      true
+      !0
       // removeEmptyString
     );
   });
   const {
-    CAMELCASE,
-    SAME,
-    possibleStandardNames: possibleStandardNamesOptimized2
-  } = requirePossibleStandardNamesOptimized();
-  const ATTRIBUTE_NAME_START_CHAR = ":A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD";
-  const ATTRIBUTE_NAME_CHAR = ATTRIBUTE_NAME_START_CHAR + "\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040";
-  const isCustomAttribute = RegExp.prototype.test.bind(
+    CAMELCASE: w,
+    SAME: _,
+    possibleStandardNames: A
+  } = ni(), v = ":A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD" + "\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040", S = RegExp.prototype.test.bind(
     // eslint-disable-next-line no-misleading-character-class
-    new RegExp("^(data|aria)-[" + ATTRIBUTE_NAME_CHAR + "]*$")
-  );
-  const possibleStandardNames = Object.keys(
-    possibleStandardNamesOptimized2
-  ).reduce((accumulator, standardName) => {
-    const propName = possibleStandardNamesOptimized2[standardName];
-    if (propName === SAME) {
-      accumulator[standardName] = standardName;
-    } else if (propName === CAMELCASE) {
-      accumulator[standardName.toLowerCase()] = standardName;
-    } else {
-      accumulator[standardName] = propName;
-    }
-    return accumulator;
+    new RegExp("^(data|aria)-[" + v + "]*$")
+  ), D = Object.keys(
+    A
+  ).reduce((i, f) => {
+    const y = A[f];
+    return y === _ ? i[f] = f : y === w ? i[f.toLowerCase()] = f : i[f] = y, i;
   }, {});
-  lib.BOOLEAN = BOOLEAN;
-  lib.BOOLEANISH_STRING = BOOLEANISH_STRING;
-  lib.NUMERIC = NUMERIC;
-  lib.OVERLOADED_BOOLEAN = OVERLOADED_BOOLEAN;
-  lib.POSITIVE_NUMERIC = POSITIVE_NUMERIC;
-  lib.RESERVED = RESERVED;
-  lib.STRING = STRING2;
-  lib.getPropertyInfo = getPropertyInfo;
-  lib.isCustomAttribute = isCustomAttribute;
-  lib.possibleStandardNames = possibleStandardNames;
-  return lib;
+  return ce.BOOLEAN = r, ce.BOOLEANISH_STRING = a, ce.NUMERIC = d, ce.OVERLOADED_BOOLEAN = c, ce.POSITIVE_NUMERIC = p, ce.RESERVED = t, ce.STRING = e, ce.getPropertyInfo = u, ce.isCustomAttribute = S, ce.possibleStandardNames = D, ce;
 }
-var utilities$1 = {};
-var cjs$1 = {};
-var inlineStyleParser;
-var hasRequiredInlineStyleParser;
-function requireInlineStyleParser() {
-  if (hasRequiredInlineStyleParser) return inlineStyleParser;
-  hasRequiredInlineStyleParser = 1;
-  var COMMENT_REGEX = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g;
-  var NEWLINE_REGEX = /\n/g;
-  var WHITESPACE_REGEX = /^\s*/;
-  var PROPERTY_REGEX = /^(\*?[-#/*\\\w]+(\[[0-9a-z_-]+\])?)\s*/;
-  var COLON_REGEX = /^:\s*/;
-  var VALUE_REGEX = /^((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^)]*?\)|[^};])+)/;
-  var SEMICOLON_REGEX = /^[;\s]*/;
-  var TRIM_REGEX = /^\s+|\s+$/g;
-  var NEWLINE = "\n";
-  var FORWARD_SLASH = "/";
-  var ASTERISK = "*";
-  var EMPTY_STRING = "";
-  var TYPE_COMMENT = "comment";
-  var TYPE_DECLARATION = "declaration";
-  inlineStyleParser = function(style, options) {
-    if (typeof style !== "string") {
+var $e = {}, Ce = {}, tt, zt;
+function oi() {
+  if (zt) return tt;
+  zt = 1;
+  var t = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g, e = /\n/g, a = /^\s*/, r = /^(\*?[-#/*\\\w]+(\[[0-9a-z_-]+\])?)\s*/, c = /^:\s*/, d = /^((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^)]*?\)|[^};])+)/, p = /^[;\s]*/, u = /^\s+|\s+$/g, o = `
+`, s = "/", l = "*", h = "", b = "comment", R = "declaration";
+  tt = function(_, A) {
+    if (typeof _ != "string")
       throw new TypeError("First argument must be a string");
+    if (!_) return [];
+    A = A || {};
+    var g = 1, v = 1;
+    function S(I) {
+      var O = I.match(e);
+      O && (g += O.length);
+      var Z = I.lastIndexOf(o);
+      v = ~Z ? I.length - Z : v + I.length;
     }
-    if (!style) return [];
-    options = options || {};
-    var lineno = 1;
-    var column = 1;
-    function updatePosition(str) {
-      var lines = str.match(NEWLINE_REGEX);
-      if (lines) lineno += lines.length;
-      var i = str.lastIndexOf(NEWLINE);
-      column = ~i ? str.length - i : column + str.length;
-    }
-    function position() {
-      var start = { line: lineno, column };
-      return function(node2) {
-        node2.position = new Position(start);
-        whitespace();
-        return node2;
+    function D() {
+      var I = { line: g, column: v };
+      return function(O) {
+        return O.position = new i(I), k(), O;
       };
     }
-    function Position(start) {
-      this.start = start;
-      this.end = { line: lineno, column };
-      this.source = options.source;
+    function i(I) {
+      this.start = I, this.end = { line: g, column: v }, this.source = A.source;
     }
-    Position.prototype.content = style;
-    function error(msg) {
-      var err = new Error(
-        options.source + ":" + lineno + ":" + column + ": " + msg
+    i.prototype.content = _;
+    function f(I) {
+      var O = new Error(
+        A.source + ":" + g + ":" + v + ": " + I
       );
-      err.reason = msg;
-      err.filename = options.source;
-      err.line = lineno;
-      err.column = column;
-      err.source = style;
-      if (options.silent) ;
-      else {
-        throw err;
+      if (O.reason = I, O.filename = A.source, O.line = g, O.column = v, O.source = _, !A.silent) throw O;
+    }
+    function y(I) {
+      var O = I.exec(_);
+      if (O) {
+        var Z = O[0];
+        return S(Z), _ = _.slice(Z.length), O;
       }
     }
-    function match(re) {
-      var m = re.exec(style);
-      if (!m) return;
-      var str = m[0];
-      updatePosition(str);
-      style = style.slice(str.length);
-      return m;
+    function k() {
+      y(a);
     }
-    function whitespace() {
-      match(WHITESPACE_REGEX);
+    function F(I) {
+      var O;
+      for (I = I || []; O = K(); )
+        O !== !1 && I.push(O);
+      return I;
     }
-    function comments(rules) {
-      var c;
-      rules = rules || [];
-      while (c = comment()) {
-        if (c !== false) {
-          rules.push(c);
-        }
+    function K() {
+      var I = D();
+      if (!(s != _.charAt(0) || l != _.charAt(1))) {
+        for (var O = 2; h != _.charAt(O) && (l != _.charAt(O) || s != _.charAt(O + 1)); )
+          ++O;
+        if (O += 2, h === _.charAt(O - 1))
+          return f("End of comment missing");
+        var Z = _.slice(2, O - 2);
+        return v += 2, S(Z), _ = _.slice(O), v += 2, I({
+          type: b,
+          comment: Z
+        });
       }
-      return rules;
     }
-    function comment() {
-      var pos = position();
-      if (FORWARD_SLASH != style.charAt(0) || ASTERISK != style.charAt(1)) return;
-      var i = 2;
-      while (EMPTY_STRING != style.charAt(i) && (ASTERISK != style.charAt(i) || FORWARD_SLASH != style.charAt(i + 1))) {
-        ++i;
+    function re() {
+      var I = D(), O = y(r);
+      if (O) {
+        if (K(), !y(c)) return f("property missing ':'");
+        var Z = y(d), ne = I({
+          type: R,
+          property: w(O[0].replace(t, h)),
+          value: Z ? w(Z[0].replace(t, h)) : h
+        });
+        return y(p), ne;
       }
-      i += 2;
-      if (EMPTY_STRING === style.charAt(i - 1)) {
-        return error("End of comment missing");
-      }
-      var str = style.slice(2, i - 2);
-      column += 2;
-      updatePosition(str);
-      style = style.slice(i);
-      column += 2;
-      return pos({
-        type: TYPE_COMMENT,
-        comment: str
-      });
     }
-    function declaration() {
-      var pos = position();
-      var prop = match(PROPERTY_REGEX);
-      if (!prop) return;
-      comment();
-      if (!match(COLON_REGEX)) return error("property missing ':'");
-      var val = match(VALUE_REGEX);
-      var ret = pos({
-        type: TYPE_DECLARATION,
-        property: trim(prop[0].replace(COMMENT_REGEX, EMPTY_STRING)),
-        value: val ? trim(val[0].replace(COMMENT_REGEX, EMPTY_STRING)) : EMPTY_STRING
-      });
-      match(SEMICOLON_REGEX);
-      return ret;
+    function se() {
+      var I = [];
+      F(I);
+      for (var O; O = re(); )
+        O !== !1 && (I.push(O), F(I));
+      return I;
     }
-    function declarations() {
-      var decls = [];
-      comments(decls);
-      var decl;
-      while (decl = declaration()) {
-        if (decl !== false) {
-          decls.push(decl);
-          comments(decls);
-        }
-      }
-      return decls;
-    }
-    whitespace();
-    return declarations();
+    return k(), se();
   };
-  function trim(str) {
-    return str ? str.replace(TRIM_REGEX, EMPTY_STRING) : EMPTY_STRING;
+  function w(_) {
+    return _ ? _.replace(u, h) : h;
   }
-  return inlineStyleParser;
+  return tt;
 }
-var hasRequiredCjs$1;
-function requireCjs$1() {
-  if (hasRequiredCjs$1) return cjs$1;
-  hasRequiredCjs$1 = 1;
-  var __importDefault = cjs$1 && cjs$1.__importDefault || function(mod) {
-    return mod && mod.__esModule ? mod : { "default": mod };
+var Bt;
+function si() {
+  if (Bt) return Ce;
+  Bt = 1;
+  var t = Ce && Ce.__importDefault || function(r) {
+    return r && r.__esModule ? r : { default: r };
   };
-  Object.defineProperty(cjs$1, "__esModule", { value: true });
-  cjs$1.default = StyleToObject;
-  var inline_style_parser_1 = __importDefault(requireInlineStyleParser());
-  function StyleToObject(style, iterator) {
-    var styleObject = null;
-    if (!style || typeof style !== "string") {
-      return styleObject;
-    }
-    var declarations = (0, inline_style_parser_1.default)(style);
-    var hasIterator = typeof iterator === "function";
-    declarations.forEach(function(declaration) {
-      if (declaration.type !== "declaration") {
-        return;
+  Object.defineProperty(Ce, "__esModule", { value: !0 }), Ce.default = a;
+  var e = t(oi());
+  function a(r, c) {
+    var d = null;
+    if (!r || typeof r != "string")
+      return d;
+    var p = (0, e.default)(r), u = typeof c == "function";
+    return p.forEach(function(o) {
+      if (o.type === "declaration") {
+        var s = o.property, l = o.value;
+        u ? c(s, l, o) : l && (d = d || {}, d[s] = l);
       }
-      var property = declaration.property, value = declaration.value;
-      if (hasIterator) {
-        iterator(property, value, declaration);
-      } else if (value) {
-        styleObject = styleObject || {};
-        styleObject[property] = value;
-      }
-    });
-    return styleObject;
+    }), d;
   }
-  return cjs$1;
+  return Ce;
 }
-var utilities = {};
-var hasRequiredUtilities$1;
-function requireUtilities$1() {
-  if (hasRequiredUtilities$1) return utilities;
-  hasRequiredUtilities$1 = 1;
-  Object.defineProperty(utilities, "__esModule", { value: true });
-  utilities.camelCase = void 0;
-  var CUSTOM_PROPERTY_REGEX = /^--[a-zA-Z0-9_-]+$/;
-  var HYPHEN_REGEX = /-([a-z])/g;
-  var NO_HYPHEN_REGEX = /^[^-]+$/;
-  var VENDOR_PREFIX_REGEX = /^-(webkit|moz|ms|o|khtml)-/;
-  var MS_VENDOR_PREFIX_REGEX = /^-(ms)-/;
-  var skipCamelCase = function(property) {
-    return !property || NO_HYPHEN_REGEX.test(property) || CUSTOM_PROPERTY_REGEX.test(property);
+var Le = {}, Gt;
+function li() {
+  if (Gt) return Le;
+  Gt = 1, Object.defineProperty(Le, "__esModule", { value: !0 }), Le.camelCase = void 0;
+  var t = /^--[a-zA-Z0-9_-]+$/, e = /-([a-z])/g, a = /^[^-]+$/, r = /^-(webkit|moz|ms|o|khtml)-/, c = /^-(ms)-/, d = function(s) {
+    return !s || a.test(s) || t.test(s);
+  }, p = function(s, l) {
+    return l.toUpperCase();
+  }, u = function(s, l) {
+    return "".concat(l, "-");
+  }, o = function(s, l) {
+    return l === void 0 && (l = {}), d(s) ? s : (s = s.toLowerCase(), l.reactCompat ? s = s.replace(c, u) : s = s.replace(r, u), s.replace(e, p));
   };
-  var capitalize = function(match, character) {
-    return character.toUpperCase();
-  };
-  var trimHyphen = function(match, prefix) {
-    return "".concat(prefix, "-");
-  };
-  var camelCase = function(property, options) {
-    if (options === void 0) {
-      options = {};
-    }
-    if (skipCamelCase(property)) {
-      return property;
-    }
-    property = property.toLowerCase();
-    if (options.reactCompat) {
-      property = property.replace(MS_VENDOR_PREFIX_REGEX, trimHyphen);
-    } else {
-      property = property.replace(VENDOR_PREFIX_REGEX, trimHyphen);
-    }
-    return property.replace(HYPHEN_REGEX, capitalize);
-  };
-  utilities.camelCase = camelCase;
-  return utilities;
+  return Le.camelCase = o, Le;
 }
-var cjs;
-var hasRequiredCjs;
-function requireCjs() {
-  if (hasRequiredCjs) return cjs;
-  hasRequiredCjs = 1;
-  var __importDefault = cjs && cjs.__importDefault || function(mod) {
-    return mod && mod.__esModule ? mod : { "default": mod };
-  };
-  var style_to_object_1 = __importDefault(requireCjs$1());
-  var utilities_1 = requireUtilities$1();
-  function StyleToJS(style, options) {
-    var output = {};
-    if (!style || typeof style !== "string") {
-      return output;
-    }
-    (0, style_to_object_1.default)(style, function(property, value) {
-      if (property && value) {
-        output[(0, utilities_1.camelCase)(property, options)] = value;
-      }
-    });
-    return output;
+var Me, Yt;
+function ui() {
+  if (Yt) return Me;
+  Yt = 1;
+  var t = Me && Me.__importDefault || function(c) {
+    return c && c.__esModule ? c : { default: c };
+  }, e = t(si()), a = li();
+  function r(c, d) {
+    var p = {};
+    return !c || typeof c != "string" || (0, e.default)(c, function(u, o) {
+      u && o && (p[(0, a.camelCase)(u, d)] = o);
+    }), p;
   }
-  StyleToJS.default = StyleToJS;
-  cjs = StyleToJS;
-  return cjs;
+  return r.default = r, Me = r, Me;
 }
-var hasRequiredUtilities;
-function requireUtilities() {
-  if (hasRequiredUtilities) return utilities$1;
-  hasRequiredUtilities = 1;
-  (function(exports) {
-    var __importDefault = utilities$1 && utilities$1.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
+var Wt;
+function br() {
+  return Wt || (Wt = 1, function(t) {
+    var e = $e && $e.__importDefault || function(l) {
+      return l && l.__esModule ? l : { default: l };
     };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.returnFirstArg = exports.canTextBeChildOfNode = exports.ELEMENTS_WITH_NO_TEXT_CHILDREN = exports.PRESERVE_CUSTOM_ATTRIBUTES = void 0;
-    exports.isCustomComponent = isCustomComponent;
-    exports.setStyleProp = setStyleProp;
-    var react_1 = React2;
-    var style_to_js_1 = __importDefault(requireCjs());
-    var RESERVED_SVG_MATHML_ELEMENTS = /* @__PURE__ */ new Set([
+    Object.defineProperty(t, "__esModule", { value: !0 }), t.returnFirstArg = t.canTextBeChildOfNode = t.ELEMENTS_WITH_NO_TEXT_CHILDREN = t.PRESERVE_CUSTOM_ATTRIBUTES = void 0, t.isCustomComponent = d, t.setStyleProp = u;
+    var a = Se, r = e(ui()), c = /* @__PURE__ */ new Set([
       "annotation-xml",
       "color-profile",
       "font-face",
@@ -3066,34 +2341,26 @@ function requireUtilities() {
       "font-face-name",
       "missing-glyph"
     ]);
-    function isCustomComponent(tagName, props) {
-      if (!tagName.includes("-")) {
-        return Boolean(props && typeof props.is === "string");
-      }
-      if (RESERVED_SVG_MATHML_ELEMENTS.has(tagName)) {
-        return false;
-      }
-      return true;
+    function d(l, h) {
+      return l.includes("-") ? !c.has(l) : !!(h && typeof h.is == "string");
     }
-    var styleOptions = {
-      reactCompat: true
+    var p = {
+      reactCompat: !0
     };
-    function setStyleProp(style, props) {
-      if (typeof style !== "string") {
-        return;
-      }
-      if (!style.trim()) {
-        props.style = {};
-        return;
-      }
-      try {
-        props.style = (0, style_to_js_1.default)(style, styleOptions);
-      } catch (error) {
-        props.style = {};
+    function u(l, h) {
+      if (typeof l == "string") {
+        if (!l.trim()) {
+          h.style = {};
+          return;
+        }
+        try {
+          h.style = (0, r.default)(l, p);
+        } catch {
+          h.style = {};
+        }
       }
     }
-    exports.PRESERVE_CUSTOM_ATTRIBUTES = Number(react_1.version.split(".")[0]) >= 16;
-    exports.ELEMENTS_WITH_NO_TEXT_CHILDREN = /* @__PURE__ */ new Set([
+    t.PRESERVE_CUSTOM_ATTRIBUTES = Number(a.version.split(".")[0]) >= 16, t.ELEMENTS_WITH_NO_TEXT_CHILDREN = /* @__PURE__ */ new Set([
       "tr",
       "tbody",
       "thead",
@@ -3104,217 +2371,148 @@ function requireUtilities() {
       "html",
       "frameset"
     ]);
-    var canTextBeChildOfNode = function(node2) {
-      return !exports.ELEMENTS_WITH_NO_TEXT_CHILDREN.has(node2.name);
+    var o = function(l) {
+      return !t.ELEMENTS_WITH_NO_TEXT_CHILDREN.has(l.name);
     };
-    exports.canTextBeChildOfNode = canTextBeChildOfNode;
-    var returnFirstArg = function(arg) {
-      return arg;
+    t.canTextBeChildOfNode = o;
+    var s = function(l) {
+      return l;
     };
-    exports.returnFirstArg = returnFirstArg;
-  })(utilities$1);
-  return utilities$1;
+    t.returnFirstArg = s;
+  }($e)), $e;
 }
-var hasRequiredAttributesToProps;
-function requireAttributesToProps() {
-  if (hasRequiredAttributesToProps) return attributesToProps;
-  hasRequiredAttributesToProps = 1;
-  Object.defineProperty(attributesToProps, "__esModule", { value: true });
-  attributesToProps.default = attributesToProps$1;
-  var react_property_1 = requireLib$1();
-  var utilities_1 = requireUtilities();
-  var UNCONTROLLED_COMPONENT_ATTRIBUTES = ["checked", "value"];
-  var UNCONTROLLED_COMPONENT_NAMES = ["input", "select", "textarea"];
-  var valueOnlyInputs = {
-    reset: true,
-    submit: true
+var Xt;
+function Er() {
+  if (Xt) return Ve;
+  Xt = 1, Object.defineProperty(Ve, "__esModule", { value: !0 }), Ve.default = d;
+  var t = ai(), e = br(), a = ["checked", "value"], r = ["input", "select", "textarea"], c = {
+    reset: !0,
+    submit: !0
   };
-  function attributesToProps$1(attributes, nodeName) {
-    if (attributes === void 0) {
-      attributes = {};
-    }
-    var props = {};
-    var isInputValueOnly = Boolean(attributes.type && valueOnlyInputs[attributes.type]);
-    for (var attributeName in attributes) {
-      var attributeValue = attributes[attributeName];
-      if ((0, react_property_1.isCustomAttribute)(attributeName)) {
-        props[attributeName] = attributeValue;
+  function d(u, o) {
+    u === void 0 && (u = {});
+    var s = {}, l = !!(u.type && c[u.type]);
+    for (var h in u) {
+      var b = u[h];
+      if ((0, t.isCustomAttribute)(h)) {
+        s[h] = b;
         continue;
       }
-      var attributeNameLowerCased = attributeName.toLowerCase();
-      var propName = getPropName(attributeNameLowerCased);
-      if (propName) {
-        var propertyInfo = (0, react_property_1.getPropertyInfo)(propName);
-        if (UNCONTROLLED_COMPONENT_ATTRIBUTES.includes(propName) && UNCONTROLLED_COMPONENT_NAMES.includes(nodeName) && !isInputValueOnly) {
-          propName = getPropName("default" + attributeNameLowerCased);
-        }
-        props[propName] = attributeValue;
-        switch (propertyInfo && propertyInfo.type) {
-          case react_property_1.BOOLEAN:
-            props[propName] = true;
+      var R = h.toLowerCase(), w = p(R);
+      if (w) {
+        var _ = (0, t.getPropertyInfo)(w);
+        switch (a.includes(w) && r.includes(o) && !l && (w = p("default" + R)), s[w] = b, _ && _.type) {
+          case t.BOOLEAN:
+            s[w] = !0;
             break;
-          case react_property_1.OVERLOADED_BOOLEAN:
-            if (attributeValue === "") {
-              props[propName] = true;
-            }
+          case t.OVERLOADED_BOOLEAN:
+            b === "" && (s[w] = !0);
             break;
         }
         continue;
       }
-      if (utilities_1.PRESERVE_CUSTOM_ATTRIBUTES) {
-        props[attributeName] = attributeValue;
-      }
+      e.PRESERVE_CUSTOM_ATTRIBUTES && (s[h] = b);
     }
-    (0, utilities_1.setStyleProp)(attributes.style, props);
-    return props;
+    return (0, e.setStyleProp)(u.style, s), s;
   }
-  function getPropName(attributeName) {
-    return react_property_1.possibleStandardNames[attributeName];
+  function p(u) {
+    return t.possibleStandardNames[u];
   }
-  return attributesToProps;
+  return Ve;
 }
-var domToReact = {};
-var hasRequiredDomToReact;
-function requireDomToReact() {
-  if (hasRequiredDomToReact) return domToReact;
-  hasRequiredDomToReact = 1;
-  var __importDefault = domToReact && domToReact.__importDefault || function(mod) {
-    return mod && mod.__esModule ? mod : { "default": mod };
+var Re = {}, Jt;
+function ci() {
+  if (Jt) return Re;
+  Jt = 1;
+  var t = Re && Re.__importDefault || function(u) {
+    return u && u.__esModule ? u : { default: u };
   };
-  Object.defineProperty(domToReact, "__esModule", { value: true });
-  domToReact.default = domToReact$1;
-  var react_1 = React2;
-  var attributes_to_props_1 = __importDefault(requireAttributesToProps());
-  var utilities_1 = requireUtilities();
-  var React = {
-    cloneElement: react_1.cloneElement,
-    createElement: react_1.createElement,
-    isValidElement: react_1.isValidElement
+  Object.defineProperty(Re, "__esModule", { value: !0 }), Re.default = d;
+  var e = Se, a = t(Er()), r = br(), c = {
+    cloneElement: e.cloneElement,
+    createElement: e.createElement,
+    isValidElement: e.isValidElement
   };
-  function domToReact$1(nodes, options) {
-    if (options === void 0) {
-      options = {};
-    }
-    var reactElements = [];
-    var hasReplace = typeof options.replace === "function";
-    var transform = options.transform || utilities_1.returnFirstArg;
-    var _a = options.library || React, cloneElement = _a.cloneElement, createElement = _a.createElement, isValidElement = _a.isValidElement;
-    var nodesLength = nodes.length;
-    for (var index = 0; index < nodesLength; index++) {
-      var node2 = nodes[index];
-      if (hasReplace) {
-        var replaceElement = options.replace(node2, index);
-        if (isValidElement(replaceElement)) {
-          if (nodesLength > 1) {
-            replaceElement = cloneElement(replaceElement, {
-              key: replaceElement.key || index
-            });
-          }
-          reactElements.push(transform(replaceElement, node2, index));
+  function d(u, o) {
+    o === void 0 && (o = {});
+    for (var s = [], l = typeof o.replace == "function", h = o.transform || r.returnFirstArg, b = o.library || c, R = b.cloneElement, w = b.createElement, _ = b.isValidElement, A = u.length, g = 0; g < A; g++) {
+      var v = u[g];
+      if (l) {
+        var S = o.replace(v, g);
+        if (_(S)) {
+          A > 1 && (S = R(S, {
+            key: S.key || g
+          })), s.push(h(S, v, g));
           continue;
         }
       }
-      if (node2.type === "text") {
-        var isWhitespace = !node2.data.trim().length;
-        if (isWhitespace && node2.parent && !(0, utilities_1.canTextBeChildOfNode)(node2.parent)) {
+      if (v.type === "text") {
+        var D = !v.data.trim().length;
+        if (D && v.parent && !(0, r.canTextBeChildOfNode)(v.parent) || o.trim && D)
           continue;
-        }
-        if (options.trim && isWhitespace) {
-          continue;
-        }
-        reactElements.push(transform(node2.data, node2, index));
+        s.push(h(v.data, v, g));
         continue;
       }
-      var element = node2;
-      var props = {};
-      if (skipAttributesToProps(element)) {
-        (0, utilities_1.setStyleProp)(element.attribs.style, element.attribs);
-        props = element.attribs;
-      } else if (element.attribs) {
-        props = (0, attributes_to_props_1.default)(element.attribs, element.name);
-      }
-      var children = void 0;
-      switch (node2.type) {
+      var i = v, f = {};
+      p(i) ? ((0, r.setStyleProp)(i.attribs.style, i.attribs), f = i.attribs) : i.attribs && (f = (0, a.default)(i.attribs, i.name));
+      var y = void 0;
+      switch (v.type) {
         case "script":
         case "style":
-          if (node2.children[0]) {
-            props.dangerouslySetInnerHTML = {
-              __html: node2.children[0].data
-            };
-          }
+          v.children[0] && (f.dangerouslySetInnerHTML = {
+            __html: v.children[0].data
+          });
           break;
         case "tag":
-          if (node2.name === "textarea" && node2.children[0]) {
-            props.defaultValue = node2.children[0].data;
-          } else if (node2.children && node2.children.length) {
-            children = domToReact$1(node2.children, options);
-          }
+          v.name === "textarea" && v.children[0] ? f.defaultValue = v.children[0].data : v.children && v.children.length && (y = d(v.children, o));
           break;
         // skip all other cases (e.g., comment)
         default:
           continue;
       }
-      if (nodesLength > 1) {
-        props.key = index;
-      }
-      reactElements.push(transform(createElement(node2.name, props, children), node2, index));
+      A > 1 && (f.key = g), s.push(h(w(v.name, f, y), v, g));
     }
-    return reactElements.length === 1 ? reactElements[0] : reactElements;
+    return s.length === 1 ? s[0] : s;
   }
-  function skipAttributesToProps(node2) {
-    return utilities_1.PRESERVE_CUSTOM_ATTRIBUTES && node2.type === "tag" && (0, utilities_1.isCustomComponent)(node2.name, node2.attribs);
+  function p(u) {
+    return r.PRESERVE_CUSTOM_ATTRIBUTES && u.type === "tag" && (0, r.isCustomComponent)(u.name, u.attribs);
   }
-  return domToReact;
+  return Re;
 }
-var hasRequiredLib;
-function requireLib() {
-  if (hasRequiredLib) return lib$3;
-  hasRequiredLib = 1;
-  (function(exports) {
-    var __importDefault = lib$3 && lib$3.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
+var Kt;
+function di() {
+  return Kt || (Kt = 1, function(t) {
+    var e = De && De.__importDefault || function(o) {
+      return o && o.__esModule ? o : { default: o };
     };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.htmlToDOM = exports.domToReact = exports.attributesToProps = exports.Text = exports.ProcessingInstruction = exports.Element = exports.Comment = void 0;
-    exports.default = HTMLReactParser2;
-    var html_dom_parser_1 = __importDefault(requireHtmlToDom());
-    exports.htmlToDOM = html_dom_parser_1.default;
-    var attributes_to_props_1 = __importDefault(requireAttributesToProps());
-    exports.attributesToProps = attributes_to_props_1.default;
-    var dom_to_react_1 = __importDefault(requireDomToReact());
-    exports.domToReact = dom_to_react_1.default;
-    var domhandler_1 = /* @__PURE__ */ requireLib$2();
-    Object.defineProperty(exports, "Comment", { enumerable: true, get: function() {
-      return domhandler_1.Comment;
+    Object.defineProperty(t, "__esModule", { value: !0 }), t.htmlToDOM = t.domToReact = t.attributesToProps = t.Text = t.ProcessingInstruction = t.Element = t.Comment = void 0, t.default = u;
+    var a = e(ii());
+    t.htmlToDOM = a.default;
+    var r = e(Er());
+    t.attributesToProps = r.default;
+    var c = e(ci());
+    t.domToReact = c.default;
+    var d = /* @__PURE__ */ gr();
+    Object.defineProperty(t, "Comment", { enumerable: !0, get: function() {
+      return d.Comment;
+    } }), Object.defineProperty(t, "Element", { enumerable: !0, get: function() {
+      return d.Element;
+    } }), Object.defineProperty(t, "ProcessingInstruction", { enumerable: !0, get: function() {
+      return d.ProcessingInstruction;
+    } }), Object.defineProperty(t, "Text", { enumerable: !0, get: function() {
+      return d.Text;
     } });
-    Object.defineProperty(exports, "Element", { enumerable: true, get: function() {
-      return domhandler_1.Element;
-    } });
-    Object.defineProperty(exports, "ProcessingInstruction", { enumerable: true, get: function() {
-      return domhandler_1.ProcessingInstruction;
-    } });
-    Object.defineProperty(exports, "Text", { enumerable: true, get: function() {
-      return domhandler_1.Text;
-    } });
-    var domParserOptions = { lowerCaseAttributeNames: false };
-    function HTMLReactParser2(html, options) {
-      if (typeof html !== "string") {
+    var p = { lowerCaseAttributeNames: !1 };
+    function u(o, s) {
+      if (typeof o != "string")
         throw new TypeError("First argument must be a string");
-      }
-      if (!html) {
-        return [];
-      }
-      return (0, dom_to_react_1.default)((0, html_dom_parser_1.default)(html, (options === null || options === void 0 ? void 0 : options.htmlparser2) || domParserOptions), options);
+      return o ? (0, c.default)((0, a.default)(o, (s == null ? void 0 : s.htmlparser2) || p), s) : [];
     }
-  })(lib$3);
-  return lib$3;
+  }(De)), De;
 }
-var libExports = requireLib();
-const HTMLReactParser = /* @__PURE__ */ getDefaultExportFromCjs(libExports);
-const parseToHTML = HTMLReactParser.default || HTMLReactParser;
-var propTypes$1 = { exports: {} };
-var reactIs = { exports: {} };
-var reactIs_production_min = {};
+var ct = di();
+const Zt = /* @__PURE__ */ vr(ct), fi = Zt.default || Zt;
+var ze = { exports: {} }, Be = { exports: {} }, W = {};
 /** @license React v16.13.1
  * react-is.production.min.js
  *
@@ -3323,101 +2521,73 @@ var reactIs_production_min = {};
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var hasRequiredReactIs_production_min;
-function requireReactIs_production_min() {
-  if (hasRequiredReactIs_production_min) return reactIs_production_min;
-  hasRequiredReactIs_production_min = 1;
-  var b = "function" === typeof Symbol && Symbol.for, c = b ? Symbol.for("react.element") : 60103, d = b ? Symbol.for("react.portal") : 60106, e = b ? Symbol.for("react.fragment") : 60107, f = b ? Symbol.for("react.strict_mode") : 60108, g = b ? Symbol.for("react.profiler") : 60114, h = b ? Symbol.for("react.provider") : 60109, k = b ? Symbol.for("react.context") : 60110, l = b ? Symbol.for("react.async_mode") : 60111, m = b ? Symbol.for("react.concurrent_mode") : 60111, n = b ? Symbol.for("react.forward_ref") : 60112, p = b ? Symbol.for("react.suspense") : 60113, q = b ? Symbol.for("react.suspense_list") : 60120, r = b ? Symbol.for("react.memo") : 60115, t = b ? Symbol.for("react.lazy") : 60116, v = b ? Symbol.for("react.block") : 60121, w = b ? Symbol.for("react.fundamental") : 60117, x = b ? Symbol.for("react.responder") : 60118, y = b ? Symbol.for("react.scope") : 60119;
-  function z(a) {
-    if ("object" === typeof a && null !== a) {
-      var u = a.$$typeof;
-      switch (u) {
-        case c:
-          switch (a = a.type, a) {
-            case l:
-            case m:
-            case e:
-            case g:
-            case f:
-            case p:
-              return a;
+var Qt;
+function hi() {
+  if (Qt) return W;
+  Qt = 1;
+  var t = typeof Symbol == "function" && Symbol.for, e = t ? Symbol.for("react.element") : 60103, a = t ? Symbol.for("react.portal") : 60106, r = t ? Symbol.for("react.fragment") : 60107, c = t ? Symbol.for("react.strict_mode") : 60108, d = t ? Symbol.for("react.profiler") : 60114, p = t ? Symbol.for("react.provider") : 60109, u = t ? Symbol.for("react.context") : 60110, o = t ? Symbol.for("react.async_mode") : 60111, s = t ? Symbol.for("react.concurrent_mode") : 60111, l = t ? Symbol.for("react.forward_ref") : 60112, h = t ? Symbol.for("react.suspense") : 60113, b = t ? Symbol.for("react.suspense_list") : 60120, R = t ? Symbol.for("react.memo") : 60115, w = t ? Symbol.for("react.lazy") : 60116, _ = t ? Symbol.for("react.block") : 60121, A = t ? Symbol.for("react.fundamental") : 60117, g = t ? Symbol.for("react.responder") : 60118, v = t ? Symbol.for("react.scope") : 60119;
+  function S(i) {
+    if (typeof i == "object" && i !== null) {
+      var f = i.$$typeof;
+      switch (f) {
+        case e:
+          switch (i = i.type, i) {
+            case o:
+            case s:
+            case r:
+            case d:
+            case c:
+            case h:
+              return i;
             default:
-              switch (a = a && a.$$typeof, a) {
-                case k:
-                case n:
-                case t:
-                case r:
-                case h:
-                  return a;
+              switch (i = i && i.$$typeof, i) {
+                case u:
+                case l:
+                case w:
+                case R:
+                case p:
+                  return i;
                 default:
-                  return u;
+                  return f;
               }
           }
-        case d:
-          return u;
+        case a:
+          return f;
       }
     }
   }
-  function A(a) {
-    return z(a) === m;
+  function D(i) {
+    return S(i) === s;
   }
-  reactIs_production_min.AsyncMode = l;
-  reactIs_production_min.ConcurrentMode = m;
-  reactIs_production_min.ContextConsumer = k;
-  reactIs_production_min.ContextProvider = h;
-  reactIs_production_min.Element = c;
-  reactIs_production_min.ForwardRef = n;
-  reactIs_production_min.Fragment = e;
-  reactIs_production_min.Lazy = t;
-  reactIs_production_min.Memo = r;
-  reactIs_production_min.Portal = d;
-  reactIs_production_min.Profiler = g;
-  reactIs_production_min.StrictMode = f;
-  reactIs_production_min.Suspense = p;
-  reactIs_production_min.isAsyncMode = function(a) {
-    return A(a) || z(a) === l;
-  };
-  reactIs_production_min.isConcurrentMode = A;
-  reactIs_production_min.isContextConsumer = function(a) {
-    return z(a) === k;
-  };
-  reactIs_production_min.isContextProvider = function(a) {
-    return z(a) === h;
-  };
-  reactIs_production_min.isElement = function(a) {
-    return "object" === typeof a && null !== a && a.$$typeof === c;
-  };
-  reactIs_production_min.isForwardRef = function(a) {
-    return z(a) === n;
-  };
-  reactIs_production_min.isFragment = function(a) {
-    return z(a) === e;
-  };
-  reactIs_production_min.isLazy = function(a) {
-    return z(a) === t;
-  };
-  reactIs_production_min.isMemo = function(a) {
-    return z(a) === r;
-  };
-  reactIs_production_min.isPortal = function(a) {
-    return z(a) === d;
-  };
-  reactIs_production_min.isProfiler = function(a) {
-    return z(a) === g;
-  };
-  reactIs_production_min.isStrictMode = function(a) {
-    return z(a) === f;
-  };
-  reactIs_production_min.isSuspense = function(a) {
-    return z(a) === p;
-  };
-  reactIs_production_min.isValidElementType = function(a) {
-    return "string" === typeof a || "function" === typeof a || a === e || a === m || a === g || a === f || a === p || a === q || "object" === typeof a && null !== a && (a.$$typeof === t || a.$$typeof === r || a.$$typeof === h || a.$$typeof === k || a.$$typeof === n || a.$$typeof === w || a.$$typeof === x || a.$$typeof === y || a.$$typeof === v);
-  };
-  reactIs_production_min.typeOf = z;
-  return reactIs_production_min;
+  return W.AsyncMode = o, W.ConcurrentMode = s, W.ContextConsumer = u, W.ContextProvider = p, W.Element = e, W.ForwardRef = l, W.Fragment = r, W.Lazy = w, W.Memo = R, W.Portal = a, W.Profiler = d, W.StrictMode = c, W.Suspense = h, W.isAsyncMode = function(i) {
+    return D(i) || S(i) === o;
+  }, W.isConcurrentMode = D, W.isContextConsumer = function(i) {
+    return S(i) === u;
+  }, W.isContextProvider = function(i) {
+    return S(i) === p;
+  }, W.isElement = function(i) {
+    return typeof i == "object" && i !== null && i.$$typeof === e;
+  }, W.isForwardRef = function(i) {
+    return S(i) === l;
+  }, W.isFragment = function(i) {
+    return S(i) === r;
+  }, W.isLazy = function(i) {
+    return S(i) === w;
+  }, W.isMemo = function(i) {
+    return S(i) === R;
+  }, W.isPortal = function(i) {
+    return S(i) === a;
+  }, W.isProfiler = function(i) {
+    return S(i) === d;
+  }, W.isStrictMode = function(i) {
+    return S(i) === c;
+  }, W.isSuspense = function(i) {
+    return S(i) === h;
+  }, W.isValidElementType = function(i) {
+    return typeof i == "string" || typeof i == "function" || i === r || i === s || i === d || i === c || i === h || i === b || typeof i == "object" && i !== null && (i.$$typeof === w || i.$$typeof === R || i.$$typeof === p || i.$$typeof === u || i.$$typeof === l || i.$$typeof === A || i.$$typeof === g || i.$$typeof === v || i.$$typeof === _);
+  }, W.typeOf = S, W;
 }
-var reactIs_development = {};
+var X = {};
 /** @license React v16.13.1
  * react-is.development.js
  *
@@ -3426,837 +2596,585 @@ var reactIs_development = {};
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var hasRequiredReactIs_development;
-function requireReactIs_development() {
-  if (hasRequiredReactIs_development) return reactIs_development;
-  hasRequiredReactIs_development = 1;
-  if (process.env.NODE_ENV !== "production") {
-    (function() {
-      var hasSymbol = typeof Symbol === "function" && Symbol.for;
-      var REACT_ELEMENT_TYPE = hasSymbol ? Symbol.for("react.element") : 60103;
-      var REACT_PORTAL_TYPE = hasSymbol ? Symbol.for("react.portal") : 60106;
-      var REACT_FRAGMENT_TYPE = hasSymbol ? Symbol.for("react.fragment") : 60107;
-      var REACT_STRICT_MODE_TYPE = hasSymbol ? Symbol.for("react.strict_mode") : 60108;
-      var REACT_PROFILER_TYPE = hasSymbol ? Symbol.for("react.profiler") : 60114;
-      var REACT_PROVIDER_TYPE = hasSymbol ? Symbol.for("react.provider") : 60109;
-      var REACT_CONTEXT_TYPE = hasSymbol ? Symbol.for("react.context") : 60110;
-      var REACT_ASYNC_MODE_TYPE = hasSymbol ? Symbol.for("react.async_mode") : 60111;
-      var REACT_CONCURRENT_MODE_TYPE = hasSymbol ? Symbol.for("react.concurrent_mode") : 60111;
-      var REACT_FORWARD_REF_TYPE = hasSymbol ? Symbol.for("react.forward_ref") : 60112;
-      var REACT_SUSPENSE_TYPE = hasSymbol ? Symbol.for("react.suspense") : 60113;
-      var REACT_SUSPENSE_LIST_TYPE = hasSymbol ? Symbol.for("react.suspense_list") : 60120;
-      var REACT_MEMO_TYPE = hasSymbol ? Symbol.for("react.memo") : 60115;
-      var REACT_LAZY_TYPE = hasSymbol ? Symbol.for("react.lazy") : 60116;
-      var REACT_BLOCK_TYPE = hasSymbol ? Symbol.for("react.block") : 60121;
-      var REACT_FUNDAMENTAL_TYPE = hasSymbol ? Symbol.for("react.fundamental") : 60117;
-      var REACT_RESPONDER_TYPE = hasSymbol ? Symbol.for("react.responder") : 60118;
-      var REACT_SCOPE_TYPE = hasSymbol ? Symbol.for("react.scope") : 60119;
-      function isValidElementType(type) {
-        return typeof type === "string" || typeof type === "function" || // Note: its typeof might be other than 'symbol' or 'number' if it's a polyfill.
-        type === REACT_FRAGMENT_TYPE || type === REACT_CONCURRENT_MODE_TYPE || type === REACT_PROFILER_TYPE || type === REACT_STRICT_MODE_TYPE || type === REACT_SUSPENSE_TYPE || type === REACT_SUSPENSE_LIST_TYPE || typeof type === "object" && type !== null && (type.$$typeof === REACT_LAZY_TYPE || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || type.$$typeof === REACT_FUNDAMENTAL_TYPE || type.$$typeof === REACT_RESPONDER_TYPE || type.$$typeof === REACT_SCOPE_TYPE || type.$$typeof === REACT_BLOCK_TYPE);
-      }
-      function typeOf(object) {
-        if (typeof object === "object" && object !== null) {
-          var $$typeof = object.$$typeof;
-          switch ($$typeof) {
-            case REACT_ELEMENT_TYPE:
-              var type = object.type;
-              switch (type) {
-                case REACT_ASYNC_MODE_TYPE:
-                case REACT_CONCURRENT_MODE_TYPE:
-                case REACT_FRAGMENT_TYPE:
-                case REACT_PROFILER_TYPE:
-                case REACT_STRICT_MODE_TYPE:
-                case REACT_SUSPENSE_TYPE:
-                  return type;
-                default:
-                  var $$typeofType = type && type.$$typeof;
-                  switch ($$typeofType) {
-                    case REACT_CONTEXT_TYPE:
-                    case REACT_FORWARD_REF_TYPE:
-                    case REACT_LAZY_TYPE:
-                    case REACT_MEMO_TYPE:
-                    case REACT_PROVIDER_TYPE:
-                      return $$typeofType;
-                    default:
-                      return $$typeof;
-                  }
-              }
-            case REACT_PORTAL_TYPE:
-              return $$typeof;
-          }
+var er;
+function pi() {
+  return er || (er = 1, process.env.NODE_ENV !== "production" && function() {
+    var t = typeof Symbol == "function" && Symbol.for, e = t ? Symbol.for("react.element") : 60103, a = t ? Symbol.for("react.portal") : 60106, r = t ? Symbol.for("react.fragment") : 60107, c = t ? Symbol.for("react.strict_mode") : 60108, d = t ? Symbol.for("react.profiler") : 60114, p = t ? Symbol.for("react.provider") : 60109, u = t ? Symbol.for("react.context") : 60110, o = t ? Symbol.for("react.async_mode") : 60111, s = t ? Symbol.for("react.concurrent_mode") : 60111, l = t ? Symbol.for("react.forward_ref") : 60112, h = t ? Symbol.for("react.suspense") : 60113, b = t ? Symbol.for("react.suspense_list") : 60120, R = t ? Symbol.for("react.memo") : 60115, w = t ? Symbol.for("react.lazy") : 60116, _ = t ? Symbol.for("react.block") : 60121, A = t ? Symbol.for("react.fundamental") : 60117, g = t ? Symbol.for("react.responder") : 60118, v = t ? Symbol.for("react.scope") : 60119;
+    function S(T) {
+      return typeof T == "string" || typeof T == "function" || // Note: its typeof might be other than 'symbol' or 'number' if it's a polyfill.
+      T === r || T === s || T === d || T === c || T === h || T === b || typeof T == "object" && T !== null && (T.$$typeof === w || T.$$typeof === R || T.$$typeof === p || T.$$typeof === u || T.$$typeof === l || T.$$typeof === A || T.$$typeof === g || T.$$typeof === v || T.$$typeof === _);
+    }
+    function D(T) {
+      if (typeof T == "object" && T !== null) {
+        var le = T.$$typeof;
+        switch (le) {
+          case e:
+            var _e = T.type;
+            switch (_e) {
+              case o:
+              case s:
+              case r:
+              case d:
+              case c:
+              case h:
+                return _e;
+              default:
+                var me = _e && _e.$$typeof;
+                switch (me) {
+                  case u:
+                  case l:
+                  case w:
+                  case R:
+                  case p:
+                    return me;
+                  default:
+                    return le;
+                }
+            }
+          case a:
+            return le;
         }
-        return void 0;
       }
-      var AsyncMode = REACT_ASYNC_MODE_TYPE;
-      var ConcurrentMode = REACT_CONCURRENT_MODE_TYPE;
-      var ContextConsumer = REACT_CONTEXT_TYPE;
-      var ContextProvider = REACT_PROVIDER_TYPE;
-      var Element = REACT_ELEMENT_TYPE;
-      var ForwardRef = REACT_FORWARD_REF_TYPE;
-      var Fragment = REACT_FRAGMENT_TYPE;
-      var Lazy = REACT_LAZY_TYPE;
-      var Memo = REACT_MEMO_TYPE;
-      var Portal = REACT_PORTAL_TYPE;
-      var Profiler = REACT_PROFILER_TYPE;
-      var StrictMode = REACT_STRICT_MODE_TYPE;
-      var Suspense = REACT_SUSPENSE_TYPE;
-      var hasWarnedAboutDeprecatedIsAsyncMode = false;
-      function isAsyncMode(object) {
-        {
-          if (!hasWarnedAboutDeprecatedIsAsyncMode) {
-            hasWarnedAboutDeprecatedIsAsyncMode = true;
-            console["warn"]("The ReactIs.isAsyncMode() alias has been deprecated, and will be removed in React 17+. Update your code to use ReactIs.isConcurrentMode() instead. It has the exact same API.");
-          }
-        }
-        return isConcurrentMode(object) || typeOf(object) === REACT_ASYNC_MODE_TYPE;
-      }
-      function isConcurrentMode(object) {
-        return typeOf(object) === REACT_CONCURRENT_MODE_TYPE;
-      }
-      function isContextConsumer(object) {
-        return typeOf(object) === REACT_CONTEXT_TYPE;
-      }
-      function isContextProvider(object) {
-        return typeOf(object) === REACT_PROVIDER_TYPE;
-      }
-      function isElement(object) {
-        return typeof object === "object" && object !== null && object.$$typeof === REACT_ELEMENT_TYPE;
-      }
-      function isForwardRef(object) {
-        return typeOf(object) === REACT_FORWARD_REF_TYPE;
-      }
-      function isFragment(object) {
-        return typeOf(object) === REACT_FRAGMENT_TYPE;
-      }
-      function isLazy(object) {
-        return typeOf(object) === REACT_LAZY_TYPE;
-      }
-      function isMemo(object) {
-        return typeOf(object) === REACT_MEMO_TYPE;
-      }
-      function isPortal(object) {
-        return typeOf(object) === REACT_PORTAL_TYPE;
-      }
-      function isProfiler(object) {
-        return typeOf(object) === REACT_PROFILER_TYPE;
-      }
-      function isStrictMode(object) {
-        return typeOf(object) === REACT_STRICT_MODE_TYPE;
-      }
-      function isSuspense(object) {
-        return typeOf(object) === REACT_SUSPENSE_TYPE;
-      }
-      reactIs_development.AsyncMode = AsyncMode;
-      reactIs_development.ConcurrentMode = ConcurrentMode;
-      reactIs_development.ContextConsumer = ContextConsumer;
-      reactIs_development.ContextProvider = ContextProvider;
-      reactIs_development.Element = Element;
-      reactIs_development.ForwardRef = ForwardRef;
-      reactIs_development.Fragment = Fragment;
-      reactIs_development.Lazy = Lazy;
-      reactIs_development.Memo = Memo;
-      reactIs_development.Portal = Portal;
-      reactIs_development.Profiler = Profiler;
-      reactIs_development.StrictMode = StrictMode;
-      reactIs_development.Suspense = Suspense;
-      reactIs_development.isAsyncMode = isAsyncMode;
-      reactIs_development.isConcurrentMode = isConcurrentMode;
-      reactIs_development.isContextConsumer = isContextConsumer;
-      reactIs_development.isContextProvider = isContextProvider;
-      reactIs_development.isElement = isElement;
-      reactIs_development.isForwardRef = isForwardRef;
-      reactIs_development.isFragment = isFragment;
-      reactIs_development.isLazy = isLazy;
-      reactIs_development.isMemo = isMemo;
-      reactIs_development.isPortal = isPortal;
-      reactIs_development.isProfiler = isProfiler;
-      reactIs_development.isStrictMode = isStrictMode;
-      reactIs_development.isSuspense = isSuspense;
-      reactIs_development.isValidElementType = isValidElementType;
-      reactIs_development.typeOf = typeOf;
-    })();
-  }
-  return reactIs_development;
+    }
+    var i = o, f = s, y = u, k = p, F = e, K = l, re = r, se = w, I = R, O = a, Z = d, ne = c, de = h, ve = !1;
+    function Ee(T) {
+      return ve || (ve = !0, console.warn("The ReactIs.isAsyncMode() alias has been deprecated, and will be removed in React 17+. Update your code to use ReactIs.isConcurrentMode() instead. It has the exact same API.")), E(T) || D(T) === o;
+    }
+    function E(T) {
+      return D(T) === s;
+    }
+    function x(T) {
+      return D(T) === u;
+    }
+    function H(T) {
+      return D(T) === p;
+    }
+    function N(T) {
+      return typeof T == "object" && T !== null && T.$$typeof === e;
+    }
+    function $(T) {
+      return D(T) === l;
+    }
+    function z(T) {
+      return D(T) === r;
+    }
+    function L(T) {
+      return D(T) === w;
+    }
+    function j(T) {
+      return D(T) === R;
+    }
+    function q(T) {
+      return D(T) === a;
+    }
+    function G(T) {
+      return D(T) === d;
+    }
+    function U(T) {
+      return D(T) === c;
+    }
+    function ie(T) {
+      return D(T) === h;
+    }
+    X.AsyncMode = i, X.ConcurrentMode = f, X.ContextConsumer = y, X.ContextProvider = k, X.Element = F, X.ForwardRef = K, X.Fragment = re, X.Lazy = se, X.Memo = I, X.Portal = O, X.Profiler = Z, X.StrictMode = ne, X.Suspense = de, X.isAsyncMode = Ee, X.isConcurrentMode = E, X.isContextConsumer = x, X.isContextProvider = H, X.isElement = N, X.isForwardRef = $, X.isFragment = z, X.isLazy = L, X.isMemo = j, X.isPortal = q, X.isProfiler = G, X.isStrictMode = U, X.isSuspense = ie, X.isValidElementType = S, X.typeOf = D;
+  }()), X;
 }
-var hasRequiredReactIs;
-function requireReactIs() {
-  if (hasRequiredReactIs) return reactIs.exports;
-  hasRequiredReactIs = 1;
-  if (process.env.NODE_ENV === "production") {
-    reactIs.exports = requireReactIs_production_min();
-  } else {
-    reactIs.exports = requireReactIs_development();
-  }
-  return reactIs.exports;
+var tr;
+function _r() {
+  return tr || (tr = 1, process.env.NODE_ENV === "production" ? Be.exports = hi() : Be.exports = pi()), Be.exports;
 }
 /*
 object-assign
 (c) Sindre Sorhus
 @license MIT
 */
-var objectAssign;
-var hasRequiredObjectAssign;
-function requireObjectAssign() {
-  if (hasRequiredObjectAssign) return objectAssign;
-  hasRequiredObjectAssign = 1;
-  var getOwnPropertySymbols = Object.getOwnPropertySymbols;
-  var hasOwnProperty = Object.prototype.hasOwnProperty;
-  var propIsEnumerable = Object.prototype.propertyIsEnumerable;
-  function toObject(val) {
-    if (val === null || val === void 0) {
+var rt, rr;
+function vi() {
+  if (rr) return rt;
+  rr = 1;
+  var t = Object.getOwnPropertySymbols, e = Object.prototype.hasOwnProperty, a = Object.prototype.propertyIsEnumerable;
+  function r(d) {
+    if (d == null)
       throw new TypeError("Object.assign cannot be called with null or undefined");
-    }
-    return Object(val);
+    return Object(d);
   }
-  function shouldUseNative() {
+  function c() {
     try {
-      if (!Object.assign) {
-        return false;
-      }
-      var test1 = new String("abc");
-      test1[5] = "de";
-      if (Object.getOwnPropertyNames(test1)[0] === "5") {
-        return false;
-      }
-      var test2 = {};
-      for (var i = 0; i < 10; i++) {
-        test2["_" + String.fromCharCode(i)] = i;
-      }
-      var order2 = Object.getOwnPropertyNames(test2).map(function(n) {
-        return test2[n];
+      if (!Object.assign)
+        return !1;
+      var d = new String("abc");
+      if (d[5] = "de", Object.getOwnPropertyNames(d)[0] === "5")
+        return !1;
+      for (var p = {}, u = 0; u < 10; u++)
+        p["_" + String.fromCharCode(u)] = u;
+      var o = Object.getOwnPropertyNames(p).map(function(l) {
+        return p[l];
       });
-      if (order2.join("") !== "0123456789") {
-        return false;
-      }
-      var test3 = {};
-      "abcdefghijklmnopqrst".split("").forEach(function(letter) {
-        test3[letter] = letter;
-      });
-      if (Object.keys(Object.assign({}, test3)).join("") !== "abcdefghijklmnopqrst") {
-        return false;
-      }
-      return true;
-    } catch (err) {
-      return false;
+      if (o.join("") !== "0123456789")
+        return !1;
+      var s = {};
+      return "abcdefghijklmnopqrst".split("").forEach(function(l) {
+        s[l] = l;
+      }), Object.keys(Object.assign({}, s)).join("") === "abcdefghijklmnopqrst";
+    } catch {
+      return !1;
     }
   }
-  objectAssign = shouldUseNative() ? Object.assign : function(target, source) {
-    var from;
-    var to = toObject(target);
-    var symbols;
-    for (var s = 1; s < arguments.length; s++) {
-      from = Object(arguments[s]);
-      for (var key in from) {
-        if (hasOwnProperty.call(from, key)) {
-          to[key] = from[key];
-        }
-      }
-      if (getOwnPropertySymbols) {
-        symbols = getOwnPropertySymbols(from);
-        for (var i = 0; i < symbols.length; i++) {
-          if (propIsEnumerable.call(from, symbols[i])) {
-            to[symbols[i]] = from[symbols[i]];
-          }
-        }
+  return rt = c() ? Object.assign : function(d, p) {
+    for (var u, o = r(d), s, l = 1; l < arguments.length; l++) {
+      u = Object(arguments[l]);
+      for (var h in u)
+        e.call(u, h) && (o[h] = u[h]);
+      if (t) {
+        s = t(u);
+        for (var b = 0; b < s.length; b++)
+          a.call(u, s[b]) && (o[s[b]] = u[s[b]]);
       }
     }
-    return to;
-  };
-  return objectAssign;
+    return o;
+  }, rt;
 }
-var ReactPropTypesSecret_1;
-var hasRequiredReactPropTypesSecret;
-function requireReactPropTypesSecret() {
-  if (hasRequiredReactPropTypesSecret) return ReactPropTypesSecret_1;
-  hasRequiredReactPropTypesSecret = 1;
-  var ReactPropTypesSecret = "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED";
-  ReactPropTypesSecret_1 = ReactPropTypesSecret;
-  return ReactPropTypesSecret_1;
+var it, ir;
+function pt() {
+  if (ir) return it;
+  ir = 1;
+  var t = "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED";
+  return it = t, it;
 }
-var has;
-var hasRequiredHas;
-function requireHas() {
-  if (hasRequiredHas) return has;
-  hasRequiredHas = 1;
-  has = Function.call.bind(Object.prototype.hasOwnProperty);
-  return has;
+var nt, nr;
+function Ar() {
+  return nr || (nr = 1, nt = Function.call.bind(Object.prototype.hasOwnProperty)), nt;
 }
-var checkPropTypes_1;
-var hasRequiredCheckPropTypes;
-function requireCheckPropTypes() {
-  if (hasRequiredCheckPropTypes) return checkPropTypes_1;
-  hasRequiredCheckPropTypes = 1;
-  var printWarning = function() {
+var at, ar;
+function mi() {
+  if (ar) return at;
+  ar = 1;
+  var t = function() {
   };
   if (process.env.NODE_ENV !== "production") {
-    var ReactPropTypesSecret = /* @__PURE__ */ requireReactPropTypesSecret();
-    var loggedTypeFailures = {};
-    var has2 = /* @__PURE__ */ requireHas();
-    printWarning = function(text) {
-      var message = "Warning: " + text;
-      if (typeof console !== "undefined") {
-        console.error(message);
-      }
+    var e = /* @__PURE__ */ pt(), a = {}, r = /* @__PURE__ */ Ar();
+    t = function(d) {
+      var p = "Warning: " + d;
+      typeof console < "u" && console.error(p);
       try {
-        throw new Error(message);
-      } catch (x) {
+        throw new Error(p);
+      } catch {
       }
     };
   }
-  function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
+  function c(d, p, u, o, s) {
     if (process.env.NODE_ENV !== "production") {
-      for (var typeSpecName in typeSpecs) {
-        if (has2(typeSpecs, typeSpecName)) {
-          var error;
+      for (var l in d)
+        if (r(d, l)) {
+          var h;
           try {
-            if (typeof typeSpecs[typeSpecName] !== "function") {
-              var err = Error(
-                (componentName || "React class") + ": " + location + " type `" + typeSpecName + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + typeof typeSpecs[typeSpecName] + "`.This often happens because of typos such as `PropTypes.function` instead of `PropTypes.func`."
+            if (typeof d[l] != "function") {
+              var b = Error(
+                (o || "React class") + ": " + u + " type `" + l + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + typeof d[l] + "`.This often happens because of typos such as `PropTypes.function` instead of `PropTypes.func`."
               );
-              err.name = "Invariant Violation";
-              throw err;
+              throw b.name = "Invariant Violation", b;
             }
-            error = typeSpecs[typeSpecName](values, typeSpecName, componentName, location, null, ReactPropTypesSecret);
-          } catch (ex) {
-            error = ex;
+            h = d[l](p, l, o, u, null, e);
+          } catch (w) {
+            h = w;
           }
-          if (error && !(error instanceof Error)) {
-            printWarning(
-              (componentName || "React class") + ": type specification of " + location + " `" + typeSpecName + "` is invalid; the type checker function must return `null` or an `Error` but returned a " + typeof error + ". You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument)."
-            );
-          }
-          if (error instanceof Error && !(error.message in loggedTypeFailures)) {
-            loggedTypeFailures[error.message] = true;
-            var stack = getStack ? getStack() : "";
-            printWarning(
-              "Failed " + location + " type: " + error.message + (stack != null ? stack : "")
+          if (h && !(h instanceof Error) && t(
+            (o || "React class") + ": type specification of " + u + " `" + l + "` is invalid; the type checker function must return `null` or an `Error` but returned a " + typeof h + ". You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument)."
+          ), h instanceof Error && !(h.message in a)) {
+            a[h.message] = !0;
+            var R = s ? s() : "";
+            t(
+              "Failed " + u + " type: " + h.message + (R ?? "")
             );
           }
         }
-      }
     }
   }
-  checkPropTypes.resetWarningCache = function() {
-    if (process.env.NODE_ENV !== "production") {
-      loggedTypeFailures = {};
-    }
-  };
-  checkPropTypes_1 = checkPropTypes;
-  return checkPropTypes_1;
+  return c.resetWarningCache = function() {
+    process.env.NODE_ENV !== "production" && (a = {});
+  }, at = c, at;
 }
-var factoryWithTypeCheckers;
-var hasRequiredFactoryWithTypeCheckers;
-function requireFactoryWithTypeCheckers() {
-  if (hasRequiredFactoryWithTypeCheckers) return factoryWithTypeCheckers;
-  hasRequiredFactoryWithTypeCheckers = 1;
-  var ReactIs = requireReactIs();
-  var assign = requireObjectAssign();
-  var ReactPropTypesSecret = /* @__PURE__ */ requireReactPropTypesSecret();
-  var has2 = /* @__PURE__ */ requireHas();
-  var checkPropTypes = /* @__PURE__ */ requireCheckPropTypes();
-  var printWarning = function() {
+var ot, or;
+function gi() {
+  if (or) return ot;
+  or = 1;
+  var t = _r(), e = vi(), a = /* @__PURE__ */ pt(), r = /* @__PURE__ */ Ar(), c = /* @__PURE__ */ mi(), d = function() {
   };
-  if (process.env.NODE_ENV !== "production") {
-    printWarning = function(text) {
-      var message = "Warning: " + text;
-      if (typeof console !== "undefined") {
-        console.error(message);
-      }
-      try {
-        throw new Error(message);
-      } catch (x) {
-      }
-    };
-  }
-  function emptyFunctionThatReturnsNull() {
+  process.env.NODE_ENV !== "production" && (d = function(u) {
+    var o = "Warning: " + u;
+    typeof console < "u" && console.error(o);
+    try {
+      throw new Error(o);
+    } catch {
+    }
+  });
+  function p() {
     return null;
   }
-  factoryWithTypeCheckers = function(isValidElement, throwOnDirectAccess) {
-    var ITERATOR_SYMBOL = typeof Symbol === "function" && Symbol.iterator;
-    var FAUX_ITERATOR_SYMBOL = "@@iterator";
-    function getIteratorFn(maybeIterable) {
-      var iteratorFn = maybeIterable && (ITERATOR_SYMBOL && maybeIterable[ITERATOR_SYMBOL] || maybeIterable[FAUX_ITERATOR_SYMBOL]);
-      if (typeof iteratorFn === "function") {
-        return iteratorFn;
-      }
+  return ot = function(u, o) {
+    var s = typeof Symbol == "function" && Symbol.iterator, l = "@@iterator";
+    function h(E) {
+      var x = E && (s && E[s] || E[l]);
+      if (typeof x == "function")
+        return x;
     }
-    var ANONYMOUS = "<<anonymous>>";
-    var ReactPropTypes = {
-      array: createPrimitiveTypeChecker("array"),
-      bigint: createPrimitiveTypeChecker("bigint"),
-      bool: createPrimitiveTypeChecker("boolean"),
-      func: createPrimitiveTypeChecker("function"),
-      number: createPrimitiveTypeChecker("number"),
-      object: createPrimitiveTypeChecker("object"),
-      string: createPrimitiveTypeChecker("string"),
-      symbol: createPrimitiveTypeChecker("symbol"),
-      any: createAnyTypeChecker(),
-      arrayOf: createArrayOfTypeChecker,
-      element: createElementTypeChecker(),
-      elementType: createElementTypeTypeChecker(),
-      instanceOf: createInstanceTypeChecker,
-      node: createNodeChecker(),
-      objectOf: createObjectOfTypeChecker,
-      oneOf: createEnumTypeChecker,
-      oneOfType: createUnionTypeChecker,
-      shape: createShapeTypeChecker,
-      exact: createStrictShapeTypeChecker
+    var b = "<<anonymous>>", R = {
+      array: g("array"),
+      bigint: g("bigint"),
+      bool: g("boolean"),
+      func: g("function"),
+      number: g("number"),
+      object: g("object"),
+      string: g("string"),
+      symbol: g("symbol"),
+      any: v(),
+      arrayOf: S,
+      element: D(),
+      elementType: i(),
+      instanceOf: f,
+      node: K(),
+      objectOf: k,
+      oneOf: y,
+      oneOfType: F,
+      shape: se,
+      exact: I
     };
-    function is(x, y) {
-      if (x === y) {
-        return x !== 0 || 1 / x === 1 / y;
-      } else {
-        return x !== x && y !== y;
-      }
+    function w(E, x) {
+      return E === x ? E !== 0 || 1 / E === 1 / x : E !== E && x !== x;
     }
-    function PropTypeError(message, data) {
-      this.message = message;
-      this.data = data && typeof data === "object" ? data : {};
-      this.stack = "";
+    function _(E, x) {
+      this.message = E, this.data = x && typeof x == "object" ? x : {}, this.stack = "";
     }
-    PropTypeError.prototype = Error.prototype;
-    function createChainableTypeChecker(validate) {
-      if (process.env.NODE_ENV !== "production") {
-        var manualPropTypeCallCache = {};
-        var manualPropTypeWarningCount = 0;
-      }
-      function checkType(isRequired, props, propName, componentName, location, propFullName, secret) {
-        componentName = componentName || ANONYMOUS;
-        propFullName = propFullName || propName;
-        if (secret !== ReactPropTypesSecret) {
-          if (throwOnDirectAccess) {
-            var err = new Error(
+    _.prototype = Error.prototype;
+    function A(E) {
+      if (process.env.NODE_ENV !== "production")
+        var x = {}, H = 0;
+      function N(z, L, j, q, G, U, ie) {
+        if (q = q || b, U = U || j, ie !== a) {
+          if (o) {
+            var T = new Error(
               "Calling PropTypes validators directly is not supported by the `prop-types` package. Use `PropTypes.checkPropTypes()` to call them. Read more at http://fb.me/use-check-prop-types"
             );
-            err.name = "Invariant Violation";
-            throw err;
-          } else if (process.env.NODE_ENV !== "production" && typeof console !== "undefined") {
-            var cacheKey = componentName + ":" + propName;
-            if (!manualPropTypeCallCache[cacheKey] && // Avoid spamming the console because they are often not actionable except for lib authors
-            manualPropTypeWarningCount < 3) {
-              printWarning(
-                "You are manually calling a React.PropTypes validation function for the `" + propFullName + "` prop on `" + componentName + "`. This is deprecated and will throw in the standalone `prop-types` package. You may be seeing this warning due to a third-party PropTypes library. See https://fb.me/react-warning-dont-call-proptypes for details."
-              );
-              manualPropTypeCallCache[cacheKey] = true;
-              manualPropTypeWarningCount++;
-            }
+            throw T.name = "Invariant Violation", T;
+          } else if (process.env.NODE_ENV !== "production" && typeof console < "u") {
+            var le = q + ":" + j;
+            !x[le] && // Avoid spamming the console because they are often not actionable except for lib authors
+            H < 3 && (d(
+              "You are manually calling a React.PropTypes validation function for the `" + U + "` prop on `" + q + "`. This is deprecated and will throw in the standalone `prop-types` package. You may be seeing this warning due to a third-party PropTypes library. See https://fb.me/react-warning-dont-call-proptypes for details."
+            ), x[le] = !0, H++);
           }
         }
-        if (props[propName] == null) {
-          if (isRequired) {
-            if (props[propName] === null) {
-              return new PropTypeError("The " + location + " `" + propFullName + "` is marked as required " + ("in `" + componentName + "`, but its value is `null`."));
-            }
-            return new PropTypeError("The " + location + " `" + propFullName + "` is marked as required in " + ("`" + componentName + "`, but its value is `undefined`."));
-          }
-          return null;
-        } else {
-          return validate(props, propName, componentName, location, propFullName);
-        }
+        return L[j] == null ? z ? L[j] === null ? new _("The " + G + " `" + U + "` is marked as required " + ("in `" + q + "`, but its value is `null`.")) : new _("The " + G + " `" + U + "` is marked as required in " + ("`" + q + "`, but its value is `undefined`.")) : null : E(L, j, q, G, U);
       }
-      var chainedCheckType = checkType.bind(null, false);
-      chainedCheckType.isRequired = checkType.bind(null, true);
-      return chainedCheckType;
+      var $ = N.bind(null, !1);
+      return $.isRequired = N.bind(null, !0), $;
     }
-    function createPrimitiveTypeChecker(expectedType) {
-      function validate(props, propName, componentName, location, propFullName, secret) {
-        var propValue = props[propName];
-        var propType = getPropType(propValue);
-        if (propType !== expectedType) {
-          var preciseType = getPreciseType(propValue);
-          return new PropTypeError(
-            "Invalid " + location + " `" + propFullName + "` of type " + ("`" + preciseType + "` supplied to `" + componentName + "`, expected ") + ("`" + expectedType + "`."),
-            { expectedType }
+    function g(E) {
+      function x(H, N, $, z, L, j) {
+        var q = H[N], G = ne(q);
+        if (G !== E) {
+          var U = de(q);
+          return new _(
+            "Invalid " + z + " `" + L + "` of type " + ("`" + U + "` supplied to `" + $ + "`, expected ") + ("`" + E + "`."),
+            { expectedType: E }
           );
         }
         return null;
       }
-      return createChainableTypeChecker(validate);
+      return A(x);
     }
-    function createAnyTypeChecker() {
-      return createChainableTypeChecker(emptyFunctionThatReturnsNull);
+    function v() {
+      return A(p);
     }
-    function createArrayOfTypeChecker(typeChecker) {
-      function validate(props, propName, componentName, location, propFullName) {
-        if (typeof typeChecker !== "function") {
-          return new PropTypeError("Property `" + propFullName + "` of component `" + componentName + "` has invalid PropType notation inside arrayOf.");
+    function S(E) {
+      function x(H, N, $, z, L) {
+        if (typeof E != "function")
+          return new _("Property `" + L + "` of component `" + $ + "` has invalid PropType notation inside arrayOf.");
+        var j = H[N];
+        if (!Array.isArray(j)) {
+          var q = ne(j);
+          return new _("Invalid " + z + " `" + L + "` of type " + ("`" + q + "` supplied to `" + $ + "`, expected an array."));
         }
-        var propValue = props[propName];
-        if (!Array.isArray(propValue)) {
-          var propType = getPropType(propValue);
-          return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + propType + "` supplied to `" + componentName + "`, expected an array."));
-        }
-        for (var i = 0; i < propValue.length; i++) {
-          var error = typeChecker(propValue, i, componentName, location, propFullName + "[" + i + "]", ReactPropTypesSecret);
-          if (error instanceof Error) {
-            return error;
-          }
+        for (var G = 0; G < j.length; G++) {
+          var U = E(j, G, $, z, L + "[" + G + "]", a);
+          if (U instanceof Error)
+            return U;
         }
         return null;
       }
-      return createChainableTypeChecker(validate);
+      return A(x);
     }
-    function createElementTypeChecker() {
-      function validate(props, propName, componentName, location, propFullName) {
-        var propValue = props[propName];
-        if (!isValidElement(propValue)) {
-          var propType = getPropType(propValue);
-          return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + propType + "` supplied to `" + componentName + "`, expected a single ReactElement."));
+    function D() {
+      function E(x, H, N, $, z) {
+        var L = x[H];
+        if (!u(L)) {
+          var j = ne(L);
+          return new _("Invalid " + $ + " `" + z + "` of type " + ("`" + j + "` supplied to `" + N + "`, expected a single ReactElement."));
         }
         return null;
       }
-      return createChainableTypeChecker(validate);
+      return A(E);
     }
-    function createElementTypeTypeChecker() {
-      function validate(props, propName, componentName, location, propFullName) {
-        var propValue = props[propName];
-        if (!ReactIs.isValidElementType(propValue)) {
-          var propType = getPropType(propValue);
-          return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + propType + "` supplied to `" + componentName + "`, expected a single ReactElement type."));
+    function i() {
+      function E(x, H, N, $, z) {
+        var L = x[H];
+        if (!t.isValidElementType(L)) {
+          var j = ne(L);
+          return new _("Invalid " + $ + " `" + z + "` of type " + ("`" + j + "` supplied to `" + N + "`, expected a single ReactElement type."));
         }
         return null;
       }
-      return createChainableTypeChecker(validate);
+      return A(E);
     }
-    function createInstanceTypeChecker(expectedClass) {
-      function validate(props, propName, componentName, location, propFullName) {
-        if (!(props[propName] instanceof expectedClass)) {
-          var expectedClassName = expectedClass.name || ANONYMOUS;
-          var actualClassName = getClassName(props[propName]);
-          return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + actualClassName + "` supplied to `" + componentName + "`, expected ") + ("instance of `" + expectedClassName + "`."));
+    function f(E) {
+      function x(H, N, $, z, L) {
+        if (!(H[N] instanceof E)) {
+          var j = E.name || b, q = Ee(H[N]);
+          return new _("Invalid " + z + " `" + L + "` of type " + ("`" + q + "` supplied to `" + $ + "`, expected ") + ("instance of `" + j + "`."));
         }
         return null;
       }
-      return createChainableTypeChecker(validate);
+      return A(x);
     }
-    function createEnumTypeChecker(expectedValues) {
-      if (!Array.isArray(expectedValues)) {
-        if (process.env.NODE_ENV !== "production") {
-          if (arguments.length > 1) {
-            printWarning(
-              "Invalid arguments supplied to oneOf, expected an array, got " + arguments.length + " arguments. A common mistake is to write oneOf(x, y, z) instead of oneOf([x, y, z])."
-            );
-          } else {
-            printWarning("Invalid argument supplied to oneOf, expected an array.");
-          }
-        }
-        return emptyFunctionThatReturnsNull;
-      }
-      function validate(props, propName, componentName, location, propFullName) {
-        var propValue = props[propName];
-        for (var i = 0; i < expectedValues.length; i++) {
-          if (is(propValue, expectedValues[i])) {
+    function y(E) {
+      if (!Array.isArray(E))
+        return process.env.NODE_ENV !== "production" && (arguments.length > 1 ? d(
+          "Invalid arguments supplied to oneOf, expected an array, got " + arguments.length + " arguments. A common mistake is to write oneOf(x, y, z) instead of oneOf([x, y, z])."
+        ) : d("Invalid argument supplied to oneOf, expected an array.")), p;
+      function x(H, N, $, z, L) {
+        for (var j = H[N], q = 0; q < E.length; q++)
+          if (w(j, E[q]))
             return null;
-          }
-        }
-        var valuesString = JSON.stringify(expectedValues, function replacer(key, value) {
-          var type = getPreciseType(value);
-          if (type === "symbol") {
-            return String(value);
-          }
-          return value;
+        var G = JSON.stringify(E, function(ie, T) {
+          var le = de(T);
+          return le === "symbol" ? String(T) : T;
         });
-        return new PropTypeError("Invalid " + location + " `" + propFullName + "` of value `" + String(propValue) + "` " + ("supplied to `" + componentName + "`, expected one of " + valuesString + "."));
+        return new _("Invalid " + z + " `" + L + "` of value `" + String(j) + "` " + ("supplied to `" + $ + "`, expected one of " + G + "."));
       }
-      return createChainableTypeChecker(validate);
+      return A(x);
     }
-    function createObjectOfTypeChecker(typeChecker) {
-      function validate(props, propName, componentName, location, propFullName) {
-        if (typeof typeChecker !== "function") {
-          return new PropTypeError("Property `" + propFullName + "` of component `" + componentName + "` has invalid PropType notation inside objectOf.");
-        }
-        var propValue = props[propName];
-        var propType = getPropType(propValue);
-        if (propType !== "object") {
-          return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + propType + "` supplied to `" + componentName + "`, expected an object."));
-        }
-        for (var key in propValue) {
-          if (has2(propValue, key)) {
-            var error = typeChecker(propValue, key, componentName, location, propFullName + "." + key, ReactPropTypesSecret);
-            if (error instanceof Error) {
-              return error;
-            }
+    function k(E) {
+      function x(H, N, $, z, L) {
+        if (typeof E != "function")
+          return new _("Property `" + L + "` of component `" + $ + "` has invalid PropType notation inside objectOf.");
+        var j = H[N], q = ne(j);
+        if (q !== "object")
+          return new _("Invalid " + z + " `" + L + "` of type " + ("`" + q + "` supplied to `" + $ + "`, expected an object."));
+        for (var G in j)
+          if (r(j, G)) {
+            var U = E(j, G, $, z, L + "." + G, a);
+            if (U instanceof Error)
+              return U;
           }
-        }
         return null;
       }
-      return createChainableTypeChecker(validate);
+      return A(x);
     }
-    function createUnionTypeChecker(arrayOfTypeCheckers) {
-      if (!Array.isArray(arrayOfTypeCheckers)) {
-        process.env.NODE_ENV !== "production" ? printWarning("Invalid argument supplied to oneOfType, expected an instance of array.") : void 0;
-        return emptyFunctionThatReturnsNull;
+    function F(E) {
+      if (!Array.isArray(E))
+        return process.env.NODE_ENV !== "production" && d("Invalid argument supplied to oneOfType, expected an instance of array."), p;
+      for (var x = 0; x < E.length; x++) {
+        var H = E[x];
+        if (typeof H != "function")
+          return d(
+            "Invalid argument supplied to oneOfType. Expected an array of check functions, but received " + ve(H) + " at index " + x + "."
+          ), p;
       }
-      for (var i = 0; i < arrayOfTypeCheckers.length; i++) {
-        var checker = arrayOfTypeCheckers[i];
-        if (typeof checker !== "function") {
-          printWarning(
-            "Invalid argument supplied to oneOfType. Expected an array of check functions, but received " + getPostfixForTypeWarning(checker) + " at index " + i + "."
-          );
-          return emptyFunctionThatReturnsNull;
-        }
-      }
-      function validate(props, propName, componentName, location, propFullName) {
-        var expectedTypes = [];
-        for (var i2 = 0; i2 < arrayOfTypeCheckers.length; i2++) {
-          var checker2 = arrayOfTypeCheckers[i2];
-          var checkerResult = checker2(props, propName, componentName, location, propFullName, ReactPropTypesSecret);
-          if (checkerResult == null) {
+      function N($, z, L, j, q) {
+        for (var G = [], U = 0; U < E.length; U++) {
+          var ie = E[U], T = ie($, z, L, j, q, a);
+          if (T == null)
             return null;
-          }
-          if (checkerResult.data && has2(checkerResult.data, "expectedType")) {
-            expectedTypes.push(checkerResult.data.expectedType);
-          }
+          T.data && r(T.data, "expectedType") && G.push(T.data.expectedType);
         }
-        var expectedTypesMessage = expectedTypes.length > 0 ? ", expected one of type [" + expectedTypes.join(", ") + "]" : "";
-        return new PropTypeError("Invalid " + location + " `" + propFullName + "` supplied to " + ("`" + componentName + "`" + expectedTypesMessage + "."));
+        var le = G.length > 0 ? ", expected one of type [" + G.join(", ") + "]" : "";
+        return new _("Invalid " + j + " `" + q + "` supplied to " + ("`" + L + "`" + le + "."));
       }
-      return createChainableTypeChecker(validate);
+      return A(N);
     }
-    function createNodeChecker() {
-      function validate(props, propName, componentName, location, propFullName) {
-        if (!isNode(props[propName])) {
-          return new PropTypeError("Invalid " + location + " `" + propFullName + "` supplied to " + ("`" + componentName + "`, expected a ReactNode."));
-        }
-        return null;
+    function K() {
+      function E(x, H, N, $, z) {
+        return O(x[H]) ? null : new _("Invalid " + $ + " `" + z + "` supplied to " + ("`" + N + "`, expected a ReactNode."));
       }
-      return createChainableTypeChecker(validate);
+      return A(E);
     }
-    function invalidValidatorError(componentName, location, propFullName, key, type) {
-      return new PropTypeError(
-        (componentName || "React class") + ": " + location + " type `" + propFullName + "." + key + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + type + "`."
+    function re(E, x, H, N, $) {
+      return new _(
+        (E || "React class") + ": " + x + " type `" + H + "." + N + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + $ + "`."
       );
     }
-    function createShapeTypeChecker(shapeTypes) {
-      function validate(props, propName, componentName, location, propFullName) {
-        var propValue = props[propName];
-        var propType = getPropType(propValue);
-        if (propType !== "object") {
-          return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type `" + propType + "` " + ("supplied to `" + componentName + "`, expected `object`."));
-        }
-        for (var key in shapeTypes) {
-          var checker = shapeTypes[key];
-          if (typeof checker !== "function") {
-            return invalidValidatorError(componentName, location, propFullName, key, getPreciseType(checker));
-          }
-          var error = checker(propValue, key, componentName, location, propFullName + "." + key, ReactPropTypesSecret);
-          if (error) {
-            return error;
-          }
+    function se(E) {
+      function x(H, N, $, z, L) {
+        var j = H[N], q = ne(j);
+        if (q !== "object")
+          return new _("Invalid " + z + " `" + L + "` of type `" + q + "` " + ("supplied to `" + $ + "`, expected `object`."));
+        for (var G in E) {
+          var U = E[G];
+          if (typeof U != "function")
+            return re($, z, L, G, de(U));
+          var ie = U(j, G, $, z, L + "." + G, a);
+          if (ie)
+            return ie;
         }
         return null;
       }
-      return createChainableTypeChecker(validate);
+      return A(x);
     }
-    function createStrictShapeTypeChecker(shapeTypes) {
-      function validate(props, propName, componentName, location, propFullName) {
-        var propValue = props[propName];
-        var propType = getPropType(propValue);
-        if (propType !== "object") {
-          return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type `" + propType + "` " + ("supplied to `" + componentName + "`, expected `object`."));
-        }
-        var allKeys = assign({}, props[propName], shapeTypes);
-        for (var key in allKeys) {
-          var checker = shapeTypes[key];
-          if (has2(shapeTypes, key) && typeof checker !== "function") {
-            return invalidValidatorError(componentName, location, propFullName, key, getPreciseType(checker));
-          }
-          if (!checker) {
-            return new PropTypeError(
-              "Invalid " + location + " `" + propFullName + "` key `" + key + "` supplied to `" + componentName + "`.\nBad object: " + JSON.stringify(props[propName], null, "  ") + "\nValid keys: " + JSON.stringify(Object.keys(shapeTypes), null, "  ")
+    function I(E) {
+      function x(H, N, $, z, L) {
+        var j = H[N], q = ne(j);
+        if (q !== "object")
+          return new _("Invalid " + z + " `" + L + "` of type `" + q + "` " + ("supplied to `" + $ + "`, expected `object`."));
+        var G = e({}, H[N], E);
+        for (var U in G) {
+          var ie = E[U];
+          if (r(E, U) && typeof ie != "function")
+            return re($, z, L, U, de(ie));
+          if (!ie)
+            return new _(
+              "Invalid " + z + " `" + L + "` key `" + U + "` supplied to `" + $ + "`.\nBad object: " + JSON.stringify(H[N], null, "  ") + `
+Valid keys: ` + JSON.stringify(Object.keys(E), null, "  ")
             );
-          }
-          var error = checker(propValue, key, componentName, location, propFullName + "." + key, ReactPropTypesSecret);
-          if (error) {
-            return error;
-          }
+          var T = ie(j, U, $, z, L + "." + U, a);
+          if (T)
+            return T;
         }
         return null;
       }
-      return createChainableTypeChecker(validate);
+      return A(x);
     }
-    function isNode(propValue) {
-      switch (typeof propValue) {
+    function O(E) {
+      switch (typeof E) {
         case "number":
         case "string":
         case "undefined":
-          return true;
+          return !0;
         case "boolean":
-          return !propValue;
+          return !E;
         case "object":
-          if (Array.isArray(propValue)) {
-            return propValue.every(isNode);
-          }
-          if (propValue === null || isValidElement(propValue)) {
-            return true;
-          }
-          var iteratorFn = getIteratorFn(propValue);
-          if (iteratorFn) {
-            var iterator = iteratorFn.call(propValue);
-            var step;
-            if (iteratorFn !== propValue.entries) {
-              while (!(step = iterator.next()).done) {
-                if (!isNode(step.value)) {
-                  return false;
-                }
+          if (Array.isArray(E))
+            return E.every(O);
+          if (E === null || u(E))
+            return !0;
+          var x = h(E);
+          if (x) {
+            var H = x.call(E), N;
+            if (x !== E.entries) {
+              for (; !(N = H.next()).done; )
+                if (!O(N.value))
+                  return !1;
+            } else
+              for (; !(N = H.next()).done; ) {
+                var $ = N.value;
+                if ($ && !O($[1]))
+                  return !1;
               }
-            } else {
-              while (!(step = iterator.next()).done) {
-                var entry = step.value;
-                if (entry) {
-                  if (!isNode(entry[1])) {
-                    return false;
-                  }
-                }
-              }
-            }
-          } else {
-            return false;
-          }
-          return true;
+          } else
+            return !1;
+          return !0;
         default:
-          return false;
+          return !1;
       }
     }
-    function isSymbol(propType, propValue) {
-      if (propType === "symbol") {
-        return true;
-      }
-      if (!propValue) {
-        return false;
-      }
-      if (propValue["@@toStringTag"] === "Symbol") {
-        return true;
-      }
-      if (typeof Symbol === "function" && propValue instanceof Symbol) {
-        return true;
-      }
-      return false;
+    function Z(E, x) {
+      return E === "symbol" ? !0 : x ? x["@@toStringTag"] === "Symbol" || typeof Symbol == "function" && x instanceof Symbol : !1;
     }
-    function getPropType(propValue) {
-      var propType = typeof propValue;
-      if (Array.isArray(propValue)) {
-        return "array";
-      }
-      if (propValue instanceof RegExp) {
-        return "object";
-      }
-      if (isSymbol(propType, propValue)) {
-        return "symbol";
-      }
-      return propType;
+    function ne(E) {
+      var x = typeof E;
+      return Array.isArray(E) ? "array" : E instanceof RegExp ? "object" : Z(x, E) ? "symbol" : x;
     }
-    function getPreciseType(propValue) {
-      if (typeof propValue === "undefined" || propValue === null) {
-        return "" + propValue;
-      }
-      var propType = getPropType(propValue);
-      if (propType === "object") {
-        if (propValue instanceof Date) {
+    function de(E) {
+      if (typeof E > "u" || E === null)
+        return "" + E;
+      var x = ne(E);
+      if (x === "object") {
+        if (E instanceof Date)
           return "date";
-        } else if (propValue instanceof RegExp) {
+        if (E instanceof RegExp)
           return "regexp";
-        }
       }
-      return propType;
+      return x;
     }
-    function getPostfixForTypeWarning(value) {
-      var type = getPreciseType(value);
-      switch (type) {
+    function ve(E) {
+      var x = de(E);
+      switch (x) {
         case "array":
         case "object":
-          return "an " + type;
+          return "an " + x;
         case "boolean":
         case "date":
         case "regexp":
-          return "a " + type;
+          return "a " + x;
         default:
-          return type;
+          return x;
       }
     }
-    function getClassName(propValue) {
-      if (!propValue.constructor || !propValue.constructor.name) {
-        return ANONYMOUS;
-      }
-      return propValue.constructor.name;
+    function Ee(E) {
+      return !E.constructor || !E.constructor.name ? b : E.constructor.name;
     }
-    ReactPropTypes.checkPropTypes = checkPropTypes;
-    ReactPropTypes.resetWarningCache = checkPropTypes.resetWarningCache;
-    ReactPropTypes.PropTypes = ReactPropTypes;
-    return ReactPropTypes;
-  };
-  return factoryWithTypeCheckers;
+    return R.checkPropTypes = c, R.resetWarningCache = c.resetWarningCache, R.PropTypes = R, R;
+  }, ot;
 }
-var factoryWithThrowingShims;
-var hasRequiredFactoryWithThrowingShims;
-function requireFactoryWithThrowingShims() {
-  if (hasRequiredFactoryWithThrowingShims) return factoryWithThrowingShims;
-  hasRequiredFactoryWithThrowingShims = 1;
-  var ReactPropTypesSecret = /* @__PURE__ */ requireReactPropTypesSecret();
-  function emptyFunction() {
+var st, sr;
+function yi() {
+  if (sr) return st;
+  sr = 1;
+  var t = /* @__PURE__ */ pt();
+  function e() {
   }
-  function emptyFunctionWithReset() {
+  function a() {
   }
-  emptyFunctionWithReset.resetWarningCache = emptyFunction;
-  factoryWithThrowingShims = function() {
-    function shim(props, propName, componentName, location, propFullName, secret) {
-      if (secret === ReactPropTypesSecret) {
-        return;
+  return a.resetWarningCache = e, st = function() {
+    function r(p, u, o, s, l, h) {
+      if (h !== t) {
+        var b = new Error(
+          "Calling PropTypes validators directly is not supported by the `prop-types` package. Use PropTypes.checkPropTypes() to call them. Read more at http://fb.me/use-check-prop-types"
+        );
+        throw b.name = "Invariant Violation", b;
       }
-      var err = new Error(
-        "Calling PropTypes validators directly is not supported by the `prop-types` package. Use PropTypes.checkPropTypes() to call them. Read more at http://fb.me/use-check-prop-types"
-      );
-      err.name = "Invariant Violation";
-      throw err;
     }
-    shim.isRequired = shim;
-    function getShim() {
-      return shim;
+    r.isRequired = r;
+    function c() {
+      return r;
     }
-    var ReactPropTypes = {
-      array: shim,
-      bigint: shim,
-      bool: shim,
-      func: shim,
-      number: shim,
-      object: shim,
-      string: shim,
-      symbol: shim,
-      any: shim,
-      arrayOf: getShim,
-      element: shim,
-      elementType: shim,
-      instanceOf: getShim,
-      node: shim,
-      objectOf: getShim,
-      oneOf: getShim,
-      oneOfType: getShim,
-      shape: getShim,
-      exact: getShim,
-      checkPropTypes: emptyFunctionWithReset,
-      resetWarningCache: emptyFunction
+    var d = {
+      array: r,
+      bigint: r,
+      bool: r,
+      func: r,
+      number: r,
+      object: r,
+      string: r,
+      symbol: r,
+      any: r,
+      arrayOf: c,
+      element: r,
+      elementType: r,
+      instanceOf: c,
+      node: r,
+      objectOf: c,
+      oneOf: c,
+      oneOfType: c,
+      shape: c,
+      exact: c,
+      checkPropTypes: a,
+      resetWarningCache: e
     };
-    ReactPropTypes.PropTypes = ReactPropTypes;
-    return ReactPropTypes;
-  };
-  return factoryWithThrowingShims;
+    return d.PropTypes = d, d;
+  }, st;
 }
-var hasRequiredPropTypes;
-function requirePropTypes() {
-  if (hasRequiredPropTypes) return propTypes$1.exports;
-  hasRequiredPropTypes = 1;
-  if (process.env.NODE_ENV !== "production") {
-    var ReactIs = requireReactIs();
-    var throwOnDirectAccess = true;
-    propTypes$1.exports = /* @__PURE__ */ requireFactoryWithTypeCheckers()(ReactIs.isElement, throwOnDirectAccess);
-  } else {
-    propTypes$1.exports = /* @__PURE__ */ requireFactoryWithThrowingShims()();
-  }
-  return propTypes$1.exports;
+var lr;
+function bi() {
+  if (lr) return ze.exports;
+  if (lr = 1, process.env.NODE_ENV !== "production") {
+    var t = _r(), e = !0;
+    ze.exports = /* @__PURE__ */ gi()(t.isElement, e);
+  } else
+    ze.exports = /* @__PURE__ */ yi()();
+  return ze.exports;
 }
-var propTypesExports = /* @__PURE__ */ requirePropTypes();
-const PropTypes = /* @__PURE__ */ getDefaultExportFromCjs(propTypesExports);
+var Ei = /* @__PURE__ */ bi();
+const pe = /* @__PURE__ */ vr(Ei);
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -4271,145 +3189,95 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
-var __assign = function() {
-  __assign = Object.assign || function __assign2(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-      s = arguments[i];
-      for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+var dt = function() {
+  return dt = Object.assign || function(e) {
+    for (var a, r = 1, c = arguments.length; r < c; r++) {
+      a = arguments[r];
+      for (var d in a) Object.prototype.hasOwnProperty.call(a, d) && (e[d] = a[d]);
     }
-    return t;
-  };
-  return __assign.apply(this, arguments);
+    return e;
+  }, dt.apply(this, arguments);
 };
-function __rest(s, e) {
-  var t = {};
-  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-    t[p] = s[p];
-  if (s != null && typeof Object.getOwnPropertySymbols === "function")
-    for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-      if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-        t[p[i]] = s[p[i]];
-    }
-  return t;
+function _i(t, e) {
+  var a = {};
+  for (var r in t) Object.prototype.hasOwnProperty.call(t, r) && e.indexOf(r) < 0 && (a[r] = t[r]);
+  if (t != null && typeof Object.getOwnPropertySymbols == "function")
+    for (var c = 0, r = Object.getOwnPropertySymbols(t); c < r.length; c++)
+      e.indexOf(r[c]) < 0 && Object.prototype.propertyIsEnumerable.call(t, r[c]) && (a[r[c]] = t[r[c]]);
+  return a;
 }
-var hashFragment = "";
-var observer = null;
-var asyncTimerId = null;
-var scrollFunction = null;
-function reset() {
-  hashFragment = "";
-  if (observer !== null)
-    observer.disconnect();
-  if (asyncTimerId !== null) {
-    window.clearTimeout(asyncTimerId);
-    asyncTimerId = null;
+var xe = "", Fe = null, Ge = null, wr = null;
+function vt() {
+  xe = "", Fe !== null && Fe.disconnect(), Ge !== null && (window.clearTimeout(Ge), Ge = null);
+}
+function ur(t) {
+  var e = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"], a = ["A", "AREA"];
+  return e.includes(t.tagName) && !t.hasAttribute("disabled") || a.includes(t.tagName) && t.hasAttribute("href");
+}
+function cr() {
+  var t = null;
+  if (xe === "#")
+    t = document.body;
+  else {
+    var e = xe.replace("#", "");
+    t = document.getElementById(e), t === null && xe === "#top" && (t = document.body);
   }
-}
-function isInteractiveElement(element) {
-  var formTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"];
-  var linkTags = ["A", "AREA"];
-  return formTags.includes(element.tagName) && !element.hasAttribute("disabled") || linkTags.includes(element.tagName) && element.hasAttribute("href");
-}
-function getElAndScroll() {
-  var element = null;
-  if (hashFragment === "#") {
-    element = document.body;
-  } else {
-    var id = hashFragment.replace("#", "");
-    element = document.getElementById(id);
-    if (element === null && hashFragment === "#top") {
-      element = document.body;
-    }
+  if (t !== null) {
+    wr(t);
+    var a = t.getAttribute("tabindex");
+    return a === null && !ur(t) && t.setAttribute("tabindex", -1), t.focus({ preventScroll: !0 }), a === null && !ur(t) && (t.blur(), t.removeAttribute("tabindex")), vt(), !0;
   }
-  if (element !== null) {
-    scrollFunction(element);
-    var originalTabIndex = element.getAttribute("tabindex");
-    if (originalTabIndex === null && !isInteractiveElement(element)) {
-      element.setAttribute("tabindex", -1);
-    }
-    element.focus({ preventScroll: true });
-    if (originalTabIndex === null && !isInteractiveElement(element)) {
-      element.blur();
-      element.removeAttribute("tabindex");
-    }
-    reset();
-    return true;
-  }
-  return false;
+  return !1;
 }
-function hashLinkScroll(timeout) {
+function Ai(t) {
   window.setTimeout(function() {
-    if (getElAndScroll() === false) {
-      if (observer === null) {
-        observer = new MutationObserver(getElAndScroll);
-      }
-      observer.observe(document, {
-        attributes: true,
-        childList: true,
-        subtree: true
-      });
-      asyncTimerId = window.setTimeout(function() {
-        reset();
-      }, timeout || 1e4);
-    }
+    cr() === !1 && (Fe === null && (Fe = new MutationObserver(cr)), Fe.observe(document, {
+      attributes: !0,
+      childList: !0,
+      subtree: !0
+    }), Ge = window.setTimeout(function() {
+      vt();
+    }, t || 1e4));
   }, 0);
 }
-function genericHashLink(As) {
-  return React2.forwardRef(function(props, ref) {
-    var linkHash = "";
-    if (typeof props.to === "string" && props.to.includes("#")) {
-      linkHash = "#" + props.to.split("#").slice(1).join("#");
-    } else if (typeof props.to === "object" && typeof props.to.hash === "string") {
-      linkHash = props.to.hash;
-    }
-    var passDownProps = {};
-    if (As === NavLink) {
-      passDownProps.isActive = function(match, location) {
-        return match && match.isExact && location.hash === linkHash;
-      };
-    }
-    function handleClick(e) {
-      reset();
-      hashFragment = props.elementId ? "#" + props.elementId : linkHash;
-      if (props.onClick)
-        props.onClick(e);
-      if (hashFragment !== "" && // ignore non-vanilla click events, same as react-router
+function Tr(t) {
+  return Se.forwardRef(function(e, a) {
+    var r = "";
+    typeof e.to == "string" && e.to.includes("#") ? r = "#" + e.to.split("#").slice(1).join("#") : typeof e.to == "object" && typeof e.to.hash == "string" && (r = e.to.hash);
+    var c = {};
+    t === pr && (c.isActive = function(u, o) {
+      return u && u.isExact && o.hash === r;
+    });
+    function d(u) {
+      vt(), xe = e.elementId ? "#" + e.elementId : r, e.onClick && e.onClick(u), xe !== "" && // ignore non-vanilla click events, same as react-router
       // below logic adapted from react-router: https://github.com/ReactTraining/react-router/blob/fc91700e08df8147bd2bb1be19a299cbb14dbcaa/packages/react-router-dom/modules/Link.js#L43-L48
-      !e.defaultPrevented && // onClick prevented default
-      e.button === 0 && // ignore everything but left clicks
-      (!props.target || props.target === "_self") && // let browser handle "target=_blank" etc
-      !(e.metaKey || e.altKey || e.ctrlKey || e.shiftKey)) {
-        scrollFunction = props.scroll || function(el) {
-          return props.smooth ? el.scrollIntoView({ behavior: "smooth" }) : el.scrollIntoView();
-        };
-        hashLinkScroll(props.timeout);
-      }
+      !u.defaultPrevented && // onClick prevented default
+      u.button === 0 && // ignore everything but left clicks
+      (!e.target || e.target === "_self") && // let browser handle "target=_blank" etc
+      !(u.metaKey || u.altKey || u.ctrlKey || u.shiftKey) && (wr = e.scroll || function(o) {
+        return e.smooth ? o.scrollIntoView({ behavior: "smooth" }) : o.scrollIntoView();
+      }, Ai(e.timeout));
     }
-    var filteredProps = __rest(props, ["scroll", "smooth", "timeout", "elementId"]);
-    return React2.createElement(As, __assign({}, passDownProps, filteredProps, { onClick: handleClick, ref }), props.children);
+    var p = _i(e, ["scroll", "smooth", "timeout", "elementId"]);
+    return Se.createElement(t, dt({}, c, p, { onClick: d, ref: a }), e.children);
   });
 }
-var HashLink = genericHashLink(Link);
-var NavHashLink = genericHashLink(NavLink);
+var ft = Tr(Jr), dr = Tr(pr);
 if (process.env.NODE_ENV !== "production") {
-  HashLink.displayName = "HashLink";
-  NavHashLink.displayName = "NavHashLink";
-  var propTypes = {
-    onClick: PropTypes.func,
-    children: PropTypes.node,
-    scroll: PropTypes.func,
-    timeout: PropTypes.number,
-    elementId: PropTypes.string,
-    to: PropTypes.oneOfType([PropTypes.string, PropTypes.object])
+  ft.displayName = "HashLink", dr.displayName = "NavHashLink";
+  var fr = {
+    onClick: pe.func,
+    children: pe.node,
+    scroll: pe.func,
+    timeout: pe.number,
+    elementId: pe.string,
+    to: pe.oneOfType([pe.string, pe.object])
   };
-  HashLink.propTypes = propTypes;
-  NavHashLink.propTypes = propTypes;
+  ft.propTypes = fr, dr.propTypes = fr;
 }
-const SampleIDs = ["hello-cube", "sky-sea"];
-const DefaultSampleID = "hello-cube";
-const SampleDisplayDescriptorByID = /* @__PURE__ */ new Map([
+const qi = ["hello-cube", "sky-sea"], Cr = "hello-cube", Ui = /* @__PURE__ */ new Map([
   [
-    DefaultSampleID,
+    Cr,
     {
       name: "Hello Cube",
       description: "Tests WebGPU functionality with a simple spinning cube."
@@ -4422,10 +3290,9 @@ const SampleDisplayDescriptorByID = /* @__PURE__ */ new Map([
       description: "Real-time rendering of a dynamic sun over the open ocean, with various models for surface waves and raymarched atmospheric scattering."
     }
   ]
-]);
-const SampleInitDescriptorByID = /* @__PURE__ */ new Map([
+]), Rr = /* @__PURE__ */ new Map([
   [
-    DefaultSampleID,
+    Cr,
     {
       projectFolder: "hello-cube",
       requiredLimits: /* @__PURE__ */ new Map(),
@@ -4448,9 +3315,7 @@ const SampleInitDescriptorByID = /* @__PURE__ */ new Map([
         "clip-distances",
         "dual-source-blending"
       ]),
-      import: () => import("./HelloCube-BKhbtyh6.js").then((value) => {
-        return value.HelloCubeAppConstructor;
-      })
+      import: () => import("./HelloCube-CXcaSkqz.js").then((t) => t.HelloCubeAppConstructor)
     }
   ],
   [
@@ -4463,172 +3328,130 @@ const SampleInitDescriptorByID = /* @__PURE__ */ new Map([
         "timestamp-query",
         "float32-filterable"
       ]),
-      import: () => import("./SkySea-Bx_-To1d.js").then((value) => {
-        return value.SkySeaAppConstructor;
-      })
+      import: () => import("./SkySea-DfwX_pY4.js").then((t) => t.SkySeaAppConstructor)
     }
   ]
-]);
-const repoRoot = "https://github.com/EllarBooher/WebGPU-Samples/tree/main/src/webgpu";
-const EmbeddedReadme = memo(function EmbeddedReadme2({
-  sampleID
+]), wi = "https://github.com/EllarBooher/WebGPU-Samples/tree/main/lib/webgpu", Vi = Xr(function({
+  sampleID: e
 }) {
-  var _a;
-  const [readmeText, setReadmeText] = useState();
-  const projectFolder = (_a = SampleInitDescriptorByID.get(sampleID)) == null ? void 0 : _a.projectFolder;
-  useEffect(() => {
-    if (projectFolder === void 0) {
-      setReadmeText(void 0);
+  var p;
+  const [a, r] = Ye(), c = (p = Rr.get(e)) == null ? void 0 : p.projectFolder;
+  if (je(() => {
+    if (c === void 0) {
+      r(void 0);
       return;
     }
-    __variableDynamicImportRuntimeHelper(/* @__PURE__ */ Object.assign({ "./hello-cube/README.md": () => import("./README-Bgw6Dhkp.js"), "./sky-sea/README.md": () => import("./README-BZcyQ1ko.js") }), `./${projectFolder}/README.md`, 3).then((value) => {
-      const markdownModule = value;
-      if (typeof markdownModule.default !== "string") {
+    Kr(/* @__PURE__ */ Object.assign({ "./hello-cube/README.md": () => import("./README-CPZmMRLh.js"), "./sky-sea/README.md": () => import("./README-u4DQJ_ZV.js") }), `./${c}/README.md`, 3).then((u) => {
+      const o = u;
+      if (typeof o.default != "string")
         throw new Error(
-          `Invalid readme markdown import, path is ${projectFolder}`
+          `Invalid readme markdown import, path is ${c}`
         );
-      }
-      setReadmeText(markdownModule.default);
-    }).catch((err) => {
-      if (err instanceof Error) {
-        console.error(err);
-      }
+      r(o.default);
+    }).catch((u) => {
+      u instanceof Error && console.error(u);
     });
-  }, [projectFolder, setReadmeText]);
-  if (readmeText === void 0) {
-    return void 0;
-  }
-  const options = {
-    replace(domNode) {
-      const { attribs, children } = domNode;
-      if (attribs === void 0 || children === void 0) {
+  }, [c, r]), a === void 0)
+    return;
+  const d = {
+    replace(u) {
+      const { attribs: o, children: s } = u;
+      if (o === void 0 || s === void 0)
         return;
-      }
-      const href = attribs.href;
-      if (typeof href !== "string") {
+      const l = o.href;
+      if (typeof l != "string")
         return;
-      }
-      if (href.startsWith("#") === true) {
-        return /* @__PURE__ */ jsxRuntimeExports.jsx(HashLink, { to: href, children: libExports.domToReact(children, options) });
-      }
-      const projectRoot = `${repoRoot}/${projectFolder}/`;
-      let hrefParsed = void 0;
-      if (URL.canParse(href)) {
-        hrefParsed = href;
-      } else if (URL.canParse(href, projectRoot)) {
-        hrefParsed = URL.parse(href, projectRoot).href;
-      }
-      return /* @__PURE__ */ jsxRuntimeExports.jsx("a", { target: "_blank", rel: "noopener noreferrer", href: hrefParsed, children: libExports.domToReact(children, options) });
+      if (l.startsWith("#") === !0)
+        return /* @__PURE__ */ te.jsx(ft, { to: l, children: ct.domToReact(s, d) });
+      const h = `${wi}/${c}/`;
+      let b;
+      return URL.canParse(l) ? b = l : URL.canParse(l, h) && (b = URL.parse(l, h).href), /* @__PURE__ */ te.jsx("a", { target: "_blank", rel: "noopener noreferrer", href: b, children: ct.domToReact(s, d) });
     }
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "webgpu-samples-readme-body", children: parseToHTML(readmeText, options) });
+  return /* @__PURE__ */ te.jsx("div", { className: "webgpu-samples-readme-body", children: fi(a, d) });
 });
-async function getDevice(props) {
+async function Ti(t) {
   console.log("Starting WebGPU");
-  const adapterPromise = navigator.gpu.requestAdapter().then((value) => {
-    if (!value) {
+  const e = navigator.gpu.requestAdapter().then((r) => r ? Promise.resolve(r) : Promise.reject(
+    new Error("Requested WebGPU Adapter is not available.")
+  )).catch((r) => Promise.reject(
+    new Error("Unable to get WebGPU Adapter", { cause: r })
+  )), a = e.then((r) => {
+    const c = Array.from(
+      t.requiredFeatures.values()
+    ).filter((s) => r.features.has(s));
+    if (c.length != t.requiredFeatures.size) {
+      const s = `Required features unavailable: ${Array.from(
+        t.requiredFeatures.values()
+      ).filter((l) => !r.features.has(l)).map((l) => `'${l}'`).join(",")}`;
       return Promise.reject(
-        new Error("Requested WebGPU Adapter is not available.")
+        new Error("Unable to get WebGPU Device", { cause: s })
       );
     }
-    return Promise.resolve(value);
-  }).catch((reason) => {
-    return Promise.reject(
-      new Error("Unable to get WebGPU Adapter", { cause: reason })
+    const d = c.concat(
+      ...Array.from(t.optionalFeatures.values()).filter((s) => r.features.has(s))
     );
-  });
-  const devicePromise = adapterPromise.then((adapter) => {
-    const knownRequiredFeatures = Array.from(
-      props.requiredFeatures.values()
-    ).filter((feature) => {
-      return adapter.features.has(feature);
-    });
-    if (knownRequiredFeatures.length != props.requiredFeatures.size) {
-      const reason = `Required features unavailable: ${Array.from(
-        props.requiredFeatures.values()
-      ).filter((feature) => !adapter.features.has(feature)).map((feature) => `'${feature}'`).join(",")}`;
-      return Promise.reject(
-        new Error("Unable to get WebGPU Device", { cause: reason })
-      );
+    console.log(`Enabling features: '${d.join("', '")}'`);
+    const p = /* @__PURE__ */ new Map(), u = new Array();
+    for (const [s, l] of t.requiredLimits.entries()) {
+      const h = r.limits[s];
+      h >= l ? p.set(s, l) : u.push({
+        name: s,
+        requestedMinimum: l,
+        supported: h
+      });
     }
-    const features = knownRequiredFeatures.concat(
-      ...Array.from(props.optionalFeatures.values()).filter((feature) => {
-        return adapter.features.has(feature);
-      })
-    );
-    console.log(`Enabling features: '${features.join(`', '`)}'`);
-    const satisfiedRequiredLimits = /* @__PURE__ */ new Map();
-    const missingLimits = new Array();
-    for (const [name, requestedMinimum] of props.requiredLimits.entries()) {
-      const supported = adapter.limits[name];
-      if (supported >= requestedMinimum) {
-        satisfiedRequiredLimits.set(name, requestedMinimum);
-      } else {
-        missingLimits.push({
-          name,
-          requestedMinimum,
-          supported
-        });
-      }
-    }
-    if (satisfiedRequiredLimits.size < props.requiredLimits.size) {
-      const reason = `Required limits unsatisfied: ${missingLimits.map(
-        (limit) => `( name: '${limit.name}' supported: '${limit.supported}' requested: '${limit.requestedMinimum}' )`
+    if (p.size < t.requiredLimits.size) {
+      const s = `Required limits unsatisfied: ${u.map(
+        (l) => `( name: '${l.name}' supported: '${l.supported}' requested: '${l.requestedMinimum}' )`
       ).join(",")}`;
       return Promise.reject(
-        new Error("Unable to get WebGPU Device", { cause: reason })
+        new Error("Unable to get WebGPU Device", { cause: s })
       );
     }
-    const limits = {};
-    for (const [name, limit] of satisfiedRequiredLimits) {
-      limits[name] = limit;
-    }
-    return adapter.requestDevice({
-      requiredFeatures: features,
-      requiredLimits: limits
-    }).catch((reason) => {
-      return Promise.reject(
-        new Error("Unable to get WebGPU Device", { cause: reason })
-      );
-    });
+    const o = {};
+    for (const [s, l] of p)
+      o[s] = l;
+    return r.requestDevice({
+      requiredFeatures: d,
+      requiredLimits: o
+    }).catch((s) => Promise.reject(
+      new Error("Unable to get WebGPU Device", { cause: s })
+    ));
   });
-  return Promise.all([adapterPromise, devicePromise]).then((value) => {
-    const [adapter, device] = value;
+  return Promise.all([e, a]).then((r) => {
+    const [c, d] = r;
     return {
-      adapter,
-      device
+      adapter: c,
+      device: d
     };
   });
 }
-async function initializeApp(props) {
+async function Ci(t) {
   return Promise.all([
-    props.import(),
-    getDevice({
-      ...props
+    t.import(),
+    Ti({
+      ...t
     })
-  ]).then(([sampleConstructor, { adapter: _adapter, device }]) => {
-    const canvasFormat = props.gpu.getPreferredCanvasFormat();
-    const app = sampleConstructor(device, canvasFormat);
-    device.lost.then(
-      (reason) => {
+  ]).then(([e, { adapter: a, device: r }]) => {
+    const c = t.gpu.getPreferredCanvasFormat(), d = e(r, c);
+    return r.lost.then(
+      (p) => {
         console.log(
-          `WebGPU device lost - ("${reason.reason}"):
- ${reason.message}`
+          `WebGPU device lost - ("${p.reason}"):
+ ${p.message}`
         );
       },
-      (err) => {
-        throw new Error(`WebGPU device lost rejected`, {
-          cause: err
+      (p) => {
+        throw new Error("WebGPU device lost rejected", {
+          cause: p
         });
       }
     ).finally(() => {
-      app.quit = true;
-    });
-    device.onuncapturederror = (ev) => {
-      app.quit = true;
-      props.onUncapturedError(ev);
-    };
-    return app;
+      d.quit = !0;
+    }), r.onuncapturederror = (p) => {
+      d.quit = !0, t.onUncapturedError(p);
+    }, d;
   });
 }
 /**
@@ -4638,43 +3461,17 @@ async function initializeApp(props) {
  * @author George Michael Brower
  * @license MIT
  */
-class Controller {
-  constructor(parent, object, property, className, elementType = "div") {
-    this.parent = parent;
-    this.object = object;
-    this.property = property;
-    this._disabled = false;
-    this._hidden = false;
-    this.initialValue = this.getValue();
-    this.domElement = document.createElement(elementType);
-    this.domElement.classList.add("controller");
-    this.domElement.classList.add(className);
-    this.$name = document.createElement("div");
-    this.$name.classList.add("name");
-    Controller.nextNameID = Controller.nextNameID || 0;
-    this.$name.id = `lil-gui-name-${++Controller.nextNameID}`;
-    this.$widget = document.createElement("div");
-    this.$widget.classList.add("widget");
-    this.$disable = this.$widget;
-    this.domElement.appendChild(this.$name);
-    this.domElement.appendChild(this.$widget);
-    this.domElement.addEventListener("keydown", (e) => e.stopPropagation());
-    this.domElement.addEventListener("keyup", (e) => e.stopPropagation());
-    this.parent.children.push(this);
-    this.parent.controllers.push(this);
-    this.parent.$children.appendChild(this.domElement);
-    this._listenCallback = this._listenCallback.bind(this);
-    this.name(property);
+class fe {
+  constructor(e, a, r, c, d = "div") {
+    this.parent = e, this.object = a, this.property = r, this._disabled = !1, this._hidden = !1, this.initialValue = this.getValue(), this.domElement = document.createElement(d), this.domElement.classList.add("controller"), this.domElement.classList.add(c), this.$name = document.createElement("div"), this.$name.classList.add("name"), fe.nextNameID = fe.nextNameID || 0, this.$name.id = `lil-gui-name-${++fe.nextNameID}`, this.$widget = document.createElement("div"), this.$widget.classList.add("widget"), this.$disable = this.$widget, this.domElement.appendChild(this.$name), this.domElement.appendChild(this.$widget), this.domElement.addEventListener("keydown", (p) => p.stopPropagation()), this.domElement.addEventListener("keyup", (p) => p.stopPropagation()), this.parent.children.push(this), this.parent.controllers.push(this), this.parent.$children.appendChild(this.domElement), this._listenCallback = this._listenCallback.bind(this), this.name(r);
   }
   /**
    * Sets the name of the controller and its label in the GUI.
    * @param {string} name
    * @returns {this}
    */
-  name(name) {
-    this._name = name;
-    this.$name.textContent = name;
-    return this;
+  name(e) {
+    return this._name = e, this.$name.textContent = e, this;
   }
   /**
    * Pass a function to be called whenever the value is modified by this controller.
@@ -4693,20 +3490,15 @@ class Controller {
    * 	console.assert( this === controller );
    * } );
    */
-  onChange(callback) {
-    this._onChange = callback;
-    return this;
+  onChange(e) {
+    return this._onChange = e, this;
   }
   /**
    * Calls the onChange methods of this controller and its parent GUI.
    * @protected
    */
   _callOnChange() {
-    this.parent._callOnChange(this);
-    if (this._onChange !== void 0) {
-      this._onChange.call(this, this.getValue());
-    }
-    this._changed = true;
+    this.parent._callOnChange(this), this._onChange !== void 0 && this._onChange.call(this, this.getValue()), this._changed = !0;
   }
   /**
    * Pass a function to be called after this controller has been modified and loses focus.
@@ -4720,31 +3512,22 @@ class Controller {
    * 	console.assert( this === controller );
    * } );
    */
-  onFinishChange(callback) {
-    this._onFinishChange = callback;
-    return this;
+  onFinishChange(e) {
+    return this._onFinishChange = e, this;
   }
   /**
    * Should be called by Controller when its widgets lose focus.
    * @protected
    */
   _callOnFinishChange() {
-    if (this._changed) {
-      this.parent._callOnFinishChange(this);
-      if (this._onFinishChange !== void 0) {
-        this._onFinishChange.call(this, this.getValue());
-      }
-    }
-    this._changed = false;
+    this._changed && (this.parent._callOnFinishChange(this), this._onFinishChange !== void 0 && this._onFinishChange.call(this, this.getValue())), this._changed = !1;
   }
   /**
    * Sets the controller back to its initial value.
    * @returns {this}
    */
   reset() {
-    this.setValue(this.initialValue);
-    this._callOnFinishChange();
-    return this;
+    return this.setValue(this.initialValue), this._callOnFinishChange(), this;
   }
   /**
    * Enables this controller.
@@ -4755,8 +3538,8 @@ class Controller {
    * controller.enable( false ); // disable
    * controller.enable( controller._disabled ); // toggle
    */
-  enable(enabled = true) {
-    return this.disable(!enabled);
+  enable(e = !0) {
+    return this.disable(!e);
   }
   /**
    * Disables this controller.
@@ -4767,12 +3550,8 @@ class Controller {
    * controller.disable( false ); // enable
    * controller.disable( !controller._disabled ); // toggle
    */
-  disable(disabled = true) {
-    if (disabled === this._disabled) return this;
-    this._disabled = disabled;
-    this.domElement.classList.toggle("disabled", disabled);
-    this.$disable.toggleAttribute("disabled", disabled);
-    return this;
+  disable(e = !0) {
+    return e === this._disabled ? this : (this._disabled = e, this.domElement.classList.toggle("disabled", e), this.$disable.toggleAttribute("disabled", e), this);
   }
   /**
    * Shows the Controller after it's been hidden.
@@ -4783,17 +3562,15 @@ class Controller {
    * controller.show( false ); // hide
    * controller.show( controller._hidden ); // toggle
    */
-  show(show = true) {
-    this._hidden = !show;
-    this.domElement.style.display = this._hidden ? "none" : "";
-    return this;
+  show(e = !0) {
+    return this._hidden = !e, this.domElement.style.display = this._hidden ? "none" : "", this;
   }
   /**
    * Hides the Controller.
    * @returns {this}
    */
   hide() {
-    return this.show(false);
+    return this.show(!1);
   }
   /**
    * Changes this controller into a dropdown of options.
@@ -4821,18 +3598,16 @@ class Controller {
    * @param {object|Array} options
    * @returns {Controller}
    */
-  options(options) {
-    const controller = this.parent.add(this.object, this.property, options);
-    controller.name(this._name);
-    this.destroy();
-    return controller;
+  options(e) {
+    const a = this.parent.add(this.object, this.property, e);
+    return a.name(this._name), this.destroy(), a;
   }
   /**
    * Sets the minimum value. Only works on number controllers.
    * @param {number} min
    * @returns {this}
    */
-  min(min) {
+  min(e) {
     return this;
   }
   /**
@@ -4840,7 +3615,7 @@ class Controller {
    * @param {number} max
    * @returns {this}
    */
-  max(max) {
+  max(e) {
     return this;
   }
   /**
@@ -4849,7 +3624,7 @@ class Controller {
    * @param {number} step
    * @returns {this}
    */
-  step(step) {
+  step(e) {
     return this;
   }
   /**
@@ -4860,7 +3635,7 @@ class Controller {
    * @param {number} decimals
    * @returns {this}
    */
-  decimals(decimals) {
+  decimals(e) {
     return this;
   }
   /**
@@ -4868,24 +3643,13 @@ class Controller {
    * @param {boolean} listen
    * @returns {this}
    */
-  listen(listen = true) {
-    this._listening = listen;
-    if (this._listenCallbackID !== void 0) {
-      cancelAnimationFrame(this._listenCallbackID);
-      this._listenCallbackID = void 0;
-    }
-    if (this._listening) {
-      this._listenCallback();
-    }
-    return this;
+  listen(e = !0) {
+    return this._listening = e, this._listenCallbackID !== void 0 && (cancelAnimationFrame(this._listenCallbackID), this._listenCallbackID = void 0), this._listening && this._listenCallback(), this;
   }
   _listenCallback() {
     this._listenCallbackID = requestAnimationFrame(this._listenCallback);
-    const curValue = this.save();
-    if (curValue !== this._listenPrevValue) {
-      this.updateDisplay();
-    }
-    this._listenPrevValue = curValue;
+    const e = this.save();
+    e !== this._listenPrevValue && this.updateDisplay(), this._listenPrevValue = e;
   }
   /**
    * Returns `object[ property ]`.
@@ -4899,13 +3663,8 @@ class Controller {
    * @param {any} value
    * @returns {this}
    */
-  setValue(value) {
-    if (this.getValue() !== value) {
-      this.object[this.property] = value;
-      this._callOnChange();
-      this.updateDisplay();
-    }
-    return this;
+  setValue(e) {
+    return this.getValue() !== e && (this.object[this.property] = e, this._callOnChange(), this.updateDisplay()), this;
   }
   /**
    * Updates the display to keep it in sync with the current value. Useful for updating your
@@ -4915,10 +3674,8 @@ class Controller {
   updateDisplay() {
     return this;
   }
-  load(value) {
-    this.setValue(value);
-    this._callOnFinishChange();
-    return this;
+  load(e) {
+    return this.setValue(e), this._callOnFinishChange(), this;
   }
   save() {
     return this.getValue();
@@ -4927,481 +3684,233 @@ class Controller {
    * Destroys this controller and removes it from the parent GUI.
    */
   destroy() {
-    this.listen(false);
-    this.parent.children.splice(this.parent.children.indexOf(this), 1);
-    this.parent.controllers.splice(this.parent.controllers.indexOf(this), 1);
-    this.parent.$children.removeChild(this.domElement);
+    this.listen(!1), this.parent.children.splice(this.parent.children.indexOf(this), 1), this.parent.controllers.splice(this.parent.controllers.indexOf(this), 1), this.parent.$children.removeChild(this.domElement);
   }
 }
-class BooleanController extends Controller {
-  constructor(parent, object, property) {
-    super(parent, object, property, "boolean", "label");
-    this.$input = document.createElement("input");
-    this.$input.setAttribute("type", "checkbox");
-    this.$input.setAttribute("aria-labelledby", this.$name.id);
-    this.$widget.appendChild(this.$input);
-    this.$input.addEventListener("change", () => {
-      this.setValue(this.$input.checked);
-      this._callOnFinishChange();
-    });
-    this.$disable = this.$input;
-    this.updateDisplay();
+class Ri extends fe {
+  constructor(e, a, r) {
+    super(e, a, r, "boolean", "label"), this.$input = document.createElement("input"), this.$input.setAttribute("type", "checkbox"), this.$input.setAttribute("aria-labelledby", this.$name.id), this.$widget.appendChild(this.$input), this.$input.addEventListener("change", () => {
+      this.setValue(this.$input.checked), this._callOnFinishChange();
+    }), this.$disable = this.$input, this.updateDisplay();
   }
   updateDisplay() {
-    this.$input.checked = this.getValue();
-    return this;
+    return this.$input.checked = this.getValue(), this;
   }
 }
-function normalizeColorString(string) {
-  let match, result;
-  if (match = string.match(/(#|0x)?([a-f0-9]{6})/i)) {
-    result = match[2];
-  } else if (match = string.match(/rgb\(\s*(\d*)\s*,\s*(\d*)\s*,\s*(\d*)\s*\)/)) {
-    result = parseInt(match[1]).toString(16).padStart(2, 0) + parseInt(match[2]).toString(16).padStart(2, 0) + parseInt(match[3]).toString(16).padStart(2, 0);
-  } else if (match = string.match(/^#?([a-f0-9])([a-f0-9])([a-f0-9])$/i)) {
-    result = match[1] + match[1] + match[2] + match[2] + match[3] + match[3];
-  }
-  if (result) {
-    return "#" + result;
-  }
-  return false;
+function ht(t) {
+  let e, a;
+  return (e = t.match(/(#|0x)?([a-f0-9]{6})/i)) ? a = e[2] : (e = t.match(/rgb\(\s*(\d*)\s*,\s*(\d*)\s*,\s*(\d*)\s*\)/)) ? a = parseInt(e[1]).toString(16).padStart(2, 0) + parseInt(e[2]).toString(16).padStart(2, 0) + parseInt(e[3]).toString(16).padStart(2, 0) : (e = t.match(/^#?([a-f0-9])([a-f0-9])([a-f0-9])$/i)) && (a = e[1] + e[1] + e[2] + e[2] + e[3] + e[3]), a ? "#" + a : !1;
 }
-const STRING = {
-  isPrimitive: true,
-  match: (v) => typeof v === "string",
-  fromHexString: normalizeColorString,
-  toHexString: normalizeColorString
-};
-const INT = {
-  isPrimitive: true,
-  match: (v) => typeof v === "number",
-  fromHexString: (string) => parseInt(string.substring(1), 16),
-  toHexString: (value) => "#" + value.toString(16).padStart(6, 0)
-};
-const ARRAY = {
-  isPrimitive: false,
+const xi = {
+  isPrimitive: !0,
+  match: (t) => typeof t == "string",
+  fromHexString: ht,
+  toHexString: ht
+}, Ne = {
+  isPrimitive: !0,
+  match: (t) => typeof t == "number",
+  fromHexString: (t) => parseInt(t.substring(1), 16),
+  toHexString: (t) => "#" + t.toString(16).padStart(6, 0)
+}, Si = {
+  isPrimitive: !1,
   // The arrow function is here to appease tree shakers like esbuild or webpack.
   // See https://esbuild.github.io/api/#tree-shaking
-  match: (v) => Array.isArray(v),
-  fromHexString(string, target, rgbScale = 1) {
-    const int = INT.fromHexString(string);
-    target[0] = (int >> 16 & 255) / 255 * rgbScale;
-    target[1] = (int >> 8 & 255) / 255 * rgbScale;
-    target[2] = (int & 255) / 255 * rgbScale;
+  match: (t) => Array.isArray(t),
+  fromHexString(t, e, a = 1) {
+    const r = Ne.fromHexString(t);
+    e[0] = (r >> 16 & 255) / 255 * a, e[1] = (r >> 8 & 255) / 255 * a, e[2] = (r & 255) / 255 * a;
   },
-  toHexString([r, g, b], rgbScale = 1) {
-    rgbScale = 255 / rgbScale;
-    const int = r * rgbScale << 16 ^ g * rgbScale << 8 ^ b * rgbScale << 0;
-    return INT.toHexString(int);
+  toHexString([t, e, a], r = 1) {
+    r = 255 / r;
+    const c = t * r << 16 ^ e * r << 8 ^ a * r << 0;
+    return Ne.toHexString(c);
   }
-};
-const OBJECT = {
-  isPrimitive: false,
-  match: (v) => Object(v) === v,
-  fromHexString(string, target, rgbScale = 1) {
-    const int = INT.fromHexString(string);
-    target.r = (int >> 16 & 255) / 255 * rgbScale;
-    target.g = (int >> 8 & 255) / 255 * rgbScale;
-    target.b = (int & 255) / 255 * rgbScale;
+}, Oi = {
+  isPrimitive: !1,
+  match: (t) => Object(t) === t,
+  fromHexString(t, e, a = 1) {
+    const r = Ne.fromHexString(t);
+    e.r = (r >> 16 & 255) / 255 * a, e.g = (r >> 8 & 255) / 255 * a, e.b = (r & 255) / 255 * a;
   },
-  toHexString({ r, g, b }, rgbScale = 1) {
-    rgbScale = 255 / rgbScale;
-    const int = r * rgbScale << 16 ^ g * rgbScale << 8 ^ b * rgbScale << 0;
-    return INT.toHexString(int);
+  toHexString({ r: t, g: e, b: a }, r = 1) {
+    r = 255 / r;
+    const c = t * r << 16 ^ e * r << 8 ^ a * r << 0;
+    return Ne.toHexString(c);
   }
-};
-const FORMATS = [STRING, INT, ARRAY, OBJECT];
-function getColorFormat(value) {
-  return FORMATS.find((format) => format.match(value));
+}, Pi = [xi, Ne, Si, Oi];
+function ki(t) {
+  return Pi.find((e) => e.match(t));
 }
-class ColorController extends Controller {
-  constructor(parent, object, property, rgbScale) {
-    super(parent, object, property, "color");
-    this.$input = document.createElement("input");
-    this.$input.setAttribute("type", "color");
-    this.$input.setAttribute("tabindex", -1);
-    this.$input.setAttribute("aria-labelledby", this.$name.id);
-    this.$text = document.createElement("input");
-    this.$text.setAttribute("type", "text");
-    this.$text.setAttribute("spellcheck", "false");
-    this.$text.setAttribute("aria-labelledby", this.$name.id);
-    this.$display = document.createElement("div");
-    this.$display.classList.add("display");
-    this.$display.appendChild(this.$input);
-    this.$widget.appendChild(this.$display);
-    this.$widget.appendChild(this.$text);
-    this._format = getColorFormat(this.initialValue);
-    this._rgbScale = rgbScale;
-    this._initialValueHexString = this.save();
-    this._textFocused = false;
-    this.$input.addEventListener("input", () => {
+class Di extends fe {
+  constructor(e, a, r, c) {
+    super(e, a, r, "color"), this.$input = document.createElement("input"), this.$input.setAttribute("type", "color"), this.$input.setAttribute("tabindex", -1), this.$input.setAttribute("aria-labelledby", this.$name.id), this.$text = document.createElement("input"), this.$text.setAttribute("type", "text"), this.$text.setAttribute("spellcheck", "false"), this.$text.setAttribute("aria-labelledby", this.$name.id), this.$display = document.createElement("div"), this.$display.classList.add("display"), this.$display.appendChild(this.$input), this.$widget.appendChild(this.$display), this.$widget.appendChild(this.$text), this._format = ki(this.initialValue), this._rgbScale = c, this._initialValueHexString = this.save(), this._textFocused = !1, this.$input.addEventListener("input", () => {
       this._setValueFromHexString(this.$input.value);
-    });
-    this.$input.addEventListener("blur", () => {
+    }), this.$input.addEventListener("blur", () => {
       this._callOnFinishChange();
-    });
-    this.$text.addEventListener("input", () => {
-      const tryParse = normalizeColorString(this.$text.value);
-      if (tryParse) {
-        this._setValueFromHexString(tryParse);
-      }
-    });
-    this.$text.addEventListener("focus", () => {
-      this._textFocused = true;
-      this.$text.select();
-    });
-    this.$text.addEventListener("blur", () => {
-      this._textFocused = false;
-      this.updateDisplay();
-      this._callOnFinishChange();
-    });
-    this.$disable = this.$text;
-    this.updateDisplay();
+    }), this.$text.addEventListener("input", () => {
+      const d = ht(this.$text.value);
+      d && this._setValueFromHexString(d);
+    }), this.$text.addEventListener("focus", () => {
+      this._textFocused = !0, this.$text.select();
+    }), this.$text.addEventListener("blur", () => {
+      this._textFocused = !1, this.updateDisplay(), this._callOnFinishChange();
+    }), this.$disable = this.$text, this.updateDisplay();
   }
   reset() {
-    this._setValueFromHexString(this._initialValueHexString);
-    return this;
+    return this._setValueFromHexString(this._initialValueHexString), this;
   }
-  _setValueFromHexString(value) {
+  _setValueFromHexString(e) {
     if (this._format.isPrimitive) {
-      const newValue = this._format.fromHexString(value);
-      this.setValue(newValue);
-    } else {
-      this._format.fromHexString(value, this.getValue(), this._rgbScale);
-      this._callOnChange();
-      this.updateDisplay();
-    }
+      const a = this._format.fromHexString(e);
+      this.setValue(a);
+    } else
+      this._format.fromHexString(e, this.getValue(), this._rgbScale), this._callOnChange(), this.updateDisplay();
   }
   save() {
     return this._format.toHexString(this.getValue(), this._rgbScale);
   }
-  load(value) {
-    this._setValueFromHexString(value);
-    this._callOnFinishChange();
-    return this;
+  load(e) {
+    return this._setValueFromHexString(e), this._callOnFinishChange(), this;
   }
   updateDisplay() {
-    this.$input.value = this._format.toHexString(this.getValue(), this._rgbScale);
-    if (!this._textFocused) {
-      this.$text.value = this.$input.value.substring(1);
-    }
-    this.$display.style.backgroundColor = this.$input.value;
-    return this;
+    return this.$input.value = this._format.toHexString(this.getValue(), this._rgbScale), this._textFocused || (this.$text.value = this.$input.value.substring(1)), this.$display.style.backgroundColor = this.$input.value, this;
   }
 }
-class FunctionController extends Controller {
-  constructor(parent, object, property) {
-    super(parent, object, property, "function");
-    this.$button = document.createElement("button");
-    this.$button.appendChild(this.$name);
-    this.$widget.appendChild(this.$button);
-    this.$button.addEventListener("click", (e) => {
-      e.preventDefault();
-      this.getValue().call(this.object);
-      this._callOnChange();
-    });
-    this.$button.addEventListener("touchstart", () => {
-    }, { passive: true });
-    this.$disable = this.$button;
+class lt extends fe {
+  constructor(e, a, r) {
+    super(e, a, r, "function"), this.$button = document.createElement("button"), this.$button.appendChild(this.$name), this.$widget.appendChild(this.$button), this.$button.addEventListener("click", (c) => {
+      c.preventDefault(), this.getValue().call(this.object), this._callOnChange();
+    }), this.$button.addEventListener("touchstart", () => {
+    }, { passive: !0 }), this.$disable = this.$button;
   }
 }
-class NumberController extends Controller {
-  constructor(parent, object, property, min, max, step) {
-    super(parent, object, property, "number");
-    this._initInput();
-    this.min(min);
-    this.max(max);
-    const stepExplicit = step !== void 0;
-    this.step(stepExplicit ? step : this._getImplicitStep(), stepExplicit);
-    this.updateDisplay();
+class Ii extends fe {
+  constructor(e, a, r, c, d, p) {
+    super(e, a, r, "number"), this._initInput(), this.min(c), this.max(d);
+    const u = p !== void 0;
+    this.step(u ? p : this._getImplicitStep(), u), this.updateDisplay();
   }
-  decimals(decimals) {
-    this._decimals = decimals;
-    this.updateDisplay();
-    return this;
+  decimals(e) {
+    return this._decimals = e, this.updateDisplay(), this;
   }
-  min(min) {
-    this._min = min;
-    this._onUpdateMinMax();
-    return this;
+  min(e) {
+    return this._min = e, this._onUpdateMinMax(), this;
   }
-  max(max) {
-    this._max = max;
-    this._onUpdateMinMax();
-    return this;
+  max(e) {
+    return this._max = e, this._onUpdateMinMax(), this;
   }
-  step(step, explicit = true) {
-    this._step = step;
-    this._stepExplicit = explicit;
-    return this;
+  step(e, a = !0) {
+    return this._step = e, this._stepExplicit = a, this;
   }
   updateDisplay() {
-    const value = this.getValue();
+    const e = this.getValue();
     if (this._hasSlider) {
-      let percent = (value - this._min) / (this._max - this._min);
-      percent = Math.max(0, Math.min(percent, 1));
-      this.$fill.style.width = percent * 100 + "%";
+      let a = (e - this._min) / (this._max - this._min);
+      a = Math.max(0, Math.min(a, 1)), this.$fill.style.width = a * 100 + "%";
     }
-    if (!this._inputFocused) {
-      this.$input.value = this._decimals === void 0 ? value : value.toFixed(this._decimals);
-    }
-    return this;
+    return this._inputFocused || (this.$input.value = this._decimals === void 0 ? e : e.toFixed(this._decimals)), this;
   }
   _initInput() {
-    this.$input = document.createElement("input");
-    this.$input.setAttribute("type", "text");
-    this.$input.setAttribute("aria-labelledby", this.$name.id);
-    const isTouch = window.matchMedia("(pointer: coarse)").matches;
-    if (isTouch) {
-      this.$input.setAttribute("type", "number");
-      this.$input.setAttribute("step", "any");
-    }
-    this.$widget.appendChild(this.$input);
-    this.$disable = this.$input;
-    const onInput = () => {
-      let value = parseFloat(this.$input.value);
-      if (isNaN(value)) return;
-      if (this._stepExplicit) {
-        value = this._snap(value);
+    this.$input = document.createElement("input"), this.$input.setAttribute("type", "text"), this.$input.setAttribute("aria-labelledby", this.$name.id), window.matchMedia("(pointer: coarse)").matches && (this.$input.setAttribute("type", "number"), this.$input.setAttribute("step", "any")), this.$widget.appendChild(this.$input), this.$disable = this.$input;
+    const a = () => {
+      let v = parseFloat(this.$input.value);
+      isNaN(v) || (this._stepExplicit && (v = this._snap(v)), this.setValue(this._clamp(v)));
+    }, r = (v) => {
+      const S = parseFloat(this.$input.value);
+      isNaN(S) || (this._snapClampSetValue(S + v), this.$input.value = this.getValue());
+    }, c = (v) => {
+      v.key === "Enter" && this.$input.blur(), v.code === "ArrowUp" && (v.preventDefault(), r(this._step * this._arrowKeyMultiplier(v))), v.code === "ArrowDown" && (v.preventDefault(), r(this._step * this._arrowKeyMultiplier(v) * -1));
+    }, d = (v) => {
+      this._inputFocused && (v.preventDefault(), r(this._step * this._normalizeMouseWheel(v)));
+    };
+    let p = !1, u, o, s, l, h;
+    const b = 5, R = (v) => {
+      u = v.clientX, o = s = v.clientY, p = !0, l = this.getValue(), h = 0, window.addEventListener("mousemove", w), window.addEventListener("mouseup", _);
+    }, w = (v) => {
+      if (p) {
+        const S = v.clientX - u, D = v.clientY - o;
+        Math.abs(D) > b ? (v.preventDefault(), this.$input.blur(), p = !1, this._setDraggingStyle(!0, "vertical")) : Math.abs(S) > b && _();
       }
-      this.setValue(this._clamp(value));
-    };
-    const increment = (delta) => {
-      const value = parseFloat(this.$input.value);
-      if (isNaN(value)) return;
-      this._snapClampSetValue(value + delta);
-      this.$input.value = this.getValue();
-    };
-    const onKeyDown = (e) => {
-      if (e.key === "Enter") {
-        this.$input.blur();
+      if (!p) {
+        const S = v.clientY - s;
+        h -= S * this._step * this._arrowKeyMultiplier(v), l + h > this._max ? h = this._max - l : l + h < this._min && (h = this._min - l), this._snapClampSetValue(l + h);
       }
-      if (e.code === "ArrowUp") {
-        e.preventDefault();
-        increment(this._step * this._arrowKeyMultiplier(e));
-      }
-      if (e.code === "ArrowDown") {
-        e.preventDefault();
-        increment(this._step * this._arrowKeyMultiplier(e) * -1);
-      }
+      s = v.clientY;
+    }, _ = () => {
+      this._setDraggingStyle(!1, "vertical"), this._callOnFinishChange(), window.removeEventListener("mousemove", w), window.removeEventListener("mouseup", _);
+    }, A = () => {
+      this._inputFocused = !0;
+    }, g = () => {
+      this._inputFocused = !1, this.updateDisplay(), this._callOnFinishChange();
     };
-    const onWheel = (e) => {
-      if (this._inputFocused) {
-        e.preventDefault();
-        increment(this._step * this._normalizeMouseWheel(e));
-      }
-    };
-    let testingForVerticalDrag = false, initClientX, initClientY, prevClientY, initValue, dragDelta;
-    const DRAG_THRESH = 5;
-    const onMouseDown = (e) => {
-      initClientX = e.clientX;
-      initClientY = prevClientY = e.clientY;
-      testingForVerticalDrag = true;
-      initValue = this.getValue();
-      dragDelta = 0;
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-    };
-    const onMouseMove = (e) => {
-      if (testingForVerticalDrag) {
-        const dx = e.clientX - initClientX;
-        const dy = e.clientY - initClientY;
-        if (Math.abs(dy) > DRAG_THRESH) {
-          e.preventDefault();
-          this.$input.blur();
-          testingForVerticalDrag = false;
-          this._setDraggingStyle(true, "vertical");
-        } else if (Math.abs(dx) > DRAG_THRESH) {
-          onMouseUp();
-        }
-      }
-      if (!testingForVerticalDrag) {
-        const dy = e.clientY - prevClientY;
-        dragDelta -= dy * this._step * this._arrowKeyMultiplier(e);
-        if (initValue + dragDelta > this._max) {
-          dragDelta = this._max - initValue;
-        } else if (initValue + dragDelta < this._min) {
-          dragDelta = this._min - initValue;
-        }
-        this._snapClampSetValue(initValue + dragDelta);
-      }
-      prevClientY = e.clientY;
-    };
-    const onMouseUp = () => {
-      this._setDraggingStyle(false, "vertical");
-      this._callOnFinishChange();
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-    const onFocus = () => {
-      this._inputFocused = true;
-    };
-    const onBlur = () => {
-      this._inputFocused = false;
-      this.updateDisplay();
-      this._callOnFinishChange();
-    };
-    this.$input.addEventListener("input", onInput);
-    this.$input.addEventListener("keydown", onKeyDown);
-    this.$input.addEventListener("wheel", onWheel, { passive: false });
-    this.$input.addEventListener("mousedown", onMouseDown);
-    this.$input.addEventListener("focus", onFocus);
-    this.$input.addEventListener("blur", onBlur);
+    this.$input.addEventListener("input", a), this.$input.addEventListener("keydown", c), this.$input.addEventListener("wheel", d, { passive: !1 }), this.$input.addEventListener("mousedown", R), this.$input.addEventListener("focus", A), this.$input.addEventListener("blur", g);
   }
   _initSlider() {
-    this._hasSlider = true;
-    this.$slider = document.createElement("div");
-    this.$slider.classList.add("slider");
-    this.$fill = document.createElement("div");
-    this.$fill.classList.add("fill");
-    this.$slider.appendChild(this.$fill);
-    this.$widget.insertBefore(this.$slider, this.$input);
-    this.domElement.classList.add("hasSlider");
-    const map = (v, a, b, c, d) => {
-      return (v - a) / (b - a) * (d - c) + c;
+    this._hasSlider = !0, this.$slider = document.createElement("div"), this.$slider.classList.add("slider"), this.$fill = document.createElement("div"), this.$fill.classList.add("fill"), this.$slider.appendChild(this.$fill), this.$widget.insertBefore(this.$slider, this.$input), this.domElement.classList.add("hasSlider");
+    const e = (g, v, S, D, i) => (g - v) / (S - v) * (i - D) + D, a = (g) => {
+      const v = this.$slider.getBoundingClientRect();
+      let S = e(g, v.left, v.right, this._min, this._max);
+      this._snapClampSetValue(S);
+    }, r = (g) => {
+      this._setDraggingStyle(!0), a(g.clientX), window.addEventListener("mousemove", c), window.addEventListener("mouseup", d);
+    }, c = (g) => {
+      a(g.clientX);
+    }, d = () => {
+      this._callOnFinishChange(), this._setDraggingStyle(!1), window.removeEventListener("mousemove", c), window.removeEventListener("mouseup", d);
     };
-    const setValueFromX = (clientX) => {
-      const rect = this.$slider.getBoundingClientRect();
-      let value = map(clientX, rect.left, rect.right, this._min, this._max);
-      this._snapClampSetValue(value);
+    let p = !1, u, o;
+    const s = (g) => {
+      g.preventDefault(), this._setDraggingStyle(!0), a(g.touches[0].clientX), p = !1;
+    }, l = (g) => {
+      g.touches.length > 1 || (this._hasScrollBar ? (u = g.touches[0].clientX, o = g.touches[0].clientY, p = !0) : s(g), window.addEventListener("touchmove", h, { passive: !1 }), window.addEventListener("touchend", b));
+    }, h = (g) => {
+      if (p) {
+        const v = g.touches[0].clientX - u, S = g.touches[0].clientY - o;
+        Math.abs(v) > Math.abs(S) ? s(g) : (window.removeEventListener("touchmove", h), window.removeEventListener("touchend", b));
+      } else
+        g.preventDefault(), a(g.touches[0].clientX);
+    }, b = () => {
+      this._callOnFinishChange(), this._setDraggingStyle(!1), window.removeEventListener("touchmove", h), window.removeEventListener("touchend", b);
+    }, R = this._callOnFinishChange.bind(this), w = 400;
+    let _;
+    const A = (g) => {
+      if (Math.abs(g.deltaX) < Math.abs(g.deltaY) && this._hasScrollBar) return;
+      g.preventDefault();
+      const S = this._normalizeMouseWheel(g) * this._step;
+      this._snapClampSetValue(this.getValue() + S), this.$input.value = this.getValue(), clearTimeout(_), _ = setTimeout(R, w);
     };
-    const mouseDown = (e) => {
-      this._setDraggingStyle(true);
-      setValueFromX(e.clientX);
-      window.addEventListener("mousemove", mouseMove);
-      window.addEventListener("mouseup", mouseUp);
-    };
-    const mouseMove = (e) => {
-      setValueFromX(e.clientX);
-    };
-    const mouseUp = () => {
-      this._callOnFinishChange();
-      this._setDraggingStyle(false);
-      window.removeEventListener("mousemove", mouseMove);
-      window.removeEventListener("mouseup", mouseUp);
-    };
-    let testingForScroll = false, prevClientX, prevClientY;
-    const beginTouchDrag = (e) => {
-      e.preventDefault();
-      this._setDraggingStyle(true);
-      setValueFromX(e.touches[0].clientX);
-      testingForScroll = false;
-    };
-    const onTouchStart = (e) => {
-      if (e.touches.length > 1) return;
-      if (this._hasScrollBar) {
-        prevClientX = e.touches[0].clientX;
-        prevClientY = e.touches[0].clientY;
-        testingForScroll = true;
-      } else {
-        beginTouchDrag(e);
-      }
-      window.addEventListener("touchmove", onTouchMove, { passive: false });
-      window.addEventListener("touchend", onTouchEnd);
-    };
-    const onTouchMove = (e) => {
-      if (testingForScroll) {
-        const dx = e.touches[0].clientX - prevClientX;
-        const dy = e.touches[0].clientY - prevClientY;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          beginTouchDrag(e);
-        } else {
-          window.removeEventListener("touchmove", onTouchMove);
-          window.removeEventListener("touchend", onTouchEnd);
-        }
-      } else {
-        e.preventDefault();
-        setValueFromX(e.touches[0].clientX);
-      }
-    };
-    const onTouchEnd = () => {
-      this._callOnFinishChange();
-      this._setDraggingStyle(false);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
-    };
-    const callOnFinishChange = this._callOnFinishChange.bind(this);
-    const WHEEL_DEBOUNCE_TIME = 400;
-    let wheelFinishChangeTimeout;
-    const onWheel = (e) => {
-      const isVertical = Math.abs(e.deltaX) < Math.abs(e.deltaY);
-      if (isVertical && this._hasScrollBar) return;
-      e.preventDefault();
-      const delta = this._normalizeMouseWheel(e) * this._step;
-      this._snapClampSetValue(this.getValue() + delta);
-      this.$input.value = this.getValue();
-      clearTimeout(wheelFinishChangeTimeout);
-      wheelFinishChangeTimeout = setTimeout(callOnFinishChange, WHEEL_DEBOUNCE_TIME);
-    };
-    this.$slider.addEventListener("mousedown", mouseDown);
-    this.$slider.addEventListener("touchstart", onTouchStart, { passive: false });
-    this.$slider.addEventListener("wheel", onWheel, { passive: false });
+    this.$slider.addEventListener("mousedown", r), this.$slider.addEventListener("touchstart", l, { passive: !1 }), this.$slider.addEventListener("wheel", A, { passive: !1 });
   }
-  _setDraggingStyle(active, axis = "horizontal") {
-    if (this.$slider) {
-      this.$slider.classList.toggle("active", active);
-    }
-    document.body.classList.toggle("lil-gui-dragging", active);
-    document.body.classList.toggle(`lil-gui-${axis}`, active);
+  _setDraggingStyle(e, a = "horizontal") {
+    this.$slider && this.$slider.classList.toggle("active", e), document.body.classList.toggle("lil-gui-dragging", e), document.body.classList.toggle(`lil-gui-${a}`, e);
   }
   _getImplicitStep() {
-    if (this._hasMin && this._hasMax) {
-      return (this._max - this._min) / 1e3;
-    }
-    return 0.1;
+    return this._hasMin && this._hasMax ? (this._max - this._min) / 1e3 : 0.1;
   }
   _onUpdateMinMax() {
-    if (!this._hasSlider && this._hasMin && this._hasMax) {
-      if (!this._stepExplicit) {
-        this.step(this._getImplicitStep(), false);
-      }
-      this._initSlider();
-      this.updateDisplay();
-    }
+    !this._hasSlider && this._hasMin && this._hasMax && (this._stepExplicit || this.step(this._getImplicitStep(), !1), this._initSlider(), this.updateDisplay());
   }
   _normalizeMouseWheel(e) {
-    let { deltaX, deltaY } = e;
-    if (Math.floor(e.deltaY) !== e.deltaY && e.wheelDelta) {
-      deltaX = 0;
-      deltaY = -e.wheelDelta / 120;
-      deltaY *= this._stepExplicit ? 1 : 10;
-    }
-    const wheel = deltaX + -deltaY;
-    return wheel;
+    let { deltaX: a, deltaY: r } = e;
+    return Math.floor(e.deltaY) !== e.deltaY && e.wheelDelta && (a = 0, r = -e.wheelDelta / 120, r *= this._stepExplicit ? 1 : 10), a + -r;
   }
   _arrowKeyMultiplier(e) {
-    let mult = this._stepExplicit ? 1 : 10;
-    if (e.shiftKey) {
-      mult *= 10;
-    } else if (e.altKey) {
-      mult /= 10;
-    }
-    return mult;
+    let a = this._stepExplicit ? 1 : 10;
+    return e.shiftKey ? a *= 10 : e.altKey && (a /= 10), a;
   }
-  _snap(value) {
-    let offset = 0;
-    if (this._hasMin) {
-      offset = this._min;
-    } else if (this._hasMax) {
-      offset = this._max;
-    }
-    value -= offset;
-    value = Math.round(value / this._step) * this._step;
-    value += offset;
-    value = parseFloat(value.toPrecision(15));
-    return value;
+  _snap(e) {
+    let a = 0;
+    return this._hasMin ? a = this._min : this._hasMax && (a = this._max), e -= a, e = Math.round(e / this._step) * this._step, e += a, e = parseFloat(e.toPrecision(15)), e;
   }
-  _clamp(value) {
-    if (value < this._min) value = this._min;
-    if (value > this._max) value = this._max;
-    return value;
+  _clamp(e) {
+    return e < this._min && (e = this._min), e > this._max && (e = this._max), e;
   }
-  _snapClampSetValue(value) {
-    this.setValue(this._clamp(this._snap(value)));
+  _snapClampSetValue(e) {
+    this.setValue(this._clamp(this._snap(e)));
   }
   get _hasScrollBar() {
-    const root = this.parent.root.$children;
-    return root.scrollHeight > root.clientHeight;
+    const e = this.parent.root.$children;
+    return e.scrollHeight > e.clientHeight;
   }
   get _hasMin() {
     return this._min !== void 0;
@@ -5410,76 +3919,42 @@ class NumberController extends Controller {
     return this._max !== void 0;
   }
 }
-class OptionController extends Controller {
-  constructor(parent, object, property, options) {
-    super(parent, object, property, "option");
-    this.$select = document.createElement("select");
-    this.$select.setAttribute("aria-labelledby", this.$name.id);
-    this.$display = document.createElement("div");
-    this.$display.classList.add("display");
-    this.$select.addEventListener("change", () => {
-      this.setValue(this._values[this.$select.selectedIndex]);
-      this._callOnFinishChange();
-    });
-    this.$select.addEventListener("focus", () => {
+class $i extends fe {
+  constructor(e, a, r, c) {
+    super(e, a, r, "option"), this.$select = document.createElement("select"), this.$select.setAttribute("aria-labelledby", this.$name.id), this.$display = document.createElement("div"), this.$display.classList.add("display"), this.$select.addEventListener("change", () => {
+      this.setValue(this._values[this.$select.selectedIndex]), this._callOnFinishChange();
+    }), this.$select.addEventListener("focus", () => {
       this.$display.classList.add("focus");
-    });
-    this.$select.addEventListener("blur", () => {
+    }), this.$select.addEventListener("blur", () => {
       this.$display.classList.remove("focus");
-    });
-    this.$widget.appendChild(this.$select);
-    this.$widget.appendChild(this.$display);
-    this.$disable = this.$select;
-    this.options(options);
+    }), this.$widget.appendChild(this.$select), this.$widget.appendChild(this.$display), this.$disable = this.$select, this.options(c);
   }
-  options(options) {
-    this._values = Array.isArray(options) ? options : Object.values(options);
-    this._names = Array.isArray(options) ? options : Object.keys(options);
-    this.$select.replaceChildren();
-    this._names.forEach((name) => {
-      const $option = document.createElement("option");
-      $option.textContent = name;
-      this.$select.appendChild($option);
-    });
-    this.updateDisplay();
-    return this;
+  options(e) {
+    return this._values = Array.isArray(e) ? e : Object.values(e), this._names = Array.isArray(e) ? e : Object.keys(e), this.$select.replaceChildren(), this._names.forEach((a) => {
+      const r = document.createElement("option");
+      r.textContent = a, this.$select.appendChild(r);
+    }), this.updateDisplay(), this;
   }
   updateDisplay() {
-    const value = this.getValue();
-    const index = this._values.indexOf(value);
-    this.$select.selectedIndex = index;
-    this.$display.textContent = index === -1 ? value : this._names[index];
-    return this;
+    const e = this.getValue(), a = this._values.indexOf(e);
+    return this.$select.selectedIndex = a, this.$display.textContent = a === -1 ? e : this._names[a], this;
   }
 }
-class StringController extends Controller {
-  constructor(parent, object, property) {
-    super(parent, object, property, "string");
-    this.$input = document.createElement("input");
-    this.$input.setAttribute("type", "text");
-    this.$input.setAttribute("spellcheck", "false");
-    this.$input.setAttribute("aria-labelledby", this.$name.id);
-    this.$input.addEventListener("input", () => {
+class Li extends fe {
+  constructor(e, a, r) {
+    super(e, a, r, "string"), this.$input = document.createElement("input"), this.$input.setAttribute("type", "text"), this.$input.setAttribute("spellcheck", "false"), this.$input.setAttribute("aria-labelledby", this.$name.id), this.$input.addEventListener("input", () => {
       this.setValue(this.$input.value);
-    });
-    this.$input.addEventListener("keydown", (e) => {
-      if (e.code === "Enter") {
-        this.$input.blur();
-      }
-    });
-    this.$input.addEventListener("blur", () => {
+    }), this.$input.addEventListener("keydown", (c) => {
+      c.code === "Enter" && this.$input.blur();
+    }), this.$input.addEventListener("blur", () => {
       this._callOnFinishChange();
-    });
-    this.$widget.appendChild(this.$input);
-    this.$disable = this.$input;
-    this.updateDisplay();
+    }), this.$widget.appendChild(this.$input), this.$disable = this.$input, this.updateDisplay();
   }
   updateDisplay() {
-    this.$input.value = this.getValue();
-    return this;
+    return this.$input.value = this.getValue(), this;
   }
 }
-var stylesheet = `.lil-gui {
+var Mi = `.lil-gui {
   font-family: var(--font-family);
   font-size: var(--font-size);
   line-height: 1;
@@ -5902,18 +4377,14 @@ var stylesheet = `.lil-gui {
   font-family: "lil-gui";
   src: url("data:application/font-woff;charset=utf-8;base64,d09GRgABAAAAAAUsAAsAAAAACJwAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABHU1VCAAABCAAAAH4AAADAImwmYE9TLzIAAAGIAAAAPwAAAGBKqH5SY21hcAAAAcgAAAD0AAACrukyyJBnbHlmAAACvAAAAF8AAACEIZpWH2hlYWQAAAMcAAAAJwAAADZfcj2zaGhlYQAAA0QAAAAYAAAAJAC5AHhobXR4AAADXAAAABAAAABMAZAAAGxvY2EAAANsAAAAFAAAACgCEgIybWF4cAAAA4AAAAAeAAAAIAEfABJuYW1lAAADoAAAASIAAAIK9SUU/XBvc3QAAATEAAAAZgAAAJCTcMc2eJxVjbEOgjAURU+hFRBK1dGRL+ALnAiToyMLEzFpnPz/eAshwSa97517c/MwwJmeB9kwPl+0cf5+uGPZXsqPu4nvZabcSZldZ6kfyWnomFY/eScKqZNWupKJO6kXN3K9uCVoL7iInPr1X5baXs3tjuMqCtzEuagm/AAlzQgPAAB4nGNgYRBlnMDAysDAYM/gBiT5oLQBAwuDJAMDEwMrMwNWEJDmmsJwgCFeXZghBcjlZMgFCzOiKOIFAB71Bb8AeJy1kjFuwkAQRZ+DwRAwBtNQRUGKQ8OdKCAWUhAgKLhIuAsVSpWz5Bbkj3dEgYiUIszqWdpZe+Z7/wB1oCYmIoboiwiLT2WjKl/jscrHfGg/pKdMkyklC5Zs2LEfHYpjcRoPzme9MWWmk3dWbK9ObkWkikOetJ554fWyoEsmdSlt+uR0pCJR34b6t/TVg1SY3sYvdf8vuiKrpyaDXDISiegp17p7579Gp3p++y7HPAiY9pmTibljrr85qSidtlg4+l25GLCaS8e6rRxNBmsnERunKbaOObRz7N72ju5vdAjYpBXHgJylOAVsMseDAPEP8LYoUHicY2BiAAEfhiAGJgZWBgZ7RnFRdnVJELCQlBSRlATJMoLV2DK4glSYs6ubq5vbKrJLSbGrgEmovDuDJVhe3VzcXFwNLCOILB/C4IuQ1xTn5FPilBTj5FPmBAB4WwoqAHicY2BkYGAA4sk1sR/j+W2+MnAzpDBgAyEMQUCSg4EJxAEAwUgFHgB4nGNgZGBgSGFggJMhDIwMqEAYAByHATJ4nGNgAIIUNEwmAABl3AGReJxjYAACIQYlBiMGJ3wQAEcQBEV4nGNgZGBgEGZgY2BiAAEQyQWEDAz/wXwGAAsPATIAAHicXdBNSsNAHAXwl35iA0UQXYnMShfS9GPZA7T7LgIu03SSpkwzYTIt1BN4Ak/gKTyAeCxfw39jZkjymzcvAwmAW/wgwHUEGDb36+jQQ3GXGot79L24jxCP4gHzF/EIr4jEIe7wxhOC3g2TMYy4Q7+Lu/SHuEd/ivt4wJd4wPxbPEKMX3GI5+DJFGaSn4qNzk8mcbKSR6xdXdhSzaOZJGtdapd4vVPbi6rP+cL7TGXOHtXKll4bY1Xl7EGnPtp7Xy2n00zyKLVHfkHBa4IcJ2oD3cgggWvt/V/FbDrUlEUJhTn/0azVWbNTNr0Ens8de1tceK9xZmfB1CPjOmPH4kitmvOubcNpmVTN3oFJyjzCvnmrwhJTzqzVj9jiSX911FjeAAB4nG3HMRKCMBBA0f0giiKi4DU8k0V2GWbIZDOh4PoWWvq6J5V8If9NVNQcaDhyouXMhY4rPTcG7jwYmXhKq8Wz+p762aNaeYXom2n3m2dLTVgsrCgFJ7OTmIkYbwIbC6vIB7WmFfAAAA==") format("woff");
 }`;
-function _injectStyles(cssContent) {
-  const injected = document.createElement("style");
-  injected.innerHTML = cssContent;
-  const before = document.querySelector("head link[rel=stylesheet], head style");
-  if (before) {
-    document.head.insertBefore(injected, before);
-  } else {
-    document.head.appendChild(injected);
-  }
+function ji(t) {
+  const e = document.createElement("style");
+  e.innerHTML = t;
+  const a = document.querySelector("head link[rel=stylesheet], head style");
+  a ? document.head.insertBefore(e, a) : document.head.appendChild(e);
 }
-let stylesInjected = false;
-class GUI {
+let hr = !1;
+class mt {
   /**
    * Creates a panel that holds controllers.
    * @example
@@ -5948,59 +4419,21 @@ class GUI {
    * Adds this GUI as a child in another GUI. Usually this is done for you by `addFolder()`.
    */
   constructor({
-    parent,
-    autoPlace = parent === void 0,
-    container,
-    width,
-    title = "Controls",
-    closeFolders = false,
-    injectStyles = true,
-    touchStyles = true
+    parent: e,
+    autoPlace: a = e === void 0,
+    container: r,
+    width: c,
+    title: d = "Controls",
+    closeFolders: p = !1,
+    injectStyles: u = !0,
+    touchStyles: o = !0
   } = {}) {
-    this.parent = parent;
-    this.root = parent ? parent.root : this;
-    this.children = [];
-    this.controllers = [];
-    this.folders = [];
-    this._closed = false;
-    this._hidden = false;
-    this.domElement = document.createElement("div");
-    this.domElement.classList.add("lil-gui");
-    this.$title = document.createElement("button");
-    this.$title.classList.add("title");
-    this.$title.setAttribute("aria-expanded", true);
-    this.$title.addEventListener("click", () => this.openAnimated(this._closed));
-    this.$title.addEventListener("touchstart", () => {
-    }, { passive: true });
-    this.$children = document.createElement("div");
-    this.$children.classList.add("children");
-    this.domElement.appendChild(this.$title);
-    this.domElement.appendChild(this.$children);
-    this.title(title);
-    if (this.parent) {
-      this.parent.children.push(this);
-      this.parent.folders.push(this);
-      this.parent.$children.appendChild(this.domElement);
+    if (this.parent = e, this.root = e ? e.root : this, this.children = [], this.controllers = [], this.folders = [], this._closed = !1, this._hidden = !1, this.domElement = document.createElement("div"), this.domElement.classList.add("lil-gui"), this.$title = document.createElement("button"), this.$title.classList.add("title"), this.$title.setAttribute("aria-expanded", !0), this.$title.addEventListener("click", () => this.openAnimated(this._closed)), this.$title.addEventListener("touchstart", () => {
+    }, { passive: !0 }), this.$children = document.createElement("div"), this.$children.classList.add("children"), this.domElement.appendChild(this.$title), this.domElement.appendChild(this.$children), this.title(d), this.parent) {
+      this.parent.children.push(this), this.parent.folders.push(this), this.parent.$children.appendChild(this.domElement);
       return;
     }
-    this.domElement.classList.add("root");
-    if (touchStyles) {
-      this.domElement.classList.add("allow-touch-styles");
-    }
-    if (!stylesInjected && injectStyles) {
-      _injectStyles(stylesheet);
-      stylesInjected = true;
-    }
-    if (container) {
-      container.appendChild(this.domElement);
-    } else if (autoPlace) {
-      this.domElement.classList.add("autoPlace");
-      document.body.appendChild(this.domElement);
-    }
-    if (width) {
-      this.domElement.style.setProperty("--width", width + "px");
-    }
-    this._closeFolders = closeFolders;
+    this.domElement.classList.add("root"), o && this.domElement.classList.add("allow-touch-styles"), !hr && u && (ji(Mi), hr = !0), r ? r.appendChild(this.domElement) : a && (this.domElement.classList.add("autoPlace"), document.body.appendChild(this.domElement)), c && this.domElement.style.setProperty("--width", c + "px"), this._closeFolders = p;
   }
   /**
    * Adds a controller to the GUI, inferring controller type using the `typeof` operator.
@@ -6017,25 +4450,24 @@ class GUI {
    * @param {number} [step] Step value for number controllers.
    * @returns {Controller}
    */
-  add(object, property, $1, max, step) {
-    if (Object($1) === $1) {
-      return new OptionController(this, object, property, $1);
-    }
-    const initialValue = object[property];
-    switch (typeof initialValue) {
+  add(e, a, r, c, d) {
+    if (Object(r) === r)
+      return new $i(this, e, a, r);
+    const p = e[a];
+    switch (typeof p) {
       case "number":
-        return new NumberController(this, object, property, $1, max, step);
+        return new Ii(this, e, a, r, c, d);
       case "boolean":
-        return new BooleanController(this, object, property);
+        return new Ri(this, e, a);
       case "string":
-        return new StringController(this, object, property);
+        return new Li(this, e, a);
       case "function":
-        return new FunctionController(this, object, property);
+        return new lt(this, e, a);
     }
     console.error(`gui.add failed
-	property:`, property, `
-	object:`, object, `
-	value:`, initialValue);
+	property:`, a, `
+	object:`, e, `
+	value:`, p);
   }
   /**
    * Adds a color controller to the GUI.
@@ -6056,8 +4488,8 @@ class GUI {
    * need to set this to 255 if your colors are too bright.
    * @returns {Controller}
    */
-  addColor(object, property, rgbScale = 1) {
-    return new ColorController(this, object, property, rgbScale);
+  addColor(e, a, r = 1) {
+    return new Di(this, e, a, r);
   }
   /**
    * Adds a folder to the GUI, which is just another GUI. This method returns
@@ -6071,10 +4503,9 @@ class GUI {
    * @param {string} title Name to display in the folder's title bar.
    * @returns {GUI}
    */
-  addFolder(title) {
-    const folder = new GUI({ parent: this, title });
-    if (this.root._closeFolders) folder.close();
-    return folder;
+  addFolder(e) {
+    const a = new mt({ parent: this, title: e });
+    return this.root._closeFolders && a.close(), a;
   }
   /**
    * Recalls values that were saved with `gui.save()`.
@@ -6082,23 +4513,12 @@ class GUI {
    * @param {boolean} recursive Pass false to exclude folders descending from this GUI.
    * @returns {this}
    */
-  load(obj, recursive = true) {
-    if (obj.controllers) {
-      this.controllers.forEach((c) => {
-        if (c instanceof FunctionController) return;
-        if (c._name in obj.controllers) {
-          c.load(obj.controllers[c._name]);
-        }
-      });
-    }
-    if (recursive && obj.folders) {
-      this.folders.forEach((f) => {
-        if (f._title in obj.folders) {
-          f.load(obj.folders[f._title]);
-        }
-      });
-    }
-    return this;
+  load(e, a = !0) {
+    return e.controllers && this.controllers.forEach((r) => {
+      r instanceof lt || r._name in e.controllers && r.load(e.controllers[r._name]);
+    }), a && e.folders && this.folders.forEach((r) => {
+      r._title in e.folders && r.load(e.folders[r._title]);
+    }), this;
   }
   /**
    * Returns an object mapping controller names to values. The object can be passed to `gui.load()` to
@@ -6120,27 +4540,22 @@ class GUI {
    * @param {boolean} recursive Pass false to exclude folders descending from this GUI.
    * @returns {object}
    */
-  save(recursive = true) {
-    const obj = {
+  save(e = !0) {
+    const a = {
       controllers: {},
       folders: {}
     };
-    this.controllers.forEach((c) => {
-      if (c instanceof FunctionController) return;
-      if (c._name in obj.controllers) {
-        throw new Error(`Cannot save GUI with duplicate property "${c._name}"`);
+    return this.controllers.forEach((r) => {
+      if (!(r instanceof lt)) {
+        if (r._name in a.controllers)
+          throw new Error(`Cannot save GUI with duplicate property "${r._name}"`);
+        a.controllers[r._name] = r.save();
       }
-      obj.controllers[c._name] = c.save();
-    });
-    if (recursive) {
-      this.folders.forEach((f) => {
-        if (f._title in obj.folders) {
-          throw new Error(`Cannot save GUI with duplicate folder "${f._title}"`);
-        }
-        obj.folders[f._title] = f.save();
-      });
-    }
-    return obj;
+    }), e && this.folders.forEach((r) => {
+      if (r._title in a.folders)
+        throw new Error(`Cannot save GUI with duplicate folder "${r._title}"`);
+      a.folders[r._title] = r.save();
+    }), a;
   }
   /**
    * Opens a GUI or folder. GUI and folders are open by default.
@@ -6151,23 +4566,18 @@ class GUI {
    * gui.open( false ); // close
    * gui.open( gui._closed ); // toggle
    */
-  open(open = true) {
-    this._setClosed(!open);
-    this.$title.setAttribute("aria-expanded", !this._closed);
-    this.domElement.classList.toggle("closed", this._closed);
-    return this;
+  open(e = !0) {
+    return this._setClosed(!e), this.$title.setAttribute("aria-expanded", !this._closed), this.domElement.classList.toggle("closed", this._closed), this;
   }
   /**
    * Closes the GUI.
    * @returns {this}
    */
   close() {
-    return this.open(false);
+    return this.open(!1);
   }
-  _setClosed(closed) {
-    if (this._closed === closed) return;
-    this._closed = closed;
-    this._callOnOpenClose(this);
+  _setClosed(e) {
+    this._closed !== e && (this._closed = e, this._callOnOpenClose(this));
   }
   /**
    * Shows the GUI after it's been hidden.
@@ -6178,59 +4588,45 @@ class GUI {
    * gui.show( false ); // hide
    * gui.show( gui._hidden ); // toggle
    */
-  show(show = true) {
-    this._hidden = !show;
-    this.domElement.style.display = this._hidden ? "none" : "";
-    return this;
+  show(e = !0) {
+    return this._hidden = !e, this.domElement.style.display = this._hidden ? "none" : "", this;
   }
   /**
    * Hides the GUI.
    * @returns {this}
    */
   hide() {
-    return this.show(false);
+    return this.show(!1);
   }
-  openAnimated(open = true) {
-    this._setClosed(!open);
-    this.$title.setAttribute("aria-expanded", !this._closed);
-    requestAnimationFrame(() => {
-      const initialHeight = this.$children.clientHeight;
-      this.$children.style.height = initialHeight + "px";
-      this.domElement.classList.add("transition");
-      const onTransitionEnd = (e) => {
-        if (e.target !== this.$children) return;
-        this.$children.style.height = "";
-        this.domElement.classList.remove("transition");
-        this.$children.removeEventListener("transitionend", onTransitionEnd);
+  openAnimated(e = !0) {
+    return this._setClosed(!e), this.$title.setAttribute("aria-expanded", !this._closed), requestAnimationFrame(() => {
+      const a = this.$children.clientHeight;
+      this.$children.style.height = a + "px", this.domElement.classList.add("transition");
+      const r = (d) => {
+        d.target === this.$children && (this.$children.style.height = "", this.domElement.classList.remove("transition"), this.$children.removeEventListener("transitionend", r));
       };
-      this.$children.addEventListener("transitionend", onTransitionEnd);
-      const targetHeight = !open ? 0 : this.$children.scrollHeight;
-      this.domElement.classList.toggle("closed", !open);
-      requestAnimationFrame(() => {
-        this.$children.style.height = targetHeight + "px";
+      this.$children.addEventListener("transitionend", r);
+      const c = e ? this.$children.scrollHeight : 0;
+      this.domElement.classList.toggle("closed", !e), requestAnimationFrame(() => {
+        this.$children.style.height = c + "px";
       });
-    });
-    return this;
+    }), this;
   }
   /**
    * Change the title of this GUI.
    * @param {string} title
    * @returns {this}
    */
-  title(title) {
-    this._title = title;
-    this.$title.textContent = title;
-    return this;
+  title(e) {
+    return this._title = e, this.$title.textContent = e, this;
   }
   /**
    * Resets all controllers to their initial values.
    * @param {boolean} recursive Pass false to exclude folders descending from this GUI.
    * @returns {this}
    */
-  reset(recursive = true) {
-    const controllers = recursive ? this.controllersRecursive() : this.controllers;
-    controllers.forEach((c) => c.reset());
-    return this;
+  reset(e = !0) {
+    return (e ? this.controllersRecursive() : this.controllers).forEach((r) => r.reset()), this;
   }
   /**
    * Pass a function to be called whenever a controller in this GUI changes.
@@ -6244,22 +4640,16 @@ class GUI {
    * 	event.controller // controller that was modified
    * } );
    */
-  onChange(callback) {
-    this._onChange = callback;
-    return this;
+  onChange(e) {
+    return this._onChange = e, this;
   }
-  _callOnChange(controller) {
-    if (this.parent) {
-      this.parent._callOnChange(controller);
-    }
-    if (this._onChange !== void 0) {
-      this._onChange.call(this, {
-        object: controller.object,
-        property: controller.property,
-        value: controller.getValue(),
-        controller
-      });
-    }
+  _callOnChange(e) {
+    this.parent && this.parent._callOnChange(e), this._onChange !== void 0 && this._onChange.call(this, {
+      object: e.object,
+      property: e.property,
+      value: e.getValue(),
+      controller: e
+    });
   }
   /**
    * Pass a function to be called whenever a controller in this GUI has finished changing.
@@ -6273,22 +4663,16 @@ class GUI {
    * 	event.controller // controller that was modified
    * } );
    */
-  onFinishChange(callback) {
-    this._onFinishChange = callback;
-    return this;
+  onFinishChange(e) {
+    return this._onFinishChange = e, this;
   }
-  _callOnFinishChange(controller) {
-    if (this.parent) {
-      this.parent._callOnFinishChange(controller);
-    }
-    if (this._onFinishChange !== void 0) {
-      this._onFinishChange.call(this, {
-        object: controller.object,
-        property: controller.property,
-        value: controller.getValue(),
-        controller
-      });
-    }
+  _callOnFinishChange(e) {
+    this.parent && this.parent._callOnFinishChange(e), this._onFinishChange !== void 0 && this._onFinishChange.call(this, {
+      object: e.object,
+      property: e.property,
+      value: e.getValue(),
+      controller: e
+    });
   }
   /**
    * Pass a function to be called when this GUI or its descendants are opened or closed.
@@ -6299,266 +4683,186 @@ class GUI {
    * 	console.log( changedGUI._closed );
    * } );
    */
-  onOpenClose(callback) {
-    this._onOpenClose = callback;
-    return this;
+  onOpenClose(e) {
+    return this._onOpenClose = e, this;
   }
-  _callOnOpenClose(changedGUI) {
-    if (this.parent) {
-      this.parent._callOnOpenClose(changedGUI);
-    }
-    if (this._onOpenClose !== void 0) {
-      this._onOpenClose.call(this, changedGUI);
-    }
+  _callOnOpenClose(e) {
+    this.parent && this.parent._callOnOpenClose(e), this._onOpenClose !== void 0 && this._onOpenClose.call(this, e);
   }
   /**
    * Destroys all DOM elements and event listeners associated with this GUI.
    */
   destroy() {
-    if (this.parent) {
-      this.parent.children.splice(this.parent.children.indexOf(this), 1);
-      this.parent.folders.splice(this.parent.folders.indexOf(this), 1);
-    }
-    if (this.domElement.parentElement) {
-      this.domElement.parentElement.removeChild(this.domElement);
-    }
-    Array.from(this.children).forEach((c) => c.destroy());
+    this.parent && (this.parent.children.splice(this.parent.children.indexOf(this), 1), this.parent.folders.splice(this.parent.folders.indexOf(this), 1)), this.domElement.parentElement && this.domElement.parentElement.removeChild(this.domElement), Array.from(this.children).forEach((e) => e.destroy());
   }
   /**
    * Returns an array of controllers contained by this GUI and its descendents.
    * @returns {Controller[]}
    */
   controllersRecursive() {
-    let controllers = Array.from(this.controllers);
-    this.folders.forEach((f) => {
-      controllers = controllers.concat(f.controllersRecursive());
-    });
-    return controllers;
+    let e = Array.from(this.controllers);
+    return this.folders.forEach((a) => {
+      e = e.concat(a.controllersRecursive());
+    }), e;
   }
   /**
    * Returns an array of folders contained by this GUI and its descendents.
    * @returns {GUI[]}
    */
   foldersRecursive() {
-    let folders = Array.from(this.folders);
-    this.folders.forEach((f) => {
-      folders = folders.concat(f.foldersRecursive());
-    });
-    return folders;
+    let e = Array.from(this.folders);
+    return this.folders.forEach((a) => {
+      e = e.concat(a.foldersRecursive());
+    }), e;
   }
 }
-const RenderingCanvas = function RenderingCanvas2({
-  app,
-  onError
+const Fi = function({
+  app: e,
+  onError: a
 }) {
-  const animateRequestRef = useRef();
-  const canvasRef = useRef(null);
-  const guiPaneRef = useRef(null);
-  const hibernateRef = useRef(false);
-  const guiRef = useRef();
-  const [guiDocked, setGUIDocked] = useState(true);
-  const resizeTimeout = useRef();
-  const lastTimeRef = useRef();
-  const resizeCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const devicePixelRatio = window.devicePixelRatio;
-      canvas.width = Math.max(canvas.offsetWidth * devicePixelRatio, 1);
-      canvas.height = Math.max(canvas.offsetHeight * devicePixelRatio, 1);
-      clearTimeout(resizeTimeout.current);
-      resizeTimeout.current = setTimeout(() => {
-        var _a;
+  const r = he(), c = he(null), d = he(null), p = he(!1), u = he(), [o, s] = Ye(!0), l = he(), h = he(), b = ut(() => {
+    const w = c.current;
+    if (w) {
+      const _ = window.devicePixelRatio;
+      return w.width = Math.max(w.offsetWidth * _, 1), w.height = Math.max(w.offsetHeight * _, 1), clearTimeout(l.current), l.current = setTimeout(() => {
+        var A;
         try {
-          if (canvas.width <= 1 || canvas.height <= 1) {
-            hibernateRef.current = true;
-            console.log("Hibernate");
+          if (w.width <= 1 || w.height <= 1) {
+            p.current = !0, console.log("Hibernate");
             return;
           }
-          hibernateRef.current = false;
-          (_a = app.handleResize) == null ? void 0 : _a.call(app, canvas.width, canvas.height);
-        } catch (err) {
-          onError(err);
+          p.current = !1, (A = e.handleResize) == null || A.call(e, w.width, w.height);
+        } catch (g) {
+          a(g);
         }
-      }, 500);
-      return () => {
-        clearTimeout(resizeTimeout.current);
+      }, 500), () => {
+        clearTimeout(l.current);
       };
     }
-  }, [app, onError]);
-  useEffect(() => {
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-    return () => {
-      window.removeEventListener("resize", resizeCanvas);
-    };
-  }, [resizeCanvas]);
-  const animate = useCallback(
-    (time) => {
-      var _a;
-      const drawContext = (_a = canvasRef.current) == null ? void 0 : _a.getContext("webgpu");
-      if (drawContext) {
-        const deltaTime = time - (lastTimeRef.current ?? 0);
-        lastTimeRef.current = time;
-        const drawTexture = drawContext.getCurrentTexture();
+  }, [e, a]);
+  je(() => (b(), window.addEventListener("resize", b), () => {
+    window.removeEventListener("resize", b);
+  }), [b]);
+  const R = ut(
+    (w) => {
+      var A;
+      const _ = (A = c.current) == null ? void 0 : A.getContext("webgpu");
+      if (_) {
+        const g = w - (h.current ?? 0);
+        h.current = w;
+        const v = _.getCurrentTexture();
         try {
-          if (!hibernateRef.current) {
-            app.draw(
-              drawTexture,
-              canvasRef.current.width / canvasRef.current.height,
-              time,
-              deltaTime
-            );
-          }
-        } catch (err) {
-          onError(err);
+          p.current || e.draw(
+            v,
+            c.current.width / c.current.height,
+            w,
+            g
+          );
+        } catch (S) {
+          a(S);
         }
-        if (!app.quit) {
-          animateRequestRef.current = requestAnimationFrame(animate);
-        }
+        e.quit || (r.current = requestAnimationFrame(R));
       }
     },
-    [app, onError]
+    [e, a]
   );
-  useEffect(() => {
-    var _a, _b, _c;
-    const context = (_a = canvasRef.current) == null ? void 0 : _a.getContext("webgpu");
-    if (guiRef.current) {
-      (_b = guiRef.current) == null ? void 0 : _b.destroy();
-    }
-    guiRef.current = new GUI({ container: guiPaneRef.current });
-    if (app.setLowPerformanceMode) {
-      guiRef.current.add({ checked: false }, "checked").onChange((checked) => {
-        var _a2;
-        (_a2 = app.setLowPerformanceMode) == null ? void 0 : _a2.call(app, checked);
-      }).name("Low Performance Mode");
-    }
-    if (app.setupUI) {
-      guiRef.current.onOpenClose((gui) => {
-        if (gui == guiRef.current) {
-          setGUIDocked(!gui._closed);
-        }
+  return je(() => {
+    var A, g, v;
+    const w = (A = c.current) == null ? void 0 : A.getContext("webgpu");
+    if (u.current && ((g = u.current) == null || g.destroy()), u.current = new mt({ container: d.current }), e.setLowPerformanceMode && u.current.add({ checked: !1 }, "checked").onChange((S) => {
+      var D;
+      (D = e.setLowPerformanceMode) == null || D.call(e, S);
+    }).name("Low Performance Mode"), e.setupUI) {
+      u.current.onOpenClose((S) => {
+        S == u.current && s(!S._closed);
       });
       try {
-        app.setupUI(guiRef.current);
-      } catch (err) {
-        onError(err);
+        e.setupUI(u.current);
+      } catch (S) {
+        a(S);
       }
     }
-    if (!context) {
+    if (!w) {
       console.error("'webgpu' canvas context not found, cannot animate.");
       return;
     }
-    context.configure(app.presentationInterface());
-    animateRequestRef.current = requestAnimationFrame(animate);
-    const canvas = canvasRef.current;
-    if (canvas) {
-      (_c = app.handleResize) == null ? void 0 : _c.call(app, canvas.width, canvas.height);
-    }
-    return () => {
-      if (animateRequestRef.current !== void 0) {
-        cancelAnimationFrame(animateRequestRef.current);
-      }
+    w.configure(e.presentationInterface()), r.current = requestAnimationFrame(R);
+    const _ = c.current;
+    return _ && ((v = e.handleResize) == null || v.call(e, _.width, _.height)), () => {
+      r.current !== void 0 && cancelAnimationFrame(r.current);
     };
-  }, [animate, app, setGUIDocked, onError]);
-  useEffect(() => {
-    resizeCanvas();
-  }, [resizeCanvas, guiDocked]);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "webgpu-samples-canvas-container", children: /* @__PURE__ */ jsxRuntimeExports.jsx("canvas", { className: "webgpu-samples-canvas", ref: canvasRef }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
+  }, [R, e, s, a]), je(() => {
+    b();
+  }, [b, o]), /* @__PURE__ */ te.jsxs(te.Fragment, { children: [
+    /* @__PURE__ */ te.jsx("div", { className: "webgpu-samples-canvas-container", children: /* @__PURE__ */ te.jsx("canvas", { className: "webgpu-samples-canvas", ref: c }) }),
+    /* @__PURE__ */ te.jsx(
       "div",
       {
-        className: guiDocked ? void 0 : "webgpu-samples-gui-floating",
-        ref: guiPaneRef
+        className: o ? void 0 : "webgpu-samples-gui-floating",
+        ref: d
       }
     ),
     void 0
   ] });
-};
-const AppLoader = function AppLoader2({
-  sampleID
+}, zi = function({
+  sampleID: e,
+  styleOverrides: a
 }) {
-  const [errors, setErrors] = useState();
-  const appRef = useRef();
-  const appLoadingPromiseRef = useRef();
-  const [initialized, setInitialized] = useState(false);
-  const handleError = useCallback(
-    (err) => {
-      console.error(err);
-      if (err instanceof Error) {
-        setErrors([
-          err.message,
-          ...typeof err.cause === "string" ? [err.cause] : []
-        ]);
-      } else {
-        setErrors(["Failed to initialize app."]);
-      }
+  const [r, c] = Ye(), d = he(), p = he(), [u, o] = Ye(!1), s = ut(
+    (R) => {
+      console.error(R), R instanceof Error ? c([
+        R.message,
+        ...typeof R.cause == "string" ? [R.cause] : []
+      ]) : c(["Failed to initialize app."]);
     },
-    [setErrors]
-  );
-  const sample = SampleInitDescriptorByID.get(sampleID);
-  useEffect(() => {
-    if (sample === void 0) {
-      setErrors(["No such sample, please navigate to another page."]);
-      setInitialized(true);
+    [c]
+  ), l = Rr.get(e);
+  je(() => {
+    if (l === void 0) {
+      c(["No such sample, please navigate to another page."]), o(!0);
       return;
     }
     if (!("gpu" in navigator)) {
-      setErrors([
+      c([
         "WebGPU is not available in this browser.",
         "navigator.gpu is null"
-      ]);
-      setInitialized(true);
+      ]), o(!0);
       return;
     }
-    setInitialized(false);
-    setErrors(void 0);
-    let shouldUpdate = true;
-    appLoadingPromiseRef.current = initializeApp({
+    o(!1), c(void 0);
+    let R = !0;
+    return p.current = Ci({
       gpu: navigator.gpu,
-      requiredLimits: sample.requiredLimits,
-      requiredFeatures: sample.requiredFeatures,
-      optionalFeatures: sample.optionalFeatures,
-      import: sample.import,
-      onUncapturedError: (ev) => {
-        console.error(`WebGPU device uncaptured error: ${ev.error.message}`);
-        setErrors(["WebGPU has encountered an error, causing it to crash."]);
+      requiredLimits: l.requiredLimits,
+      requiredFeatures: l.requiredFeatures,
+      optionalFeatures: l.optionalFeatures,
+      import: l.import,
+      onUncapturedError: (w) => {
+        console.error(`WebGPU device uncaptured error: ${w.error.message}`), c(["WebGPU has encountered an error, causing it to crash."]);
       }
-    }).then((app) => {
-      if (!shouldUpdate) return;
-      appRef.current = app;
-    }).catch((err) => {
-      if (!shouldUpdate) return;
-      handleError(err);
+    }).then((w) => {
+      R && (d.current = w);
+    }).catch((w) => {
+      R && s(w);
     }).finally(() => {
-      if (!shouldUpdate) return;
-      appLoadingPromiseRef.current = void 0;
-      setInitialized(true);
-    });
-    return () => {
-      var _a, _b;
-      shouldUpdate = false;
-      (_b = (_a = appRef.current) == null ? void 0 : _a.destroy) == null ? void 0 : _b.call(_a);
+      R && (p.current = void 0, o(!0));
+    }), () => {
+      var w, _;
+      R = !1, (_ = (w = d.current) == null ? void 0 : w.destroy) == null || _.call(w);
     };
-  }, [sample, handleError]);
-  const errorBlock = /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "webgpu-samples-info", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: `Sorry, there was an issue, cause the sample to fail to load or crash.
+  }, [l, s]);
+  const h = /* @__PURE__ */ te.jsxs("div", { className: "webgpu-samples-info", children: [
+    /* @__PURE__ */ te.jsx("p", { children: `Sorry, there was an issue, cause the sample to fail to load or crash.
             This app uses WebGPU, which can be unstable on some browsers.
             Try updating or using another browser.` }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("ol", { className: "webgpu-samples-error", children: errors == null ? void 0 : errors.map((value) => {
-      return /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: value }, value);
-    }) })
-  ] });
-  const loadingBlock = /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "webgpu-samples-info", children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: `Loading...` }) });
-  if (navigator.gpu === void 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "webgpu-samples-info", children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: `Your browser does not support WebGPU. Please try another.` }) });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: initialized ? /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: errors !== void 0 ? errorBlock : /* @__PURE__ */ jsxRuntimeExports.jsx(RenderingCanvas, { app: appRef.current, onError: handleError }) }) : loadingBlock });
+    /* @__PURE__ */ te.jsx("ol", { className: "webgpu-samples-error", children: r == null ? void 0 : r.map((R) => /* @__PURE__ */ te.jsx("li", { children: R }, R)) })
+  ] }), b = /* @__PURE__ */ te.jsx("div", { className: "webgpu-samples-info", children: /* @__PURE__ */ te.jsx("p", { children: "Loading..." }) });
+  return navigator.gpu === void 0 ? /* @__PURE__ */ te.jsx("div", { className: "webgpu-samples-info", children: /* @__PURE__ */ te.jsx("p", { children: "Your browser does not support WebGPU. Please try another." }) }) : /* @__PURE__ */ te.jsx("div", { className: "webgpu-samples-app-loader", style: a, children: u ? /* @__PURE__ */ te.jsx(te.Fragment, { children: r !== void 0 ? h : /* @__PURE__ */ te.jsx(Fi, { app: d.current, onError: s }) }) : b });
 };
 export {
-  AppLoader,
-  DefaultSampleID,
-  EmbeddedReadme,
-  SampleDisplayDescriptorByID,
-  SampleIDs
+  zi as AppLoader,
+  Cr as DefaultSampleID,
+  Vi as EmbeddedReadme,
+  Ui as SampleDisplayDescriptorByID,
+  qi as SampleIDs
 };
