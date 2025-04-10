@@ -3,7 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { EmbeddedReadme } from "../lib/webgpu/EmbeddedReadme";
 import { AppLoader } from "../lib/webgpu/WebGPUSamplePage";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { HashRouter, Link, Route, Routes } from "react-router";
 import { SampleID, SampleIDs } from "../lib/webgpu/Samples";
 
 import "./Demo.css";
@@ -24,9 +24,9 @@ const SamplePage = ({ sampleID }: { sampleID: SampleID }) => {
 const SampleDirectory = () => {
 	const children = SampleIDs.map((value) => {
 		return (
-			<a key={value} href={`/${value}`}>
+			<Link key={value} to={`/${value}`}>
 				{value}
-			</a>
+			</Link>
 		);
 	});
 	return (
@@ -38,7 +38,7 @@ const SampleDirectory = () => {
 				padding: "1rem",
 			}}
 		>
-			<a href={`/`}>index</a>
+			<Link to={`/`}>index</Link>
 			{children}
 		</div>
 	);
@@ -46,7 +46,7 @@ const SampleDirectory = () => {
 
 createRoot(root).render(
 	<StrictMode>
-		<BrowserRouter>
+		<HashRouter>
 			<Routes>
 				<Route index element={<SampleDirectory />} />
 				{SampleIDs.map((sampleID) => {
@@ -59,6 +59,6 @@ createRoot(root).render(
 					);
 				})}
 			</Routes>
-		</BrowserRouter>
+		</HashRouter>
 	</StrictMode>
 );

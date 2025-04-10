@@ -15,10 +15,11 @@
 		"test": "vitest",
 		"test:run": "vitest --run",
 		"test:ui": "vitest --ui",
-		"build": "vite build",
-		"prod": "concurrently \"npm run lint\" \"npm run build\"",
+		"build": "concurrently \"npm run lint\" \"vite build\"",
 		"precommit": "lint-staged && npm run test:run",
-		"preview": "vite preview",
+		"demo:build": "concurrently \"npm run lint\" \"vite build -c vite.demo.ts\"",
+		"demo:preview": "npm run demo:build && vite preview --outDir demo",
+		"demo:static": "npm run demo:build && npx http-server ./demo -p 8080",
 		"prepare": "husky"
 	},
 	"dependencies": {
