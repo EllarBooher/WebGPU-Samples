@@ -31,6 +31,9 @@ export const EmbeddedReadme = memo(function EmbeddedReadme({
 			setReadmeText(undefined);
 			return;
 		}
+
+		// We parse the HTML in an unsafe way, so make sure only markdown from a
+		// trusted source is imported/fetched.
 		import(`./${projectFolder}/README.md`)
 			.then((value) => {
 				const markdownModule = value as typeof import("*.md");
