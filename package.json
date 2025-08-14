@@ -22,7 +22,7 @@
 		"demo:build": "vite build -c vite.demo.ts",
 		"demo:preview": "npm run demo:build && vite preview --outDir demo",
 		"demo:static": "npm run demo:build && npx http-server ./demo -p 8080",
-		"precommit": "concurrently \"npm run build\" \"lint-staged\" \"npm run test:run\"",
+		"precommit": "concurrently \"npm run build && git checkout -- dist && git clean -f -- dist\" \"lint-staged\" \"npm run test:run\"",
 		"prepare": "husky"
 	},
 	"dependencies": {
