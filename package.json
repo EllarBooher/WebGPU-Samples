@@ -11,21 +11,23 @@
 	},
 	"scripts": {
 		"dev": "vite",
-		"lint": "eslint . --max-warnings 0 --cache-location './node_modules/@eslint/.eslintcache' && stylelint \"**/*.css\"",
+		"lint:stylelint": "stylelint \"**/*.css\"",
+		"lint:tsc": "tsc --noEmit -p .",
+		"lint:eslint": "eslint . --max-warnings 0 --cache-location './node_modules/@eslint/.eslintcache'",
+		"lint": "concurrently \"npm run lint:eslint\" \"npm run lint:tsc\" \"npm run lint:stylelint\"",
 		"test": "vitest",
 		"test:run": "vitest --run",
 		"test:ui": "vitest --ui",
-		"build": "concurrently \"npm run lint\" \"vite build\"",
-		"precommit": "lint-staged && npm run test:run",
-		"demo:build": "concurrently \"npm run lint\" \"vite build -c vite.demo.ts\"",
+		"build": "vite build",
+		"demo:build": "vite build -c vite.demo.ts",
 		"demo:preview": "npm run demo:build && vite preview --outDir demo",
 		"demo:static": "npm run demo:build && npx http-server ./demo -p 8080",
+		"precommit": "concurrently \"npm run build\" \"lint-staged\" \"npm run test:run\"",
 		"prepare": "husky"
 	},
 	"dependencies": {
 		"html-react-parser": "^5.2.2",
-		"lil-gui": "^0.20.0",
-		"react-router-hash-link": "^2.4.3"
+		"lil-gui": "^0.20.0"
 	},
 	"peerDependencies": {
 		"react": "^18.3.1",
@@ -37,7 +39,6 @@
 		"@types/node": "^22.13.14",
 		"@types/react": "^18.3.18",
 		"@types/react-dom": "^18.3.5",
-		"@types/react-router-hash-link": "^2.4.9",
 		"@types/rollup": "^0.51.4",
 		"@vitejs/plugin-react": "^4.3.4",
 		"@vitest/ui": "^3.1.1",
@@ -55,7 +56,6 @@
 		"lil-gui": "^0.20.0",
 		"lint-staged": "^15.5.0",
 		"prism-themes": "^1.9.0",
-		"react-router-hash-link": "^2.4.3",
 		"rehype-mathjax": "^7.1.0",
 		"rehype-prism-plus": "^2.0.0",
 		"rehype-raw": "^7.0.0",

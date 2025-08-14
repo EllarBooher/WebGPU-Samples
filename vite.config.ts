@@ -13,12 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-	plugins: [
-		react(),
-		wgslPlugin(),
-		sampleReadme(),
-		dts({ tsconfigPath: "./tsconfig.app.json" }),
-	],
+	plugins: [react(), wgslPlugin(), sampleReadme(), dts({ include: "lib" })],
 	build: {
 		outDir: path.resolve(__dirname, "dist"),
 		lib: {

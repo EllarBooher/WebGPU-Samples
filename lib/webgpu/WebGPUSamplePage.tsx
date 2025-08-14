@@ -1,4 +1,10 @@
-import React, { useEffect, useCallback, useState, useRef } from "react";
+import React, {
+	useEffect,
+	useCallback,
+	useState,
+	useRef,
+	ReactNode,
+} from "react";
 import { RendererApp, initializeApp } from "./RendererApp";
 import { GUI } from "lil-gui";
 import "./WebGPUSamplePage.css";
@@ -7,8 +13,8 @@ import { SampleID, SampleInitDescriptorByID } from "./Samples";
 const CanvasScreenshotWidget = ({
 	canvas,
 }: {
-	canvas: React.RefObject<HTMLCanvasElement>;
-}): JSX.Element => {
+	canvas: React.RefObject<HTMLCanvasElement | null>;
+}): ReactNode => {
 	const [screenshotSource, setScreenshotSource] = useState<string>();
 
 	return (
@@ -61,15 +67,15 @@ const RenderingCanvas = function RenderingCanvas({
 }: {
 	app: RendererApp;
 	onError: (err: unknown) => void;
-}): JSX.Element {
-	const animateRequestRef = useRef<number>();
+}): ReactNode {
+	const animateRequestRef = useRef<number | null>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const guiPaneRef = useRef<HTMLDivElement>(null);
 	const hibernateRef = useRef(false);
-	const guiRef = useRef<GUI>();
+	const guiRef = useRef<GUI | null>(null);
 	const [guiDocked, setGUIDocked] = useState<boolean>(true);
-	const resizeTimeout = useRef<ReturnType<typeof setTimeout>>();
-	const lastTimeRef = useRef<number>();
+	const resizeTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+	const lastTimeRef = useRef<number | null>(null);
 
 	const resizeCanvas = useCallback(() => {
 		const canvas = canvasRef.current;
@@ -184,7 +190,7 @@ const RenderingCanvas = function RenderingCanvas({
 		}
 
 		return (): void => {
-			if (animateRequestRef.current !== undefined) {
+			if (animateRequestRef.current) {
 				cancelAnimationFrame(animateRequestRef.current);
 			}
 		};
@@ -238,10 +244,10 @@ export const AppLoader = function AppLoader({
 }: {
 	sampleID: SampleID;
 	styleOverrides?: React.CSSProperties;
-}): JSX.Element {
+}): ReactNode {
 	const [errors, setErrors] = useState<string[]>();
-	const appRef = useRef<RendererApp>();
-	const appLoadingPromiseRef = useRef<Promise<void>>();
+	const appRef = useRef<RendererApp | null>(null);
+	const appLoadingPromiseRef = useRef<Promise<void>>(undefined);
 	const [initialized, setInitialized] = useState(false);
 
 	const handleError = useCallback(

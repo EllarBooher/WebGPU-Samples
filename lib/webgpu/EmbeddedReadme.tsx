@@ -1,9 +1,8 @@
-import { memo, useEffect, useState } from "react";
+import { JSX, memo, useEffect, useState } from "react";
 import "./EmbeddedReadme.css";
 import "prism-themes/themes/prism-one-dark.min.css";
 
 import parseToHTML, { DOMNode, domToReact, Element } from "html-react-parser";
-import { HashLink } from "react-router-hash-link";
 import { SampleID, SampleInitDescriptorByID } from "./Samples";
 
 const repoRoot =
@@ -70,9 +69,13 @@ export const EmbeddedReadme = memo(function EmbeddedReadme({
 			// Anchor Link
 			if (href.startsWith("#") === true) {
 				return (
-					<HashLink to={href}>
+					<button
+						onClick={() =>
+							document.getElementById(href.slice(1))?.scrollIntoView()
+						}
+					>
 						{domToReact(children as DOMNode[], options)}
-					</HashLink>
+					</button>
 				);
 			}
 
