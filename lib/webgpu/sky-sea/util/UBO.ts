@@ -31,7 +31,7 @@ export abstract class UBO {
 	 * @returns A packed array of the bytes that must match the exact
 	 *  representation of the mirrored type on the device.
 	 */
-	protected abstract packed(): ArrayBuffer;
+	protected abstract packed(): ArrayBufferView<ArrayBufferLike>;
 
 	/**
 	 * Writes the bytes of the host data into the device buffer.
@@ -47,6 +47,12 @@ export abstract class UBO {
 			);
 		}
 
-		queue.writeBuffer(this.buffer, 0, values);
+		queue.writeBuffer(
+			this.buffer,
+			0,
+			values.buffer,
+			values.byteOffset,
+			values.byteLength
+		);
 	}
 }

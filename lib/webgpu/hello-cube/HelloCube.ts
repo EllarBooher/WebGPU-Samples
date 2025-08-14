@@ -207,9 +207,9 @@ class HelloCubeApp implements RendererApp {
 		this.device.queue.writeBuffer(
 			this.projViewModelBuffer,
 			0,
-			projViewModel,
-			0,
-			projViewModel.length
+			projViewModel.buffer,
+			projViewModel.byteOffset,
+			projViewModel.byteLength
 		);
 
 		const commandEncoder = this.device.createCommandEncoder();

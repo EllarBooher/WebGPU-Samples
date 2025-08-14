@@ -102,7 +102,7 @@ class FourierWavesUBO extends UBO {
 		);
 	}
 
-	protected override packed(): ArrayBuffer {
+	protected override packed(): DataView<ArrayBuffer> {
 		const buffer = new ArrayBuffer(this.buffer.size);
 		const view = new DataView(buffer);
 		const float32View = new Float32Array(buffer);
@@ -126,7 +126,7 @@ class FourierWavesUBO extends UBO {
 			float32View[baseOffset + 3] = 0.0;
 		});
 
-		return buffer;
+		return view;
 	}
 }
 

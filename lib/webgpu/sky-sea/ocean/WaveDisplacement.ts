@@ -55,7 +55,7 @@ class WaveSurfaceDisplacementUBO extends UBO {
 		);
 	}
 
-	protected override packed(): ArrayBuffer {
+	protected override packed(): DataView<ArrayBuffer> {
 		const buffer = new ArrayBuffer(this.buffer.size);
 		const view = new DataView(buffer);
 		const float32 = new Float32Array(buffer);
@@ -84,7 +84,7 @@ class WaveSurfaceDisplacementUBO extends UBO {
 			);
 		}
 
-		return buffer;
+		return view;
 	}
 }
 

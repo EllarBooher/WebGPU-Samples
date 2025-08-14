@@ -24,7 +24,7 @@ class FullscreenQuadUBO extends UBO {
 		super(device, 4 + 4 + 4, "Fullscreen Quad UBO");
 	}
 
-	protected override packed(): ArrayBuffer {
+	protected override packed(): DataView<ArrayBuffer> {
 		const buffer = new ArrayBuffer(this.buffer.size);
 		const view = new DataView(buffer);
 
@@ -35,7 +35,7 @@ class FullscreenQuadUBO extends UBO {
 		view.setFloat32(40, this.data.depth_or_array_layer, true);
 		view.setUint32(44, this.data.mip_level_u32, true);
 
-		return buffer;
+		return view;
 	}
 }
 

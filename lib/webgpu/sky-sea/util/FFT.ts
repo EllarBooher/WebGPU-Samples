@@ -17,7 +17,7 @@ class DFFTParametersUBO extends UBO {
 		super(device, FLOAT_COUNT, "DFFT Parameters UBO");
 	}
 
-	protected override packed(): ArrayBuffer {
+	protected override packed(): DataView<ArrayBuffer> {
 		const buffer = new ArrayBuffer(this.buffer.size);
 		const view = new DataView(buffer);
 
@@ -25,7 +25,7 @@ class DFFTParametersUBO extends UBO {
 		view.setUint32(4, this.data.size, true);
 		view.setFloat32(8, this.data.b_inverse ? 1.0 : 0.0, true);
 
-		return buffer;
+		return view;
 	}
 }
 
