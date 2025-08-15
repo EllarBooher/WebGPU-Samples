@@ -368,7 +368,7 @@ function rt(M) {
   }
   function a(s, u, h) {
     const w = h ?? new M(3), p = s[0], x = s[1], z = s[2];
-    return w[0] = p * u[0 * 4 + 0] + x * u[1 * 4 + 0] + z * u[2 * 4 + 0], w[1] = p * u[0 * 4 + 1] + x * u[1 * 4 + 1] + z * u[2 * 4 + 1], w[2] = p * u[0 * 4 + 2] + x * u[1 * 4 + 2] + z * u[2 * 4 + 2], w;
+    return w[0] = p * u[0] + x * u[4] + z * u[8], w[1] = p * u[1] + x * u[5] + z * u[9], w[2] = p * u[2] + x * u[6] + z * u[10], w;
   }
   function t(s, u, h) {
     const w = h ?? new M(3), p = s[0], x = s[1], z = s[2];
@@ -530,15 +530,15 @@ function it(M) {
       let u;
       return u = t[1], t[1] = t[4], t[4] = u, u = t[2], t[2] = t[8], t[8] = u, u = t[6], t[6] = t[9], t[9] = u, o;
     }
-    const f = t[0 * 4 + 0], l = t[0 * 4 + 1], D = t[0 * 4 + 2], d = t[1 * 4 + 0], n = t[1 * 4 + 1], i = t[1 * 4 + 2], c = t[2 * 4 + 0], e = t[2 * 4 + 1], s = t[2 * 4 + 2];
+    const f = t[0], l = t[1], D = t[2], d = t[4], n = t[5], i = t[6], c = t[8], e = t[9], s = t[10];
     return o[0] = f, o[1] = d, o[2] = c, o[4] = l, o[5] = n, o[6] = e, o[8] = D, o[9] = i, o[10] = s, o;
   }
   function Sn(t, r) {
-    const o = r ?? new M(12), f = t[0 * 4 + 0], l = t[0 * 4 + 1], D = t[0 * 4 + 2], d = t[1 * 4 + 0], n = t[1 * 4 + 1], i = t[1 * 4 + 2], c = t[2 * 4 + 0], e = t[2 * 4 + 1], s = t[2 * 4 + 2], u = s * n - i * e, h = -s * d + i * c, w = e * d - n * c, p = 1 / (f * u + l * h + D * w);
+    const o = r ?? new M(12), f = t[0], l = t[1], D = t[2], d = t[4], n = t[5], i = t[6], c = t[8], e = t[9], s = t[10], u = s * n - i * e, h = -s * d + i * c, w = e * d - n * c, p = 1 / (f * u + l * h + D * w);
     return o[0] = u * p, o[1] = (-s * l + D * e) * p, o[2] = (i * l - D * n) * p, o[4] = h * p, o[5] = (s * f - D * c) * p, o[6] = (-i * f + D * d) * p, o[8] = w * p, o[9] = (-e * f + l * c) * p, o[10] = (n * f - l * d) * p, o;
   }
   function wn(t) {
-    const r = t[0], o = t[0 * 4 + 1], f = t[0 * 4 + 2], l = t[1 * 4 + 0], D = t[1 * 4 + 1], d = t[1 * 4 + 2], n = t[2 * 4 + 0], i = t[2 * 4 + 1], c = t[2 * 4 + 2];
+    const r = t[0], o = t[1], f = t[2], l = t[4], D = t[5], d = t[6], n = t[8], i = t[9], c = t[10];
     return r * (D * c - i * d) - l * (o * c - i * f) + n * (o * d - D * f);
   }
   const K = Sn;
@@ -576,7 +576,7 @@ function it(M) {
     return o[0] = 1, o[1] = 0, o[2] = 0, o[4] = 0, o[5] = 1, o[6] = 0, o[8] = t[0], o[9] = t[1], o[10] = 1, o;
   }
   function Qn(t, r, o) {
-    const f = o ?? new M(12), l = r[0], D = r[1], d = t[0], n = t[1], i = t[2], c = t[1 * 4 + 0], e = t[1 * 4 + 1], s = t[1 * 4 + 2], u = t[2 * 4 + 0], h = t[2 * 4 + 1], w = t[2 * 4 + 2];
+    const f = o ?? new M(12), l = r[0], D = r[1], d = t[0], n = t[1], i = t[2], c = t[4], e = t[5], s = t[6], u = t[8], h = t[9], w = t[10];
     return t !== f && (f[0] = d, f[1] = n, f[2] = i, f[4] = c, f[5] = e, f[6] = s), f[8] = d * l + c * D + u, f[9] = n * l + e * D + h, f[10] = i * l + s * D + w, f;
   }
   function U(t, r) {
@@ -584,7 +584,7 @@ function it(M) {
     return o[0] = f, o[1] = l, o[2] = 0, o[4] = -l, o[5] = f, o[6] = 0, o[8] = 0, o[9] = 0, o[10] = 1, o;
   }
   function Y(t, r, o) {
-    const f = o ?? new M(12), l = t[0 * 4 + 0], D = t[0 * 4 + 1], d = t[0 * 4 + 2], n = t[1 * 4 + 0], i = t[1 * 4 + 1], c = t[1 * 4 + 2], e = Math.cos(r), s = Math.sin(r);
+    const f = o ?? new M(12), l = t[0], D = t[1], d = t[2], n = t[4], i = t[5], c = t[6], e = Math.cos(r), s = Math.sin(r);
     return f[0] = e * l + s * n, f[1] = e * D + s * i, f[2] = e * d + s * c, f[4] = e * n - s * l, f[5] = e * i - s * D, f[6] = e * c - s * d, t !== f && (f[8] = t[8], f[9] = t[9], f[10] = t[10]), f;
   }
   function T(t, r) {
@@ -600,7 +600,7 @@ function it(M) {
     return o[0] = f, o[1] = 0, o[2] = -l, o[4] = 0, o[5] = 1, o[6] = 0, o[8] = l, o[9] = 0, o[10] = f, o;
   }
   function En(t, r, o) {
-    const f = o ?? new M(12), l = t[0 * 4 + 0], D = t[0 * 4 + 1], d = t[0 * 4 + 2], n = t[2 * 4 + 0], i = t[2 * 4 + 1], c = t[2 * 4 + 2], e = Math.cos(r), s = Math.sin(r);
+    const f = o ?? new M(12), l = t[0], D = t[1], d = t[2], n = t[8], i = t[9], c = t[10], e = Math.cos(r), s = Math.sin(r);
     return f[0] = e * l - s * n, f[1] = e * D - s * i, f[2] = e * d - s * c, f[8] = e * n + s * l, f[9] = e * i + s * D, f[10] = e * c + s * d, t !== f && (f[4] = t[4], f[5] = t[5], f[6] = t[6]), f;
   }
   const H = U, Hn = Y;
@@ -610,7 +610,7 @@ function it(M) {
   }
   function On(t, r, o) {
     const f = o ?? new M(12), l = r[0], D = r[1];
-    return f[0] = l * t[0 * 4 + 0], f[1] = l * t[0 * 4 + 1], f[2] = l * t[0 * 4 + 2], f[4] = D * t[1 * 4 + 0], f[5] = D * t[1 * 4 + 1], f[6] = D * t[1 * 4 + 2], t !== f && (f[8] = t[8], f[9] = t[9], f[10] = t[10]), f;
+    return f[0] = l * t[0], f[1] = l * t[1], f[2] = l * t[2], f[4] = D * t[4], f[5] = D * t[5], f[6] = D * t[6], t !== f && (f[8] = t[8], f[9] = t[9], f[10] = t[10]), f;
   }
   function hn(t, r) {
     const o = r ?? new M(12);
@@ -618,7 +618,7 @@ function it(M) {
   }
   function $n(t, r, o) {
     const f = o ?? new M(12), l = r[0], D = r[1], d = r[2];
-    return f[0] = l * t[0 * 4 + 0], f[1] = l * t[0 * 4 + 1], f[2] = l * t[0 * 4 + 2], f[4] = D * t[1 * 4 + 0], f[5] = D * t[1 * 4 + 1], f[6] = D * t[1 * 4 + 2], f[8] = d * t[2 * 4 + 0], f[9] = d * t[2 * 4 + 1], f[10] = d * t[2 * 4 + 2], f;
+    return f[0] = l * t[0], f[1] = l * t[1], f[2] = l * t[2], f[4] = D * t[4], f[5] = D * t[5], f[6] = D * t[6], f[8] = d * t[8], f[9] = d * t[9], f[10] = d * t[10], f;
   }
   function Vn(t, r) {
     const o = r ?? new M(12);
@@ -626,7 +626,7 @@ function it(M) {
   }
   function y(t, r, o) {
     const f = o ?? new M(12);
-    return f[0] = r * t[0 * 4 + 0], f[1] = r * t[0 * 4 + 1], f[2] = r * t[0 * 4 + 2], f[4] = r * t[1 * 4 + 0], f[5] = r * t[1 * 4 + 1], f[6] = r * t[1 * 4 + 2], t !== f && (f[8] = t[8], f[9] = t[9], f[10] = t[10]), f;
+    return f[0] = r * t[0], f[1] = r * t[1], f[2] = r * t[2], f[4] = r * t[4], f[5] = r * t[5], f[6] = r * t[6], t !== f && (f[8] = t[8], f[9] = t[9], f[10] = t[10]), f;
   }
   function g(t, r) {
     const o = r ?? new M(12);
@@ -634,7 +634,7 @@ function it(M) {
   }
   function a(t, r, o) {
     const f = o ?? new M(12);
-    return f[0] = r * t[0 * 4 + 0], f[1] = r * t[0 * 4 + 1], f[2] = r * t[0 * 4 + 2], f[4] = r * t[1 * 4 + 0], f[5] = r * t[1 * 4 + 1], f[6] = r * t[1 * 4 + 2], f[8] = r * t[2 * 4 + 0], f[9] = r * t[2 * 4 + 1], f[10] = r * t[2 * 4 + 2], f;
+    return f[0] = r * t[0], f[1] = r * t[1], f[2] = r * t[2], f[4] = r * t[4], f[5] = r * t[5], f[6] = r * t[6], f[8] = r * t[8], f[9] = r * t[9], f[10] = r * t[10], f;
   }
   return {
     add: un,
@@ -739,15 +739,15 @@ function wt(M) {
       let Q;
       return Q = n[1], n[1] = n[4], n[4] = Q, Q = n[2], n[2] = n[8], n[8] = Q, Q = n[3], n[3] = n[12], n[12] = Q, Q = n[6], n[6] = n[9], n[9] = Q, Q = n[7], n[7] = n[13], n[13] = Q, Q = n[11], n[11] = n[14], n[14] = Q, c;
     }
-    const e = n[0 * 4 + 0], s = n[0 * 4 + 1], u = n[0 * 4 + 2], h = n[0 * 4 + 3], w = n[1 * 4 + 0], p = n[1 * 4 + 1], x = n[1 * 4 + 2], z = n[1 * 4 + 3], P = n[2 * 4 + 0], A = n[2 * 4 + 1], q = n[2 * 4 + 2], I = n[2 * 4 + 3], Z = n[3 * 4 + 0], $ = n[3 * 4 + 1], V = n[3 * 4 + 2], E = n[3 * 4 + 3];
+    const e = n[0], s = n[1], u = n[2], h = n[3], w = n[4], p = n[5], x = n[6], z = n[7], P = n[8], A = n[9], q = n[10], I = n[11], Z = n[12], $ = n[13], V = n[14], E = n[15];
     return c[0] = e, c[1] = w, c[2] = P, c[3] = Z, c[4] = s, c[5] = p, c[6] = A, c[7] = $, c[8] = u, c[9] = x, c[10] = q, c[11] = V, c[12] = h, c[13] = z, c[14] = I, c[15] = E, c;
   }
   function qn(n, i) {
-    const c = i ?? new M(16), e = n[0 * 4 + 0], s = n[0 * 4 + 1], u = n[0 * 4 + 2], h = n[0 * 4 + 3], w = n[1 * 4 + 0], p = n[1 * 4 + 1], x = n[1 * 4 + 2], z = n[1 * 4 + 3], P = n[2 * 4 + 0], A = n[2 * 4 + 1], q = n[2 * 4 + 2], I = n[2 * 4 + 3], Z = n[3 * 4 + 0], $ = n[3 * 4 + 1], V = n[3 * 4 + 2], E = n[3 * 4 + 3], Q = q * E, O = V * I, j = x * E, L = V * z, G = x * I, W = q * z, _ = u * E, N = V * h, R = u * I, k = q * h, nn = u * z, tn = x * h, sn = P * $, cn = Z * A, zn = w * $, gn = Z * p, An = w * A, jn = P * p, Ln = e * $, Bn = Z * s, Gn = e * A, Jn = P * s, Kn = e * p, Un = w * s, Nn = Q * p + L * A + G * $ - (O * p + j * A + W * $), Rn = O * s + _ * A + k * $ - (Q * s + N * A + R * $), kn = j * s + N * p + nn * $ - (L * s + _ * p + tn * $), vn = W * s + R * p + tn * A - (G * s + k * p + nn * A), v = 1 / (e * Nn + w * Rn + P * kn + Z * vn);
+    const c = i ?? new M(16), e = n[0], s = n[1], u = n[2], h = n[3], w = n[4], p = n[5], x = n[6], z = n[7], P = n[8], A = n[9], q = n[10], I = n[11], Z = n[12], $ = n[13], V = n[14], E = n[15], Q = q * E, O = V * I, j = x * E, L = V * z, G = x * I, W = q * z, _ = u * E, N = V * h, R = u * I, k = q * h, nn = u * z, tn = x * h, sn = P * $, cn = Z * A, zn = w * $, gn = Z * p, An = w * A, jn = P * p, Ln = e * $, Bn = Z * s, Gn = e * A, Jn = P * s, Kn = e * p, Un = w * s, Nn = Q * p + L * A + G * $ - (O * p + j * A + W * $), Rn = O * s + _ * A + k * $ - (Q * s + N * A + R * $), kn = j * s + N * p + nn * $ - (L * s + _ * p + tn * $), vn = W * s + R * p + tn * A - (G * s + k * p + nn * A), v = 1 / (e * Nn + w * Rn + P * kn + Z * vn);
     return c[0] = v * Nn, c[1] = v * Rn, c[2] = v * kn, c[3] = v * vn, c[4] = v * (O * w + j * P + W * Z - (Q * w + L * P + G * Z)), c[5] = v * (Q * e + N * P + R * Z - (O * e + _ * P + k * Z)), c[6] = v * (L * e + _ * w + tn * Z - (j * e + N * w + nn * Z)), c[7] = v * (G * e + k * w + nn * P - (W * e + R * w + tn * P)), c[8] = v * (sn * z + gn * I + An * E - (cn * z + zn * I + jn * E)), c[9] = v * (cn * h + Ln * I + Jn * E - (sn * h + Bn * I + Gn * E)), c[10] = v * (zn * h + Bn * z + Kn * E - (gn * h + Ln * z + Un * E)), c[11] = v * (jn * h + Gn * z + Un * I - (An * h + Jn * z + Kn * I)), c[12] = v * (zn * q + jn * V + cn * x - (An * V + sn * x + gn * q)), c[13] = v * (Gn * V + sn * u + Bn * q - (Ln * q + Jn * V + cn * u)), c[14] = v * (Ln * x + Un * V + gn * u - (Kn * V + zn * u + Bn * x)), c[15] = v * (Kn * q + An * u + Jn * x - (Gn * x + Un * q + jn * u)), c;
   }
   function Sn(n) {
-    const i = n[0], c = n[0 * 4 + 1], e = n[0 * 4 + 2], s = n[0 * 4 + 3], u = n[1 * 4 + 0], h = n[1 * 4 + 1], w = n[1 * 4 + 2], p = n[1 * 4 + 3], x = n[2 * 4 + 0], z = n[2 * 4 + 1], P = n[2 * 4 + 2], A = n[2 * 4 + 3], q = n[3 * 4 + 0], I = n[3 * 4 + 1], Z = n[3 * 4 + 2], $ = n[3 * 4 + 3], V = P * $, E = Z * A, Q = w * $, O = Z * p, j = w * A, L = P * p, G = e * $, W = Z * s, _ = e * A, N = P * s, R = e * p, k = w * s, nn = V * h + O * z + j * I - (E * h + Q * z + L * I), tn = E * c + G * z + N * I - (V * c + W * z + _ * I), sn = Q * c + W * h + R * I - (O * c + G * h + k * I), cn = L * c + _ * h + k * z - (j * c + N * h + R * z);
+    const i = n[0], c = n[1], e = n[2], s = n[3], u = n[4], h = n[5], w = n[6], p = n[7], x = n[8], z = n[9], P = n[10], A = n[11], q = n[12], I = n[13], Z = n[14], $ = n[15], V = P * $, E = Z * A, Q = w * $, O = Z * p, j = w * A, L = P * p, G = e * $, W = Z * s, _ = e * A, N = P * s, R = e * p, k = w * s, nn = V * h + O * z + j * I - (E * h + Q * z + L * I), tn = E * c + G * z + N * I - (V * c + W * z + _ * I), sn = Q * c + W * h + R * I - (O * c + G * h + k * I), cn = L * c + _ * h + k * z - (j * c + N * h + R * z);
     return i * nn + u * tn + x * sn + q * cn;
   }
   const wn = qn;
@@ -831,7 +831,7 @@ function wt(M) {
     return c[0] = 1, c[1] = 0, c[2] = 0, c[3] = 0, c[4] = 0, c[5] = 1, c[6] = 0, c[7] = 0, c[8] = 0, c[9] = 0, c[10] = 1, c[11] = 0, c[12] = n[0], c[13] = n[1], c[14] = n[2], c[15] = 1, c;
   }
   function an(n, i, c) {
-    const e = c ?? new M(16), s = i[0], u = i[1], h = i[2], w = n[0], p = n[1], x = n[2], z = n[3], P = n[1 * 4 + 0], A = n[1 * 4 + 1], q = n[1 * 4 + 2], I = n[1 * 4 + 3], Z = n[2 * 4 + 0], $ = n[2 * 4 + 1], V = n[2 * 4 + 2], E = n[2 * 4 + 3], Q = n[3 * 4 + 0], O = n[3 * 4 + 1], j = n[3 * 4 + 2], L = n[3 * 4 + 3];
+    const e = c ?? new M(16), s = i[0], u = i[1], h = i[2], w = n[0], p = n[1], x = n[2], z = n[3], P = n[4], A = n[5], q = n[6], I = n[7], Z = n[8], $ = n[9], V = n[10], E = n[11], Q = n[12], O = n[13], j = n[14], L = n[15];
     return n !== e && (e[0] = w, e[1] = p, e[2] = x, e[3] = z, e[4] = P, e[5] = A, e[6] = q, e[7] = I, e[8] = Z, e[9] = $, e[10] = V, e[11] = E), e[12] = w * s + P * u + Z * h + Q, e[13] = p * s + A * u + $ * h + O, e[14] = x * s + q * u + V * h + j, e[15] = z * s + I * u + E * h + L, e;
   }
   function On(n, i) {
@@ -847,7 +847,7 @@ function wt(M) {
     return c[0] = e, c[1] = 0, c[2] = -s, c[3] = 0, c[4] = 0, c[5] = 1, c[6] = 0, c[7] = 0, c[8] = s, c[9] = 0, c[10] = e, c[11] = 0, c[12] = 0, c[13] = 0, c[14] = 0, c[15] = 1, c;
   }
   function Vn(n, i, c) {
-    const e = c ?? new M(16), s = n[0 * 4 + 0], u = n[0 * 4 + 1], h = n[0 * 4 + 2], w = n[0 * 4 + 3], p = n[2 * 4 + 0], x = n[2 * 4 + 1], z = n[2 * 4 + 2], P = n[2 * 4 + 3], A = Math.cos(i), q = Math.sin(i);
+    const e = c ?? new M(16), s = n[0], u = n[1], h = n[2], w = n[3], p = n[8], x = n[9], z = n[10], P = n[11], A = Math.cos(i), q = Math.sin(i);
     return e[0] = A * s - q * p, e[1] = A * u - q * x, e[2] = A * h - q * z, e[3] = A * w - q * P, e[8] = A * p + q * s, e[9] = A * x + q * u, e[10] = A * z + q * h, e[11] = A * P + q * w, n !== e && (e[4] = n[4], e[5] = n[5], e[6] = n[6], e[7] = n[7], e[12] = n[12], e[13] = n[13], e[14] = n[14], e[15] = n[15]), e;
   }
   function y(n, i) {
@@ -855,7 +855,7 @@ function wt(M) {
     return c[0] = e, c[1] = s, c[2] = 0, c[3] = 0, c[4] = -s, c[5] = e, c[6] = 0, c[7] = 0, c[8] = 0, c[9] = 0, c[10] = 1, c[11] = 0, c[12] = 0, c[13] = 0, c[14] = 0, c[15] = 1, c;
   }
   function g(n, i, c) {
-    const e = c ?? new M(16), s = n[0 * 4 + 0], u = n[0 * 4 + 1], h = n[0 * 4 + 2], w = n[0 * 4 + 3], p = n[1 * 4 + 0], x = n[1 * 4 + 1], z = n[1 * 4 + 2], P = n[1 * 4 + 3], A = Math.cos(i), q = Math.sin(i);
+    const e = c ?? new M(16), s = n[0], u = n[1], h = n[2], w = n[3], p = n[4], x = n[5], z = n[6], P = n[7], A = Math.cos(i), q = Math.sin(i);
     return e[0] = A * s + q * p, e[1] = A * u + q * x, e[2] = A * h + q * z, e[3] = A * w + q * P, e[4] = A * p - q * s, e[5] = A * x - q * u, e[6] = A * z - q * h, e[7] = A * P - q * w, n !== e && (e[8] = n[8], e[9] = n[9], e[10] = n[10], e[11] = n[11], e[12] = n[12], e[13] = n[13], e[14] = n[14], e[15] = n[15]), e;
   }
   function a(n, i, c) {
@@ -882,7 +882,7 @@ function wt(M) {
   }
   function l(n, i, c) {
     const e = c ?? new M(16), s = i[0], u = i[1], h = i[2];
-    return e[0] = s * n[0 * 4 + 0], e[1] = s * n[0 * 4 + 1], e[2] = s * n[0 * 4 + 2], e[3] = s * n[0 * 4 + 3], e[4] = u * n[1 * 4 + 0], e[5] = u * n[1 * 4 + 1], e[6] = u * n[1 * 4 + 2], e[7] = u * n[1 * 4 + 3], e[8] = h * n[2 * 4 + 0], e[9] = h * n[2 * 4 + 1], e[10] = h * n[2 * 4 + 2], e[11] = h * n[2 * 4 + 3], n !== e && (e[12] = n[12], e[13] = n[13], e[14] = n[14], e[15] = n[15]), e;
+    return e[0] = s * n[0], e[1] = s * n[1], e[2] = s * n[2], e[3] = s * n[3], e[4] = u * n[4], e[5] = u * n[5], e[6] = u * n[6], e[7] = u * n[7], e[8] = h * n[8], e[9] = h * n[9], e[10] = h * n[10], e[11] = h * n[11], n !== e && (e[12] = n[12], e[13] = n[13], e[14] = n[14], e[15] = n[15]), e;
   }
   function D(n, i) {
     const c = i ?? new M(16);
@@ -890,7 +890,7 @@ function wt(M) {
   }
   function d(n, i, c) {
     const e = c ?? new M(16);
-    return e[0] = i * n[0 * 4 + 0], e[1] = i * n[0 * 4 + 1], e[2] = i * n[0 * 4 + 2], e[3] = i * n[0 * 4 + 3], e[4] = i * n[1 * 4 + 0], e[5] = i * n[1 * 4 + 1], e[6] = i * n[1 * 4 + 2], e[7] = i * n[1 * 4 + 3], e[8] = i * n[2 * 4 + 0], e[9] = i * n[2 * 4 + 1], e[10] = i * n[2 * 4 + 2], e[11] = i * n[2 * 4 + 3], n !== e && (e[12] = n[12], e[13] = n[13], e[14] = n[14], e[15] = n[15]), e;
+    return e[0] = i * n[0], e[1] = i * n[1], e[2] = i * n[2], e[3] = i * n[3], e[4] = i * n[4], e[5] = i * n[5], e[6] = i * n[6], e[7] = i * n[7], e[8] = i * n[8], e[9] = i * n[9], e[10] = i * n[10], e[11] = i * n[11], n !== e && (e[12] = n[12], e[13] = n[13], e[14] = n[14], e[15] = n[15]), e;
   }
   return {
     add: Fn,

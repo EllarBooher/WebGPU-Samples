@@ -1,8 +1,6 @@
-var b = Object.defineProperty;
-var w = (i, e, t) => e in i ? b(i, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : i[e] = t;
-var r = (i, e, t) => w(i, typeof e != "symbol" ? e + "" : e, t);
-import { m as u } from "./wgpu-matrix.module-CE_7eKYK.js";
-const P = `struct VertexOut {
+import { m as n } from "./wgpu-matrix.module-aHNSNER6.js";
+import { P as x } from "./main-B-9XFVmh.js";
+const b = `struct VertexOut {
   @builtin(position) position : vec4f,
   @location(0) color : vec4f
 }
@@ -22,40 +20,32 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 {
   return fragData.color;
 }
-`, V = /* @__PURE__ */ new Set([
-  "depth-clip-control",
-  "depth32float-stencil8",
-  "texture-compression-bc",
-  "texture-compression-bc-sliced-3d",
-  "texture-compression-etc2",
-  "texture-compression-astc",
-  "texture-compression-astc-sliced-3d",
-  "timestamp-query",
-  "indirect-first-instance",
-  "shader-f16",
-  "rg11b10ufloat-renderable",
-  "bgra8unorm-storage",
-  "float32-filterable",
-  "float32-blendable",
-  "clip-distances",
-  "dual-source-blending"
-]);
-class y {
+`;
+class w {
+  quit = !1;
+  device;
+  pipeline;
+  presentFormat;
+  vertexBuffer;
+  indexBuffer;
+  indexCount;
+  projViewModelBuffer;
+  projViewModelBindGroup;
+  supportedFeatures;
+  destroy() {
+    this.device.destroy();
+  }
+  presentationInterface() {
+    return {
+      device: this.device,
+      format: this.presentFormat
+    };
+  }
   constructor(e, t) {
-    r(this, "quit", !1);
-    r(this, "device");
-    r(this, "pipeline");
-    r(this, "presentFormat");
-    r(this, "vertexBuffer");
-    r(this, "indexBuffer");
-    r(this, "indexCount");
-    r(this, "projViewModelBuffer");
-    r(this, "projViewModelBindGroup");
-    r(this, "supportedFeatures");
     this.device = e, this.presentFormat = t, this.supportedFeatures = e.features;
-    const o = this.device.createShaderModule({
-      code: P
-    }), a = new Float32Array([
+    const r = this.device.createShaderModule({
+      code: b
+    }), s = new Float32Array([
       -1,
       -1,
       -1,
@@ -120,7 +110,7 @@ class y {
       1,
       1,
       1
-    ]), s = new Uint32Array([
+    ]), i = new Uint32Array([
       // -Z
       0,
       1,
@@ -164,15 +154,15 @@ class y {
       5,
       1
     ]);
-    this.indexCount = s.length, this.vertexBuffer = this.device.createBuffer({
-      size: a.byteLength,
+    this.indexCount = i.length, this.vertexBuffer = this.device.createBuffer({
+      size: s.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     }), this.device.queue.writeBuffer(
       this.vertexBuffer,
       0,
-      a,
+      s,
       0,
-      a.length
+      s.length
     );
     const d = [
       {
@@ -180,26 +170,26 @@ class y {
           { shaderLocation: 0, offset: 0, format: "float32x4" },
           { shaderLocation: 1, offset: 16, format: "float32x4" }
         ],
-        arrayStride: 2 * 16,
+        arrayStride: 32,
         stepMode: "vertex"
       }
     ];
     this.indexBuffer = this.device.createBuffer({
-      size: s.byteLength,
+      size: i.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     }), this.device.queue.writeBuffer(
       this.indexBuffer,
       0,
-      s,
+      i,
       0,
-      s.length
+      i.length
     );
-    const l = 16 * 4;
+    const p = 64;
     this.projViewModelBuffer = this.device.createBuffer({
-      size: l,
+      size: p,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const c = this.device.createBindGroupLayout({
+    const a = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -211,7 +201,7 @@ class y {
       ]
     });
     this.projViewModelBindGroup = this.device.createBindGroup({
-      layout: c,
+      layout: a,
       entries: [
         {
           binding: 0,
@@ -221,14 +211,14 @@ class y {
         }
       ]
     });
-    const f = {
+    const u = {
       vertex: {
-        module: o,
+        module: r,
         entryPoint: "vertex_main",
         buffers: d
       },
       fragment: {
-        module: o,
+        module: r,
         entryPoint: "fragment_main",
         targets: [
           {
@@ -242,54 +232,45 @@ class y {
         frontFace: "cw"
       },
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [c]
+        bindGroupLayouts: [a]
       })
     };
-    this.pipeline = this.device.createRenderPipeline(f);
-  }
-  destroy() {
-    this.device.destroy();
-  }
-  presentationInterface() {
-    return {
-      device: this.device,
-      format: this.presentFormat
-    };
+    this.pipeline = this.device.createRenderPipeline(u);
   }
   setupUI(e) {
-    V.forEach((t) => {
-      const o = this.supportedFeatures.has(t);
-      e.add({ enabled: o }, "enabled").name(t).disable(!0);
+    x.forEach((t) => {
+      const r = this.supportedFeatures.has(t);
+      e.add({ enabled: r }, "enabled").name(t).disable(!0);
     });
   }
-  draw(e, t, o) {
-    const a = e.createView(), s = 60 * Math.PI / 180, c = u.perspective(s, t, 0.1, 1e3), f = [3, 5, 10], m = [0, 0, 0], v = [0, 1, 0], B = u.lookAt(f, m, v), g = u.axisRotation([1, 1, 0], o / 1e3), p = u.mul(c, u.mul(B, g));
+  draw(e, t, r) {
+    const s = e.createView(), i = 60 * Math.PI / 180, a = n.perspective(i, t, 0.1, 1e3), u = [3, 5, 10], h = [0, 0, 0], v = [0, 1, 0], B = n.lookAt(u, h, v), m = n.axisRotation([1, 1, 0], r / 1e3), f = n.mul(a, n.mul(B, m));
     this.device.queue.writeBuffer(
       this.projViewModelBuffer,
       0,
-      p,
-      0,
-      p.length
+      f.buffer,
+      f.byteOffset,
+      f.byteLength
     );
-    const h = this.device.createCommandEncoder(), x = { r: 0.5, g: 0.5, b: 0.5, a: 0 }, n = h.beginRenderPass({
+    const l = this.device.createCommandEncoder(), g = { r: 0.5, g: 0.5, b: 0.5, a: 0 }, o = l.beginRenderPass({
       colorAttachments: [
         {
-          clearValue: x,
+          clearValue: g,
           loadOp: "clear",
           storeOp: "store",
-          view: a
+          view: s
         }
       ]
     });
-    n.setPipeline(this.pipeline), n.setVertexBuffer(0, this.vertexBuffer), n.setIndexBuffer(
+    o.setPipeline(this.pipeline), o.setVertexBuffer(0, this.vertexBuffer), o.setIndexBuffer(
       this.indexBuffer,
       "uint32",
       0,
       this.indexBuffer.size
-    ), n.setBindGroup(0, this.projViewModelBindGroup), n.drawIndexed(this.indexCount, 1, 0, 0, 0), n.end(), this.device.queue.submit([h.finish()]);
+    ), o.setBindGroup(0, this.projViewModelBindGroup), o.drawIndexed(this.indexCount, 1, 0, 0, 0), o.end(), this.device.queue.submit([l.finish()]);
   }
 }
-const G = (i, e) => new y(i, e);
+const V = (c, e) => new w(c, e);
 export {
-  G as HelloCubeAppConstructor
+  V as HelloCubeAppConstructor
 };

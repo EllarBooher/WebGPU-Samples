@@ -1,9 +1,10 @@
-var ue = Object.defineProperty;
-var le = (u, e, t) => e in u ? ue(u, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : u[e] = t;
-var a = (u, e, t) => le(u, typeof e != "symbol" ? e + "" : e, t);
-import { v as z, m as x, a as S, b as T } from "./wgpu-matrix.module-CE_7eKYK.js";
-const _e = 4;
-class R {
+import { v as M, m as y, a as b, b as S } from "./wgpu-matrix.module-aHNSNER6.js";
+const oe = 4;
+class A {
+  /**
+   * The device buffer that is uploaded to.
+   */
+  buffer;
   /**
    * Allocates the backing buffer with a given size.
    * @param device - The WebGPU device to use.
@@ -12,12 +13,8 @@ class R {
    * @param label - A label for debugging purposes, used by WebGPU.
    */
   constructor(e, t, r) {
-    /**
-     * The device buffer that is uploaded to.
-     */
-    a(this, "buffer");
     this.buffer = e.createBuffer({
-      size: t * _e,
+      size: t * oe,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
       label: r
     });
@@ -31,134 +28,140 @@ class R {
     const t = this.packed();
     t.byteLength != this.buffer.size && console.warn(
       `GPUBuffer label: '${this.buffer.label}' uploaded with improper size. Expected: ${this.buffer.size} bytes, got ${t.byteLength} bytes.`
-    ), e.writeBuffer(this.buffer, 0, t);
+    ), e.writeBuffer(
+      this.buffer,
+      0,
+      t.buffer,
+      t.byteOffset,
+      t.byteLength
+    );
   }
 }
-function ce() {
+function ue() {
   return {
     rayleighMm: {
-      scattering: S.create(5.802, 13.558, 33.1),
-      absorption: S.create(0, 0, 0),
+      scattering: b.create(5.802, 13.558, 33.1),
+      absorption: b.create(0, 0, 0),
       densityScale: 8e-3
     },
     mieMm: {
-      scattering: S.create(3.996, 3.996, 3.996),
-      absorption: S.create(4.4, 4.4, 4.4),
+      scattering: b.create(3.996, 3.996, 3.996),
+      absorption: b.create(4.4, 4.4, 4.4),
       densityScale: 12e-4
     },
     ozoneMm: {
-      scattering: S.create(0, 0, 0),
-      absorption: S.create(0.65, 1.881, 0.085)
+      scattering: b.create(0, 0, 0),
+      absorption: b.create(0.65, 1.881, 0.085)
     },
     planetRadiusMm: 6.36,
     atmosphereRadiusMm: 6.42,
     // Unitless albedo
     // Values are arbitrary
-    groundAlbedo: S.create(0.3 * 1, 0.3 * 0.75, 0.3 * 0.4)
+    groundAlbedo: b.create(0.3 * 1, 0.3 * 0.75, 0.3 * 0.4)
   };
 }
-function me() {
+function le() {
   return {
-    color: S.create(1, 1, 1),
+    color: b.create(1, 1, 1),
     strength: 10,
-    forward: S.create(0, -1, 0),
+    forward: b.create(0, -1, 0),
     angularRadius: 16 / 60 * (3.141592653589793 / 180)
   };
 }
-const de = 16, pe = 128, fe = 16, he = 32, ge = 16, k = 256, ve = 16, ye = 16;
-function xe(u, e) {
-  return Math.ceil(e / u) * u;
+const _e = 16, ce = 128, de = 16, me = 32, pe = 16, W = 256, fe = 16, he = 16;
+function ge(o, e) {
+  return Math.ceil(e / o) * o;
 }
-const be = Math.max(
+const ve = Math.max(
+  _e,
   de,
-  fe,
-  ge,
-  ve
-), Se = xe(
-  be,
-  k + k + pe + he + ye
+  pe,
+  fe
+), ye = ge(
+  ve,
+  W + W + ce + me + he
 );
-class Te extends R {
-  constructor(t) {
-    super(t, Se / 4, "Global UBO");
-    /**
-     * The data that will be packed and laid out in proper byte order in
-     * {@link packed}, to be written to the GPU.
-     */
-    a(this, "data", {
-      atmosphere: ce(),
-      light: me(),
-      camera: {
-        invProj: x.identity(),
-        invView: x.identity(),
-        projView: x.identity(),
-        position: z.create(0, 0, 0, 1),
-        forward: z.create(0, 0, -1, 0)
-      },
-      ocean_camera: {
-        invProj: x.identity(),
-        invView: x.identity(),
-        projView: x.identity(),
-        position: z.create(0, 0, 0, 1),
-        forward: z.create(0, 0, -1, 0)
-      },
-      time: {
-        timeSeconds: 0,
-        deltaTimeSeconds: 0
-      }
-    });
+class xe extends A {
+  /**
+   * The data that will be packed and laid out in proper byte order in
+   * {@link packed}, to be written to the GPU.
+   */
+  data = {
+    atmosphere: ue(),
+    light: le(),
+    camera: {
+      invProj: y.identity(),
+      invView: y.identity(),
+      projView: y.identity(),
+      position: M.create(0, 0, 0, 1),
+      forward: M.create(0, 0, -1, 0)
+    },
+    ocean_camera: {
+      invProj: y.identity(),
+      invView: y.identity(),
+      projView: y.identity(),
+      position: M.create(0, 0, 0, 1),
+      forward: M.create(0, 0, -1, 0)
+    },
+    time: {
+      timeSeconds: 0,
+      deltaTimeSeconds: 0
+    }
+  };
+  constructor(e) {
+    super(e, ye / 4, "Global UBO");
   }
   packed() {
-    const t = new Float32Array(2).fill(0), r = new Float32Array(4).fill(0), i = new Float32Array(4 * 2).fill(0), n = this.data.atmosphere, o = n.rayleighMm, s = n.mieMm, l = new Float32Array([
-      ...o.scattering,
-      o.densityScale,
-      ...o.absorption,
-      n.planetRadiusMm,
+    const e = new Float32Array(2).fill(0), t = new Float32Array(4).fill(0), r = new Float32Array(8).fill(0), a = this.data.atmosphere, i = a.rayleighMm, s = a.mieMm, n = new Float32Array([
+      ...i.scattering,
+      i.densityScale,
+      ...i.absorption,
+      a.planetRadiusMm,
       ...s.scattering,
       s.densityScale,
       ...s.absorption,
-      n.atmosphereRadiusMm,
-      ...n.groundAlbedo,
+      a.atmosphereRadiusMm,
+      ...a.groundAlbedo,
       0,
-      ...n.ozoneMm.scattering,
+      ...a.ozoneMm.scattering,
       0,
-      ...n.ozoneMm.absorption,
+      ...a.ozoneMm.absorption,
       0,
-      ...r
-    ]), _ = this.data.light, m = new Float32Array([
-      ..._.color,
-      _.strength,
+      ...t
+    ]), u = this.data.light, l = new Float32Array([
+      ...u.color,
+      u.strength,
+      ...u.forward,
+      u.angularRadius
+    ]), _ = this.data.camera, c = new Float32Array([
+      ..._.invProj,
+      ..._.invView,
+      ..._.projView,
+      ..._.position,
       ..._.forward,
-      _.angularRadius
-    ]), c = this.data.camera, v = new Float32Array([
-      ...c.invProj,
-      ...c.invView,
-      ...c.projView,
-      ...c.position,
-      ...c.forward,
-      ...i
-    ]), h = this.data.ocean_camera, y = new Float32Array([
-      ...h.invProj,
-      ...h.invView,
-      ...h.projView,
-      ...h.position,
-      ...h.forward,
-      ...i
-    ]), d = this.data.time, g = new Float32Array([
-      ...t,
-      d.timeSeconds,
-      d.deltaTimeSeconds
+      ...r
+    ]), d = this.data.ocean_camera, v = new Float32Array([
+      ...d.invProj,
+      ...d.invView,
+      ...d.projView,
+      ...d.position,
+      ...d.forward,
+      ...r
+    ]), g = this.data.time, m = new Float32Array([
+      ...e,
+      g.timeSeconds,
+      g.deltaTimeSeconds
     ]);
     return new Float32Array([
+      ...c,
       ...v,
-      ...y,
+      ...n,
       ...l,
-      ...m,
-      ...g
+      ...m
     ]);
   }
 }
-const we = `struct Atmosphere
+const be = `struct Atmosphere
 {
 scattering_rayleigh_per_Mm : vec3<f32>,
 density_scale_rayleigh_Mm : f32,
@@ -576,8 +579,24 @@ fn computeTransmittance(@builtin(global_invocation_id) global_id : vec3<u32>,)
     }
     textureStore(transmittance_lut, texel_coord, vec4<f32>(transmittance, 1.0));
 }
-`, Me = "rgba32float";
-class ze {
+`, Se = "rgba32float";
+class Te {
+  /**
+   * The transmittance lookup table texture.
+   */
+  texture;
+  /**
+   * The view into {@link texture}.
+   */
+  view;
+  /*
+   * @group(0) @binding(0) var transmittance_lut: texture_storage_2d<rgba32float, write>;
+   *
+   * @group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+   */
+  pipeline;
+  group0;
+  group1;
   /**
    * Initializes all resources related to the transmittance lookup table.
    * @param device - The WebGPU device to use.
@@ -586,30 +605,14 @@ class ze {
    * 	rendering the LUT.
    */
   constructor(e, t, r) {
-    /**
-     * The transmittance lookup table texture.
-     */
-    a(this, "texture");
-    /**
-     * The view into {@link texture}.
-     */
-    a(this, "view");
-    /*
-     * @group(0) @binding(0) var transmittance_lut: texture_storage_2d<rgba32float, write>;
-     *
-     * @group(1) @binding(0) var<uniform> u_global: GlobalUBO;
-     */
-    a(this, "pipeline");
-    a(this, "group0");
-    a(this, "group1");
     this.texture = e.createTexture({
       size: t,
       dimension: "2d",
-      format: Me,
+      format: Se,
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
       label: "Transmittance LUT"
     }), this.view = this.texture.createView({ label: "Transmittance LUT" });
-    const i = e.createBindGroupLayout({
+    const a = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -621,7 +624,7 @@ class ze {
         }
       ],
       label: "Transmittance LUT Group 0"
-    }), n = e.createBindGroupLayout({
+    }), i = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -630,17 +633,17 @@ class ze {
         }
       ],
       label: "Transmittance LUT Group 1"
-    }), o = e.createShaderModule({
-      code: we,
+    }), s = e.createShaderModule({
+      code: be,
       label: "Transmittance LUT"
     });
     this.pipeline = e.createComputePipeline({
       compute: {
-        module: o,
+        module: s,
         entryPoint: "computeTransmittance"
       },
       layout: e.createPipelineLayout({
-        bindGroupLayouts: [i, n]
+        bindGroupLayouts: [a, i]
       }),
       label: "Transmittance LUT"
     }), this.group0 = e.createBindGroup({
@@ -678,7 +681,7 @@ class ze {
     ), t.end();
   }
 }
-const De = `struct Atmosphere
+const we = `struct Atmosphere
 {
 scattering_rayleigh_per_Mm : vec3<f32>,
 density_scale_rayleigh_Mm : f32,
@@ -1229,8 +1232,26 @@ fn computeMultiscattering(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let multiscattering = infinite_scattering_transfer * inscattering;
     textureStore(multiscatter_lut, texel_coord, vec4<f32>(multiscattering, 1.0));
 }
-`, V = "rgba32float";
-class Pe {
+`, k = "rgba32float";
+class Me {
+  /**
+   * The multiscatter lookup table texture.
+   */
+  texture;
+  /**
+   * The view into {@link texture}.
+   */
+  view;
+  /*
+   * @group(0) @binding(0) var multiscatter_lut: texture_storage_2d<rgba32float, write>;
+   * @group(0) @binding(1) var lut_sampler: sampler;
+   * @group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
+   *
+   * @group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+   */
+  pipeline;
+  group0;
+  group1;
   /**
    * Initializes all resources related to the multiscatter lookup table.
    * @param device - The WebGPU device to use.
@@ -1239,62 +1260,44 @@ class Pe {
    * @param filterableLUT - Whether or not the LUTs are filterable.
    * @param globalUBO - The global UBO to bind and read from.
    */
-  constructor(e, t, r, i, n) {
-    /**
-     * The multiscatter lookup table texture.
-     */
-    a(this, "texture");
-    /**
-     * The view into {@link texture}.
-     */
-    a(this, "view");
-    /*
-     * @group(0) @binding(0) var multiscatter_lut: texture_storage_2d<rgba32float, write>;
-     * @group(0) @binding(1) var lut_sampler: sampler;
-     * @group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
-     *
-     * @group(1) @binding(0) var<uniform> u_global: GlobalUBO;
-     */
-    a(this, "pipeline");
-    a(this, "group0");
-    a(this, "group1");
-    const o = "Multiscatter LUT";
+  constructor(e, t, r, a, i) {
+    const s = "Multiscatter LUT";
     this.texture = e.createTexture({
       size: t,
       dimension: "2d",
-      format: V,
+      format: k,
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
       label: "Multiscatter LUT"
-    }), this.view = this.texture.createView({ label: o });
-    const s = e.createBindGroupLayout({
+    }), this.view = this.texture.createView({ label: s });
+    const n = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
           storageTexture: {
             access: "write-only",
-            format: V
+            format: k
           }
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
           sampler: {
-            type: i ? "filtering" : "non-filtering"
+            type: a ? "filtering" : "non-filtering"
           }
         },
         {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
           texture: {
-            sampleType: i ? "float" : "unfilterable-float"
+            sampleType: a ? "float" : "unfilterable-float"
           }
         }
       ],
       label: "Multiscatter LUT Group 0"
     });
     this.group0 = e.createBindGroup({
-      layout: s,
+      layout: n,
       entries: [
         {
           binding: 0,
@@ -1303,8 +1306,8 @@ class Pe {
         {
           binding: 1,
           resource: e.createSampler({
-            magFilter: i ? "linear" : "nearest",
-            minFilter: i ? "linear" : "nearest"
+            magFilter: a ? "linear" : "nearest",
+            minFilter: a ? "linear" : "nearest"
           })
         },
         {
@@ -1314,7 +1317,7 @@ class Pe {
       ],
       label: "Multiscatter LUT Group 0"
     });
-    const l = e.createBindGroupLayout({
+    const u = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -1325,26 +1328,26 @@ class Pe {
       label: "Multiscatter LUT Group 1"
     });
     this.group1 = e.createBindGroup({
-      layout: l,
+      layout: u,
       entries: [
         {
           binding: 0,
-          resource: { buffer: n.buffer }
+          resource: { buffer: i.buffer }
         }
       ],
       label: "Multiscatter LUT Group 1"
     });
-    const _ = e.createShaderModule({
-      code: De,
-      label: o
+    const l = e.createShaderModule({
+      code: we,
+      label: s
     });
     this.pipeline = e.createComputePipeline({
       compute: {
-        module: _,
+        module: l,
         entryPoint: "computeMultiscattering"
       },
       layout: e.createPipelineLayout({
-        bindGroupLayouts: [s, l]
+        bindGroupLayouts: [n, u]
       }),
       label: "Multiscatter LUT"
     });
@@ -1359,7 +1362,7 @@ class Pe {
     ), t.end();
   }
 }
-const Ae = `struct Atmosphere
+const ze = `struct Atmosphere
 {
 scattering_rayleigh_per_Mm : vec3<f32>,
 density_scale_rayleigh_Mm : f32,
@@ -1928,8 +1931,21 @@ fn computeSkyViewLuminance(@builtin(global_invocation_id) global_id : vec3<u32>,
     ).luminance;
     textureStore(skyview_lut, texel_coord, vec4(luminance, 1.0));
 }
-`, H = "rgba32float";
-class Re {
+`, V = "rgba32float";
+class De {
+  texture;
+  view;
+  /*
+  	@group(0) @binding(0) var skyview_lut: texture_storage_2d<rgba32float, write>;
+  	@group(0) @binding(1) var lut_sampler: sampler;
+  	@group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
+  	@group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
+  
+  	@group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+  	*/
+  group0;
+  group1;
+  pipeline;
   /**
    * Initializes all resources related to the sky view lookup table.
    * @param device - The WebGPU device to use.
@@ -1945,63 +1961,50 @@ class Re {
    * @param globalUBO - The global UBO to bind and use when
    *  rendering the LUT.
    */
-  constructor(e, t, r, i, n, o) {
-    a(this, "texture");
-    a(this, "view");
-    /*
-    	@group(0) @binding(0) var skyview_lut: texture_storage_2d<rgba32float, write>;
-    	@group(0) @binding(1) var lut_sampler: sampler;
-    	@group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
-    	@group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
-    
-    	@group(1) @binding(0) var<uniform> u_global: GlobalUBO;
-    	*/
-    a(this, "group0");
-    a(this, "group1");
-    a(this, "pipeline");
+  constructor(e, t, r, a, i, s) {
     this.texture = e.createTexture({
       size: t,
       dimension: "2d",
-      format: H,
+      format: V,
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
       label: "Skyview LUT"
     }), this.view = this.texture.createView({ label: "Skyview LUT" });
-    const s = e.createBindGroupLayout({
+    const n = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
           storageTexture: {
             access: "write-only",
-            format: H
+            format: V
           }
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
           sampler: {
-            type: n ? "filtering" : "non-filtering"
+            type: i ? "filtering" : "non-filtering"
           }
         },
         {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
           texture: {
-            sampleType: n ? "float" : "unfilterable-float"
+            sampleType: i ? "float" : "unfilterable-float"
           }
         },
         {
           binding: 3,
           visibility: GPUShaderStage.COMPUTE,
           texture: {
-            sampleType: n ? "float" : "unfilterable-float"
+            sampleType: i ? "float" : "unfilterable-float"
           }
         }
       ],
       label: "Skyview LUT"
     });
     this.group0 = e.createBindGroup({
-      layout: s,
+      layout: n,
       entries: [
         {
           binding: 0,
@@ -2010,8 +2013,8 @@ class Re {
         {
           binding: 1,
           resource: e.createSampler({
-            magFilter: n ? "linear" : "nearest",
-            minFilter: n ? "linear" : "nearest"
+            magFilter: i ? "linear" : "nearest",
+            minFilter: i ? "linear" : "nearest"
           })
         },
         {
@@ -2020,12 +2023,12 @@ class Re {
         },
         {
           binding: 3,
-          resource: i
+          resource: a
         }
       ],
       label: "Skyview LUT Group 0"
     });
-    const l = e.createBindGroupLayout({
+    const u = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -2036,25 +2039,25 @@ class Re {
       label: "Skyview LUT Group 1"
     });
     this.group1 = e.createBindGroup({
-      layout: l,
+      layout: u,
       entries: [
         {
           binding: 0,
-          resource: { buffer: o.buffer }
+          resource: { buffer: s.buffer }
         }
       ],
       label: "Skyview LUT Group 1"
     });
-    const _ = e.createShaderModule({
-      code: Ae
+    const l = e.createShaderModule({
+      code: ze
     });
     this.pipeline = e.createComputePipeline({
       compute: {
-        module: _,
+        module: l,
         entryPoint: "computeSkyViewLuminance"
       },
       layout: e.createPipelineLayout({
-        bindGroupLayouts: [s, l]
+        bindGroupLayouts: [n, u]
       }),
       label: "Skyview LUT"
     });
@@ -2081,7 +2084,7 @@ class Re {
     ), r.end();
   }
 }
-const Ue = `struct Atmosphere
+const Pe = `struct Atmosphere
 {
 scattering_rayleigh_per_Mm : vec3<f32>,
 density_scale_rayleigh_Mm : f32,
@@ -2952,8 +2955,29 @@ fn renderCompositedAtmosphere(@builtin(global_invocation_id) global_id : vec3<u3
     let output = vec4<f32>(sRGB_EOTF(HDRtoSRGB_ACES(luminance)),1.0);
     textureStore(output_color, texel_coord, output);
 }
-`, j = "rgba16float";
-class Ee {
+`, H = "rgba16float";
+class Ae {
+  /*
+   * @group(0) @binding(0) var output_color: texture_storage_2d<rgba32float, write>;
+   * @group(0) @binding(1) var lut_sampler: sampler;
+   * @group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
+   * @group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
+   * @group(0) @binding(4) var skyview_lut: texture_2d<f32>;
+   * @group(0) @binding(5) var aerial_perspective_lut: texture_3d<f32>;
+   *
+   * @group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+   *
+   * @group(2) @binding(0) var gbuffer_color_with_surface_world_depth_in_alpha: texture_2d<f32>;
+   * @group(2) @binding(1) var gbuffer_normal_with_surface_jacobian_in_alpha: texture_2d<f32>;
+   */
+  group0Layout;
+  group1Layout;
+  lutSampler;
+  group0;
+  group1;
+  outputColor;
+  outputColorView;
+  pipeline;
   /**
    * Initializes all resources related to the atmospheric camera pass. The
    * texture will be initialized as one pixel by one pixel, call
@@ -2974,28 +2998,7 @@ class Ee {
    *  instances.
    * @param globalUBO - The global UBO to bind and use when rendering the LUT.
    */
-  constructor(e, t, r, i, n, o, s, l) {
-    /*
-     * @group(0) @binding(0) var output_color: texture_storage_2d<rgba32float, write>;
-     * @group(0) @binding(1) var lut_sampler: sampler;
-     * @group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
-     * @group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
-     * @group(0) @binding(4) var skyview_lut: texture_2d<f32>;
-     * @group(0) @binding(5) var aerial_perspective_lut: texture_3d<f32>;
-     *
-     * @group(1) @binding(0) var<uniform> u_global: GlobalUBO;
-     *
-     * @group(2) @binding(0) var gbuffer_color_with_surface_world_depth_in_alpha: texture_2d<f32>;
-     * @group(2) @binding(1) var gbuffer_normal_with_surface_jacobian_in_alpha: texture_2d<f32>;
-     */
-    a(this, "group0Layout");
-    a(this, "group1Layout");
-    a(this, "lutSampler");
-    a(this, "group0");
-    a(this, "group1");
-    a(this, "outputColor");
-    a(this, "outputColorView");
-    a(this, "pipeline");
+  constructor(e, t, r, a, i, s, n, u) {
     this.group0Layout = e.createBindGroupLayout({
       entries: [
         {
@@ -3003,7 +3006,7 @@ class Ee {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
           storageTexture: {
-            format: j
+            format: H
           }
         },
         {
@@ -3011,7 +3014,7 @@ class Ee {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
           sampler: {
-            type: s ? "filtering" : "non-filtering"
+            type: n ? "filtering" : "non-filtering"
           }
         },
         {
@@ -3019,7 +3022,7 @@ class Ee {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
           texture: {
-            sampleType: s ? "float" : "unfilterable-float",
+            sampleType: n ? "float" : "unfilterable-float",
             viewDimension: "2d"
           }
         },
@@ -3028,7 +3031,7 @@ class Ee {
           binding: 3,
           visibility: GPUShaderStage.COMPUTE,
           texture: {
-            sampleType: s ? "float" : "unfilterable-float",
+            sampleType: n ? "float" : "unfilterable-float",
             viewDimension: "2d"
           }
         },
@@ -3037,7 +3040,7 @@ class Ee {
           binding: 4,
           visibility: GPUShaderStage.COMPUTE,
           texture: {
-            sampleType: s ? "float" : "unfilterable-float",
+            sampleType: n ? "float" : "unfilterable-float",
             viewDimension: "2d"
           }
         },
@@ -3062,14 +3065,14 @@ class Ee {
       ],
       label: "Atmosphere Camera Group 1"
     }), this.outputColor = e.createTexture({
-      format: j,
+      format: H,
       size: { width: 1, height: 1 },
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
       label: "Atmosphere Camera Output Color"
     }), this.outputColorView = this.outputColor.createView(), this.lutSampler = e.createSampler({
       label: "Atmosphere Camera LUT Sampler",
-      magFilter: s ? "linear" : "nearest",
-      minFilter: s ? "linear" : "nearest"
+      magFilter: n ? "linear" : "nearest",
+      minFilter: n ? "linear" : "nearest"
     }), this.group0 = e.createBindGroup({
       layout: this.group0Layout,
       entries: [
@@ -3087,15 +3090,15 @@ class Ee {
         },
         {
           binding: 3,
-          resource: i
+          resource: a
         },
         {
           binding: 4,
-          resource: n
+          resource: i
         },
         {
           binding: 5,
-          resource: o
+          resource: s
         }
       ],
       label: "Atmosphere Camera Group 0"
@@ -3104,18 +3107,18 @@ class Ee {
       entries: [
         {
           binding: 0,
-          resource: { buffer: l.buffer }
+          resource: { buffer: u.buffer }
         }
       ],
       label: "Atmosphere Camera Group 1"
     });
-    const _ = e.createShaderModule({
-      code: Ue,
+    const l = e.createShaderModule({
+      code: Pe,
       label: "Atmosphere Camera"
     });
     this.pipeline = e.createComputePipeline({
       compute: {
-        module: _,
+        module: l,
         entryPoint: "renderCompositedAtmosphere"
       },
       layout: e.createPipelineLayout({
@@ -3135,7 +3138,7 @@ class Ee {
    * @param size - The new size to use. {@link outputColor} will be this size.
    * @param device - The WebGPU device to use.
    */
-  resize(e, t, r, i, n, o) {
+  resize(e, t, r, a, i, s) {
     this.outputColor = t.createTexture({
       format: this.outputColor.format,
       size: e,
@@ -3157,15 +3160,15 @@ class Ee {
         },
         {
           binding: 3,
-          resource: i
+          resource: a
         },
         {
           binding: 4,
-          resource: n
+          resource: i
         },
         {
           binding: 5,
-          resource: o
+          resource: s
         }
       ],
       label: "Atmosphere Camera Group 0 Resized"
@@ -3181,7 +3184,7 @@ class Ee {
    * 	shader source for how it is utilized.
    */
   record(e, t, r) {
-    const i = e.beginComputePass({
+    const a = e.beginComputePass({
       timestampWrites: t !== void 0 ? {
         querySet: t.querySet,
         beginningOfPassWriteIndex: t.beginWriteIndex,
@@ -3189,13 +3192,13 @@ class Ee {
       } : void 0,
       label: "Atmosphere Camera"
     });
-    i.setPipeline(this.pipeline), i.setBindGroup(0, this.group0), i.setBindGroup(1, this.group1), i.setBindGroup(2, r.readGroup), i.dispatchWorkgroups(
+    a.setPipeline(this.pipeline), a.setBindGroup(0, this.group0), a.setBindGroup(1, this.group1), a.setBindGroup(2, r.readGroup), a.dispatchWorkgroups(
       Math.ceil(this.outputColor.width / 16),
       Math.ceil(this.outputColor.height / 16)
-    ), i.end();
+    ), a.end();
   }
 }
-const Le = `const PI = 3.141592653589793;
+const Re = `const PI = 3.141592653589793;
 const METERS_PER_MM = 1000000;
 struct Atmosphere
 {
@@ -3738,8 +3741,27 @@ fn computeAerialPerspective(@builtin(global_invocation_id) global_id : vec3<u32>
 	let mean_transmittance = dot(result.transmittance, vec3<f32>(1.0)) / 3.0;
     textureStore(aerial_perspective_lut, texel_coord, vec4(in_scattering, mean_transmittance));
 }
-`, Y = "rgba16float";
-class Ce {
+`, j = "rgba16float";
+class Ue {
+  /**
+   * The aerial perspective lookup table texture.
+   */
+  texture;
+  /**
+   * The view into {@link texture}.
+   */
+  view;
+  /*
+   * @group(0) @binding(0) var aerial_perspective_lut: texture_storage_3d<rgba16float, write>;
+   * @group(0) @binding(1) var lut_sampler: sampler;
+   * @group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
+   * @group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
+   *
+   * @group(1) @binding(0) var<uniform> u_global: GlobalUBO;
+   */
+  group0;
+  group1;
+  pipeline;
   /**
    * Initializes all resources related to the aerial perspective lookup table.
    * @param device - The WebGPU device to use.
@@ -3756,37 +3778,18 @@ class Ce {
    *  instances.
    * @param globalUBO - The global UBO to bind and use when rendering the LUT.
    */
-  constructor(e, t, r, i, n, o) {
-    /**
-     * The aerial perspective lookup table texture.
-     */
-    a(this, "texture");
-    /**
-     * The view into {@link texture}.
-     */
-    a(this, "view");
-    /*
-     * @group(0) @binding(0) var aerial_perspective_lut: texture_storage_3d<rgba16float, write>;
-     * @group(0) @binding(1) var lut_sampler: sampler;
-     * @group(0) @binding(2) var transmittance_lut: texture_2d<f32>;
-     * @group(0) @binding(3) var multiscatter_lut: texture_2d<f32>;
-     *
-     * @group(1) @binding(0) var<uniform> u_global: GlobalUBO;
-     */
-    a(this, "group0");
-    a(this, "group1");
-    a(this, "pipeline");
+  constructor(e, t, r, a, i, s) {
     this.texture = e.createTexture({
       size: t,
       dimension: "3d",
-      format: Y,
+      format: j,
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
       label: "Aerial Perspective LUT"
     }), this.view = this.texture.createView({
       label: this.texture.label,
       dimension: "3d"
     });
-    const s = e.createBindGroupLayout({
+    const n = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -3794,35 +3797,35 @@ class Ce {
           storageTexture: {
             access: "write-only",
             viewDimension: "3d",
-            format: Y
+            format: j
           }
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
           sampler: {
-            type: n ? "filtering" : "non-filtering"
+            type: i ? "filtering" : "non-filtering"
           }
         },
         {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
           texture: {
-            sampleType: n ? "float" : "unfilterable-float"
+            sampleType: i ? "float" : "unfilterable-float"
           }
         },
         {
           binding: 3,
           visibility: GPUShaderStage.COMPUTE,
           texture: {
-            sampleType: n ? "float" : "unfilterable-float"
+            sampleType: i ? "float" : "unfilterable-float"
           }
         }
       ],
       label: "Aerial Perspective LUT"
     });
     this.group0 = e.createBindGroup({
-      layout: s,
+      layout: n,
       entries: [
         {
           binding: 0,
@@ -3831,8 +3834,8 @@ class Ce {
         {
           binding: 1,
           resource: e.createSampler({
-            magFilter: n ? "linear" : "nearest",
-            minFilter: n ? "linear" : "nearest"
+            magFilter: i ? "linear" : "nearest",
+            minFilter: i ? "linear" : "nearest"
           })
         },
         {
@@ -3841,12 +3844,12 @@ class Ce {
         },
         {
           binding: 3,
-          resource: i
+          resource: a
         }
       ],
       label: "Aerial Perspective LUT Group 0"
     });
-    const l = e.createBindGroupLayout({
+    const u = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -3857,25 +3860,25 @@ class Ce {
       label: "Aerial Perspective LUT Group 1"
     });
     this.group1 = e.createBindGroup({
-      layout: l,
+      layout: u,
       entries: [
         {
           binding: 0,
-          resource: { buffer: o.buffer }
+          resource: { buffer: s.buffer }
         }
       ],
       label: "Aerial Perspective LUT Group 1"
     });
-    const _ = e.createShaderModule({
-      code: Le
+    const l = e.createShaderModule({
+      code: Re
     });
     this.pipeline = e.createComputePipeline({
       compute: {
-        module: _,
+        module: l,
         entryPoint: "computeAerialPerspective"
       },
       layout: e.createPipelineLayout({
-        bindGroupLayouts: [s, l]
+        bindGroupLayouts: [n, u]
       }),
       label: "Aerial Perspective LUT"
     });
@@ -3905,7 +3908,7 @@ class Ce {
     ), r.end();
   }
 }
-const Ge = [
+const Ee = [
   "Scene",
   "GBufferColor",
   "GBufferNormal",
@@ -3921,27 +3924,10 @@ const Ge = [
   "FFTWaveDx_Dy_Dz_Dxdz_Spatial",
   "FFTWaveDydx_Dydz_Dxdx_Dzdz_Spatial"
 ];
-class w {
-  /**
-   * Uses the passed texture to create a view, while storing the texture
-   * object so that the properties can be queried later. The resulting view
-   * will have dimension "1d", "2d", "2d-array", or "3d" and will match the
-   * texture.
-   * @param texture - The texture to store and create a view of.
-   */
-  constructor(e) {
-    a(this, "texture");
-    a(this, "view");
-    a(this, "viewDimension");
-    this.texture = e;
-    let t = 1, r = this.texture.dimension;
-    this.texture.dimension == "2d" && this.texture.depthOrArrayLayers > 1 && (t = this.texture.depthOrArrayLayers, r = "2d-array"), this.viewDimension = r, this.view = e.createView({
-      label: `Render Output View for '${e.label}'`,
-      dimension: this.viewDimension,
-      arrayLayerCount: t,
-      baseArrayLayer: 0
-    });
-  }
+class T {
+  texture;
+  view;
+  viewDimension;
   /**
    * The number of mip levels in the texture.
    * @readonly
@@ -3960,18 +3946,33 @@ class w {
       depthOrArrayLayers: this.texture.depthOrArrayLayers
     };
   }
-}
-class Fe {
-  constructor() {
-    a(this, "flip", !1);
-    a(this, "colorGain", { r: 1, g: 1, b: 1 });
-    a(this, "channelMasks", { r: !0, g: !0, b: !0 });
-    a(this, "swapBARG", !1);
-    a(this, "mipLevel", 0);
-    a(this, "arrayLayer", 0);
+  /**
+   * Uses the passed texture to create a view, while storing the texture
+   * object so that the properties can be queried later. The resulting view
+   * will have dimension "1d", "2d", "2d-array", or "3d" and will match the
+   * texture.
+   * @param texture - The texture to store and create a view of.
+   */
+  constructor(e) {
+    this.texture = e;
+    let t = 1, r = this.texture.dimension;
+    this.texture.dimension == "2d" && this.texture.depthOrArrayLayers > 1 && (t = this.texture.depthOrArrayLayers, r = "2d-array"), this.viewDimension = r, this.view = e.createView({
+      label: `Render Output View for '${e.label}'`,
+      dimension: this.viewDimension,
+      arrayLayerCount: t,
+      baseArrayLayer: 0
+    });
   }
 }
-const Oe = [
+class Le {
+  flip = !1;
+  colorGain = { r: 1, g: 1, b: 1 };
+  channelMasks = { r: !0, g: !0, b: !0 };
+  swapBARG = !1;
+  mipLevel = 0;
+  arrayLayer = 0;
+}
+const Ce = [
   { id: "AtmosphereTransmittanceLUT", flip: !0 },
   {
     id: "AtmosphereMultiscatterLUT",
@@ -3999,26 +4000,10 @@ const Oe = [
     colorGain: { r: 100, g: 100, b: 100 }
   }
 ];
-class Ie {
-  constructor() {
-    a(this, "options");
-    a(this, "textureProperties");
-    a(this, "controllers");
-    this.options = {
-      outputTexture: "Scene",
-      renderOutputTransforms: new Map(
-        Ge.map((e) => [e, new Fe()])
-      )
-    }, Oe.forEach(
-      ({ id: e, ...t }) => {
-        const r = this.options.renderOutputTransforms.get(e);
-        this.options.renderOutputTransforms.set(e, {
-          ...r,
-          ...t
-        });
-      }
-    ), this.textureProperties = /* @__PURE__ */ new Map();
-  }
+class Ge {
+  options;
+  textureProperties;
+  controllers;
   /**
    * @returns The target and transform of the currently selected render
    * output.
@@ -4093,36 +4078,97 @@ class Ie {
       "[FFT Waves] (Turbulence, Jacobian)": "FFTWaveTurbulenceJacobian",
       "[FFT Waves] Spatial Domain (Dx, Dy, Dz, Dxdz)": "FFTWaveDx_Dy_Dz_Dxdz_Spatial",
       "[FFT Waves] Spatial Domain (Dydx, Dydz, Dxdx, Dzdz)": "FFTWaveDydx_Dydz_Dxdx_Dzdz_Spatial"
-    }).name("Render Output").listen().onFinishChange((g) => {
-      this.setOutput(g);
+    }).name("Render Output").listen().onFinishChange((h) => {
+      this.setOutput(h);
     });
     const r = this.options.renderOutputTransforms.get(
       this.options.outputTexture
-    ), i = t.add(r, "flip").name("Flip Image").listen(), n = t.add(r, "mipLevel").min(0).max(0).step(1).name("Mip Level").listen(), o = t.add(r, "arrayLayer").min(0).max(0).step(1).name("Array Layer").listen(), s = -1e4, l = 1e4;
-    t.add({ scale: 0 }, "scale").name("Uniform Scale").min(s).max(l).onChange((g) => {
-      this.setUniformColorScale(g);
+    ), a = t.add(r, "flip").name("Flip Image").listen(), i = t.add(r, "mipLevel").min(0).max(0).step(1).name("Mip Level").listen(), s = t.add(r, "arrayLayer").min(0).max(0).step(1).name("Array Layer").listen(), n = -1e4, u = 1e4;
+    t.add({ scale: 0 }, "scale").name("Uniform Scale").min(n).max(u).onChange((h) => {
+      this.setUniformColorScale(h);
     });
-    const _ = t.add(r.channelMasks, "r").name("R").listen(), m = t.add(r.colorGain, "r").name("").min(s).max(l).listen(), c = t.add(r.channelMasks, "g").name("G").listen(), v = t.add(r.colorGain, "g").name("").min(s).max(l).listen(), h = t.add(r.channelMasks, "b").name("B").listen(), y = t.add(r.colorGain, "b").name("").min(s).max(l).listen(), d = t.add(r, "swapBARG").name("Swap Blue-Alpha and Red-Green Pairs").listen();
+    const l = t.add(r.channelMasks, "r").name("R").listen(), _ = t.add(r.colorGain, "r").name("").min(n).max(u).listen(), c = t.add(r.channelMasks, "g").name("G").listen(), d = t.add(r.colorGain, "g").name("").min(n).max(u).listen(), v = t.add(r.channelMasks, "b").name("B").listen(), g = t.add(r.colorGain, "b").name("").min(n).max(u).listen(), m = t.add(r, "swapBARG").name("Swap Blue-Alpha and Red-Green Pairs").listen();
     this.controllers = {
-      flip: i,
+      flip: a,
       colorGain: {
-        r: m,
-        g: v,
-        b: y
+        r: _,
+        g: d,
+        b: g
       },
       channelMasks: {
-        r: _,
+        r: l,
         g: c,
-        b: h
+        b: v
       },
-      swapBARG: d,
-      mipLevel: n,
-      arrayLayer: o
+      swapBARG: m,
+      mipLevel: i,
+      arrayLayer: s
     };
   }
+  constructor() {
+    this.options = {
+      outputTexture: "Scene",
+      renderOutputTransforms: new Map(
+        Ee.map((e) => [e, new Le()])
+      )
+    }, Ce.forEach(
+      ({ id: e, ...t }) => {
+        const r = this.options.renderOutputTransforms.get(e);
+        this.options.renderOutputTransforms.set(e, {
+          ...r,
+          ...t
+        });
+      }
+    ), this.textureProperties = /* @__PURE__ */ new Map();
+  }
 }
-const X = "rgba16float", Be = "float", qe = "depth32float", Q = "rgba16float", Ne = "float";
-class ne {
+const Y = "rgba16float", Fe = "float", Oe = "depth32float", X = "rgba16float", Ie = "float";
+class ie {
+  colorWithSurfaceWorldDepthInAlpha;
+  colorWithSurfaceWorldDepthInAlphaView;
+  normalWithSurfaceFoamStrengthInAlpha;
+  normalWithSurfaceFoamStrengthInAlphaView;
+  // Depth used for graphics pipelines that render into the gbuffer
+  depth;
+  depthView;
+  get extent() {
+    return {
+      width: this.colorWithSurfaceWorldDepthInAlpha.width,
+      height: this.colorWithSurfaceWorldDepthInAlpha.height
+    };
+  }
+  get formats() {
+    return {
+      colorWithSurfaceWorldDepthInAlpha: this.colorWithSurfaceWorldDepthInAlpha.format,
+      normalWithSurfaceFoamStrengthInAlpha: this.normalWithSurfaceFoamStrengthInAlpha.format,
+      depth: this.depth.format
+    };
+  }
+  colorRenderables() {
+    return {
+      colorWithSurfaceWorldDepthInAlpha: new T(
+        this.colorWithSurfaceWorldDepthInAlpha
+      ),
+      normalWithSurfaceFoamStrengthInAlpha: new T(
+        this.normalWithSurfaceFoamStrengthInAlpha
+      )
+    };
+  }
+  /**
+   * Contains all bindings for reading the GBuffer in a shader.
+   * @see {@link GBuffer} for descriptions of the targets including formats.
+   */
+  readGroupLayout;
+  /**
+   * @see {@link readGroupLayout}
+   */
+  readGroup;
+  writeGroupLayout;
+  /**
+   * Contains all bindings for writing to the GBuffer in a shader.
+   * @see {@link GBuffer} for descriptions of the targets including formats.
+   */
+  writeGroup;
   /**
    * Instantiates all textures and bind groups for the GBuffer.
    * @param device - The WebGPU device to use.
@@ -4133,32 +4179,10 @@ class ne {
    *  resized to match the presentation viewport's dimensions.
    */
   constructor(e, t, r) {
-    a(this, "colorWithSurfaceWorldDepthInAlpha");
-    a(this, "colorWithSurfaceWorldDepthInAlphaView");
-    a(this, "normalWithSurfaceFoamStrengthInAlpha");
-    a(this, "normalWithSurfaceFoamStrengthInAlphaView");
-    // Depth used for graphics pipelines that render into the gbuffer
-    a(this, "depth");
-    a(this, "depthView");
-    /**
-     * Contains all bindings for reading the GBuffer in a shader.
-     * @see {@link GBuffer} for descriptions of the targets including formats.
-     */
-    a(this, "readGroupLayout");
-    /**
-     * @see {@link readGroupLayout}
-     */
-    a(this, "readGroup");
-    a(this, "writeGroupLayout");
-    /**
-     * Contains all bindings for writing to the GBuffer in a shader.
-     * @see {@link GBuffer} for descriptions of the targets including formats.
-     */
-    a(this, "writeGroup");
     this.colorWithSurfaceWorldDepthInAlpha = e.createTexture({
       size: t,
       dimension: "2d",
-      format: X,
+      format: Y,
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       label: "GBuffer ColorWithSurfaceWorldDepthInAlpha"
     }), this.colorWithSurfaceWorldDepthInAlphaView = this.colorWithSurfaceWorldDepthInAlpha.createView({
@@ -4166,22 +4190,22 @@ class ne {
     }), this.normalWithSurfaceFoamStrengthInAlpha = e.createTexture({
       size: t,
       dimension: "2d",
-      format: Q,
+      format: X,
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       label: "GBuffer Normal"
     }), this.normalWithSurfaceFoamStrengthInAlphaView = this.normalWithSurfaceFoamStrengthInAlpha.createView({
       label: "GBuffer Normal"
-    }), this.readGroupLayout = (r == null ? void 0 : r.readGroupLayout) ?? e.createBindGroupLayout({
+    }), this.readGroupLayout = r?.readGroupLayout ?? e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT,
-          texture: { sampleType: Be }
+          texture: { sampleType: Fe }
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT,
-          texture: { sampleType: Ne }
+          texture: { sampleType: Ie }
         }
       ],
       label: "GBuffer Read Group Layout"
@@ -4198,14 +4222,14 @@ class ne {
         }
       ],
       label: "GBuffer Read Group"
-    }), this.writeGroupLayout = (r == null ? void 0 : r.writeGroupLayout) ?? e.createBindGroupLayout({
+    }), this.writeGroupLayout = r?.writeGroupLayout ?? e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT,
           storageTexture: {
             access: "write-only",
-            format: X
+            format: Y
           }
         },
         {
@@ -4213,7 +4237,7 @@ class ne {
           visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT,
           storageTexture: {
             access: "write-only",
-            format: Q
+            format: X
           }
         }
       ],
@@ -4234,36 +4258,13 @@ class ne {
     }), this.depth = e.createTexture({
       size: t,
       dimension: "2d",
-      format: qe,
+      format: Oe,
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       label: "GBuffer Depth"
     }), this.depthView = this.depth.createView({ label: "GBuffer Depth" });
   }
-  get extent() {
-    return {
-      width: this.colorWithSurfaceWorldDepthInAlpha.width,
-      height: this.colorWithSurfaceWorldDepthInAlpha.height
-    };
-  }
-  get formats() {
-    return {
-      colorWithSurfaceWorldDepthInAlpha: this.colorWithSurfaceWorldDepthInAlpha.format,
-      normalWithSurfaceFoamStrengthInAlpha: this.normalWithSurfaceFoamStrengthInAlpha.format,
-      depth: this.depth.format
-    };
-  }
-  colorRenderables() {
-    return {
-      colorWithSurfaceWorldDepthInAlpha: new w(
-        this.colorWithSurfaceWorldDepthInAlpha
-      ),
-      normalWithSurfaceFoamStrengthInAlpha: new w(
-        this.normalWithSurfaceFoamStrengthInAlpha
-      )
-    };
-  }
 }
-const We = `const PI = 3.141592653589793;
+const Be = `const PI = 3.141592653589793;
 const METERS_PER_MM = 1000000;
 struct Atmosphere
 {
@@ -4600,7 +4601,7 @@ fn accumulateTurbulence(@builtin(global_invocation_id) global_id: vec3<u32>)
 		vec4<f32>(turbulence, jacobian, 0.0, 0.0)
 	);
 }
-`, ke = `const TWO_PI = 6.28318530717958647693;
+`, qe = `const TWO_PI = 6.28318530717958647693;
 struct DFFTParameters
 {
 	log_2_size: u32,
@@ -4752,22 +4753,59 @@ fn resetStepCounter(@builtin(global_invocation_id) global_id: vec3<u32>)
 	}
 }
 `;
-class Ve extends R {
-  constructor(t) {
-    super(t, 3, "DFFT Parameters UBO");
-    a(this, "data", {
-      log_2_size: 1,
-      size: 2,
-      b_inverse: !1
-    });
+class Ne extends A {
+  data = {
+    log_2_size: 1,
+    size: 2,
+    b_inverse: !1
+  };
+  constructor(e) {
+    super(e, 3, "DFFT Parameters UBO");
   }
   packed() {
-    const t = new ArrayBuffer(this.buffer.size), r = new DataView(t);
-    return r.setUint32(0, this.data.log_2_size, !0), r.setUint32(4, this.data.size, !0), r.setFloat32(8, this.data.b_inverse ? 1 : 0, !0), t;
+    const e = new ArrayBuffer(this.buffer.size), t = new DataView(e);
+    return t.setUint32(0, this.data.log_2_size, !0), t.setUint32(4, this.data.size, !0), t.setFloat32(8, this.data.b_inverse ? 1 : 0, !0), t;
   }
 }
-const K = 16, C = "rgba16float";
-class He {
+const Q = 16, L = "rgba16float";
+class We {
+  parametersUBO;
+  butterfliesBuffer;
+  gridSize3D;
+  /*
+   * We work with buffers instead of textures, since webgpu is restrictive on
+   * which storage textures can be read_write without extensions. A possible
+   * workaround is using two functions for the perform kernel, identical up to
+   * swapping source/destination buffer. This would save copying during IO, but
+   * might not be necessary.
+   */
+  complexBuffer0;
+  complexBuffer1;
+  stepCounterBuffer;
+  outputTexture;
+  /*
+   * @group(0) @binding(0) var<uniform> u_parameters: DFFTParameters;
+   * @group(0) @binding(1) var<storage, write> out_butterflies_log2n_by_n: array<TwoPointButterfly>;
+   */
+  butterfliesBindGroup;
+  computeButterfliesKernel;
+  /*
+   * @group(0) @binding(0) var<uniform> u_parameters: DFFTParameters;
+   * @group(0) @binding(1) var<storage, read> butterflies_log2n_by_n: array<TwoPointButterfly>;
+   * @group(0) @binding(2) var<storage, read_write> buffer_0: array<vec2<f32>>;
+   * @group(0) @binding(3) var<storage, read_write> buffer_1: array<vec2<f32>>;
+   * @group(0) @binding(4) var<uniform> step_counter: u32;
+   * @group(0) @binding(5) var<uniform, read_write> out_half_precision_buffer: array<vec4<f16>>;
+   */
+  performBindGroup;
+  performKernel;
+  performSwapEvenSignsAndCopyToHalfPrecisionOutputKernel;
+  /*
+   * @group(0) @binding(0) var<storage, read_write> out_step_counter: u32;
+   */
+  stepCounterBindGroup;
+  incrementStepCounterKernel;
+  resetStepCounterKernel;
   /**
    * Initializes all the pipelines and intermediate buffers for the
    * performance of the DFFT on a square grid of size 2^N, where N is
@@ -4777,65 +4815,28 @@ class He {
    *  size. Must be greater than 4.
    */
   constructor(e, t, r) {
-    a(this, "parametersUBO");
-    a(this, "butterfliesBuffer");
-    a(this, "gridSize3D");
-    /*
-     * We work with buffers instead of textures, since webgpu is restrictive on
-     * which storage textures can be read_write without extensions. A possible
-     * workaround is using two functions for the perform kernel, identical up to
-     * swapping source/destination buffer. This would save copying during IO, but
-     * might not be necessary.
-     */
-    a(this, "complexBuffer0");
-    a(this, "complexBuffer1");
-    a(this, "stepCounterBuffer");
-    a(this, "outputTexture");
-    /*
-     * @group(0) @binding(0) var<uniform> u_parameters: DFFTParameters;
-     * @group(0) @binding(1) var<storage, write> out_butterflies_log2n_by_n: array<TwoPointButterfly>;
-     */
-    a(this, "butterfliesBindGroup");
-    a(this, "computeButterfliesKernel");
-    /*
-     * @group(0) @binding(0) var<uniform> u_parameters: DFFTParameters;
-     * @group(0) @binding(1) var<storage, read> butterflies_log2n_by_n: array<TwoPointButterfly>;
-     * @group(0) @binding(2) var<storage, read_write> buffer_0: array<vec2<f32>>;
-     * @group(0) @binding(3) var<storage, read_write> buffer_1: array<vec2<f32>>;
-     * @group(0) @binding(4) var<uniform> step_counter: u32;
-     * @group(0) @binding(5) var<uniform, read_write> out_half_precision_buffer: array<vec4<f16>>;
-     */
-    a(this, "performBindGroup");
-    a(this, "performKernel");
-    a(this, "performSwapEvenSignsAndCopyToHalfPrecisionOutputKernel");
-    /*
-     * @group(0) @binding(0) var<storage, read_write> out_step_counter: u32;
-     */
-    a(this, "stepCounterBindGroup");
-    a(this, "incrementStepCounterKernel");
-    a(this, "resetStepCounterKernel");
     if (t < 5)
       throw new RangeError("gridSizeExponent must be greater than 4.");
     if (!Number.isFinite(r) || r < 1)
       throw new RangeError(`layerCount of ${r} is invalid`);
-    const i = Math.pow(2, t);
+    const a = Math.pow(2, t);
     this.gridSize3D = {
-      width: i,
-      height: i,
+      width: a,
+      height: a,
       depthOrArrayLayers: r
     };
-    const n = this.gridSize3D.width * this.gridSize3D.height * this.gridSize3D.depthOrArrayLayers;
-    this.parametersUBO = new Ve(e), this.parametersUBO.data.log_2_size = t, this.parametersUBO.data.size = i, this.parametersUBO.data.b_inverse = !1, this.parametersUBO.writeToGPU(e.queue);
-    const o = 16;
+    const i = this.gridSize3D.width * this.gridSize3D.height * this.gridSize3D.depthOrArrayLayers;
+    this.parametersUBO = new Ne(e), this.parametersUBO.data.log_2_size = t, this.parametersUBO.data.size = a, this.parametersUBO.data.b_inverse = !1, this.parametersUBO.writeToGPU(e.queue);
+    const s = 16;
     this.butterfliesBuffer = e.createBuffer({
       label: "DFFT Precompute Stage Steps",
-      size: t * i * o,
+      size: t * a * s,
       usage: GPUBufferUsage.STORAGE
     });
-    const s = e.createShaderModule({
+    const n = e.createShaderModule({
       label: "DFFT Precompute Stage",
-      code: ke
-    }), l = e.createBindGroupLayout({
+      code: qe
+    }), u = e.createBindGroupLayout({
       label: "DFFT Precompute Stage Group 0",
       entries: [
         {
@@ -4852,7 +4853,7 @@ class He {
     });
     this.butterfliesBindGroup = e.createBindGroup({
       label: "DFFT Precompute Stage Group 0",
-      layout: l,
+      layout: u,
       entries: [
         {
           binding: 0,
@@ -4866,19 +4867,19 @@ class He {
         }
       ]
     });
-    const _ = e.createPipelineLayout({
+    const l = e.createPipelineLayout({
       label: "DFFT Precompute Steps Kernel",
-      bindGroupLayouts: [l]
+      bindGroupLayouts: [u]
     });
     this.computeButterfliesKernel = e.createComputePipeline({
       label: "DFFT Precompute Stage",
       compute: {
-        module: s,
+        module: n,
         entryPoint: "precomputeDFFTInstructions"
       },
-      layout: _
+      layout: l
     });
-    const m = e.createBindGroupLayout({
+    const _ = e.createBindGroupLayout({
       label: "DFFT Perform Group 0",
       entries: [
         {
@@ -4910,7 +4911,7 @@ class He {
           binding: 6,
           visibility: GPUShaderStage.COMPUTE,
           storageTexture: {
-            format: C,
+            format: L,
             viewDimension: "2d-array",
             access: "write-only"
           }
@@ -4919,7 +4920,7 @@ class He {
     });
     this.complexBuffer0 = e.createBuffer({
       label: "DFFT Buffer 0",
-      size: n * K,
+      size: i * Q,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
     }), this.complexBuffer1 = e.createBuffer({
       label: "DFFT Buffer 1",
@@ -4932,15 +4933,15 @@ class He {
       size: c,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE | GPUBufferUsage.UNIFORM
     });
-    const v = new Uint32Array(1);
-    v[0] = 0, e.queue.writeBuffer(this.stepCounterBuffer, 0, v), this.outputTexture = e.createTexture({
+    const d = new Uint32Array(1);
+    d[0] = 0, e.queue.writeBuffer(this.stepCounterBuffer, 0, d), this.outputTexture = e.createTexture({
       label: "DFFT Output Texture",
-      format: C,
+      format: L,
       size: this.gridSize3D,
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC
     }), this.performBindGroup = e.createBindGroup({
       label: "DFFT Perform Group 0",
-      layout: m,
+      layout: _,
       entries: [
         {
           binding: 0,
@@ -4970,26 +4971,26 @@ class He {
         }
       ]
     });
-    const h = e.createPipelineLayout({
+    const v = e.createPipelineLayout({
       label: "DFFT Perform",
-      bindGroupLayouts: [m]
+      bindGroupLayouts: [_]
     });
     this.performKernel = e.createComputePipeline({
       label: "DFFT Perform DFFT Step",
       compute: {
-        module: s,
+        module: n,
         entryPoint: "performDFFTStep"
       },
-      layout: h
+      layout: v
     }), this.performSwapEvenSignsAndCopyToHalfPrecisionOutputKernel = e.createComputePipeline({
       label: "DFFT Perform Swap Even Signs",
       compute: {
-        module: s,
+        module: n,
         entryPoint: "performSwapEvenSignsAndCopyToHalfPrecisionOutput"
       },
-      layout: h
+      layout: v
     });
-    const y = e.createBindGroupLayout({
+    const g = e.createBindGroupLayout({
       label: "DFFT Step Counter Bind Group 0",
       entries: [
         {
@@ -5001,7 +5002,7 @@ class He {
     });
     this.stepCounterBindGroup = e.createBindGroup({
       label: "DFFT Step Counter Bind Group 0",
-      layout: y,
+      layout: g,
       entries: [
         {
           binding: 7,
@@ -5009,50 +5010,50 @@ class He {
         }
       ]
     });
-    const d = e.createPipelineLayout({
+    const m = e.createPipelineLayout({
       label: "DFFT Step Counter",
-      bindGroupLayouts: [y]
+      bindGroupLayouts: [g]
     });
     this.incrementStepCounterKernel = e.createComputePipeline({
       label: "DFFT Increment Step Counter Kernel",
-      layout: d,
+      layout: m,
       compute: {
-        module: s,
+        module: n,
         entryPoint: "incrementStepCounter"
       }
     }), this.resetStepCounterKernel = e.createComputePipeline({
       label: "DFFT Reset Step Counter Kernel",
-      layout: d,
+      layout: m,
       compute: {
-        module: s,
+        module: n,
         entryPoint: "resetStepCounter"
       }
     }), this.parametersUBO.data.b_inverse = !0, this.parametersUBO.writeToGPU(e.queue);
-    const g = e.createCommandEncoder({
+    const h = e.createCommandEncoder({
       label: "DFFT Precompute"
-    }), p = g.beginComputePass({
+    }), p = h.beginComputePass({
       label: "DFFT Precompute Steps"
     });
-    p.setPipeline(this.computeButterfliesKernel), p.setBindGroup(0, this.butterfliesBindGroup), p.dispatchWorkgroups(i / 2 / 2, 1), p.end(), e.queue.submit([g.finish()]);
+    p.setPipeline(this.computeButterfliesKernel), p.setBindGroup(0, this.butterfliesBindGroup), p.dispatchWorkgroups(a / 2 / 2, 1), p.end(), e.queue.submit([h.finish()]);
   }
   recordPerformOnBuffer0(e, t) {
-    const r = 2 * this.parametersUBO.data.log_2_size, i = e.beginComputePass({
+    const r = 2 * this.parametersUBO.data.log_2_size, a = e.beginComputePass({
       label: "DFFT Perform",
       timestampWrites: t
     });
-    for (let n = 0; n < r; n++)
-      n === 0 ? (i.setPipeline(this.resetStepCounterKernel), i.setBindGroup(0, this.stepCounterBindGroup), i.dispatchWorkgroups(1)) : (i.setPipeline(this.incrementStepCounterKernel), i.setBindGroup(0, this.stepCounterBindGroup), i.dispatchWorkgroups(1)), i.setPipeline(this.performKernel), i.setBindGroup(0, this.performBindGroup), i.dispatchWorkgroups(
+    for (let i = 0; i < r; i++)
+      i === 0 ? (a.setPipeline(this.resetStepCounterKernel), a.setBindGroup(0, this.stepCounterBindGroup), a.dispatchWorkgroups(1)) : (a.setPipeline(this.incrementStepCounterKernel), a.setBindGroup(0, this.stepCounterBindGroup), a.dispatchWorkgroups(1)), a.setPipeline(this.performKernel), a.setBindGroup(0, this.performBindGroup), a.dispatchWorkgroups(
         this.gridSize3D.width / 16,
         this.gridSize3D.height / 16,
         this.gridSize3D.depthOrArrayLayers / 1
       );
-    i.setPipeline(
+    a.setPipeline(
       this.performSwapEvenSignsAndCopyToHalfPrecisionOutputKernel
-    ), i.setBindGroup(0, this.performBindGroup), i.dispatchWorkgroups(
+    ), a.setBindGroup(0, this.performBindGroup), a.dispatchWorkgroups(
       this.gridSize3D.width / 16,
       this.gridSize3D.height / 16,
       this.gridSize3D.depthOrArrayLayers / 1
-    ), i.end();
+    ), a.end();
   }
   /**
    * Performs two parallel Discrete Fast Fourier Transforms on a 2D square
@@ -5079,40 +5080,40 @@ class He {
    * @param endTimestampWrites -
    * deprecated
    */
-  recordPerform(e, t, r, i, n, o) {
-    const s = "rgba32float";
-    if (r.format != s)
+  recordPerform(e, t, r, a, i, s) {
+    const n = "rgba32float";
+    if (r.format != n)
       throw RangeError(
-        `sourceTexture (format ${r.format}) must be ${s}`
+        `sourceTexture (format ${r.format}) must be ${n}`
       );
-    if (i.format != C)
+    if (a.format != L)
       throw RangeError(
-        `destinationArray (format ${r.format}) must be ${s}`
+        `destinationArray (format ${r.format}) must be ${n}`
       );
-    if (r.width != i.width || r.height != i.height || r.depthOrArrayLayers != i.depthOrArrayLayers)
+    if (r.width != a.width || r.height != a.height || r.depthOrArrayLayers != a.depthOrArrayLayers)
       throw RangeError(
-        `SourceTexture ${r.label} does not match destination texture ${i.label} extent`
+        `SourceTexture ${r.label} does not match destination texture ${a.label} extent`
       );
-    this.parametersUBO.data.b_inverse = n, this.parametersUBO.writeToGPU(e.queue), t.copyTextureToBuffer(
+    this.parametersUBO.data.b_inverse = i, this.parametersUBO.writeToGPU(e.queue), t.copyTextureToBuffer(
       { texture: r },
       {
         buffer: this.complexBuffer0,
-        bytesPerRow: this.gridSize3D.width * K,
+        bytesPerRow: this.gridSize3D.width * Q,
         rowsPerImage: this.gridSize3D.height
       },
       this.gridSize3D
-    ), this.recordPerformOnBuffer0(t, o), t.copyTextureToTexture(
+    ), this.recordPerformOnBuffer0(t, s), t.copyTextureToTexture(
       {
         texture: this.outputTexture
       },
       {
-        texture: i
+        texture: a
       },
       this.gridSize3D
     );
   }
 }
-const je = `@group(0) @binding(0) var out_next_mip_level: texture_storage_2d_array<rgba16float, write>;
+const ke = `@group(0) @binding(0) var out_next_mip_level: texture_storage_2d_array<rgba16float, write>;
 @group(0) @binding(1) var in_previous_mip_level: texture_2d_array<f32>;
 @compute @workgroup_size(16, 16, 1)
 fn fillMipMap(@builtin(global_invocation_id) global_id: vec3<u32>)
@@ -5138,64 +5139,19 @@ fn fillMipMapSmaller(@builtin(global_invocation_id) global_id: vec3<u32>)
 	);
 	textureStore(out_next_mip_level, global_id.xy, array_level, color);
 }
-`, G = "rgba16float";
-class Ye {
-  constructor(e) {
-    /*
-     * @group(0) @binding(0) var out_next_mip_level: texture_storage_2d<rgba16float, write>;
-     * @group(0) @binding(1) var in_previous_mip_level: texture_2d<f32>;
-     */
-    a(this, "fillMipMapTextureInOutLayout");
-    // private fillMipMapTextureBindGroups: GPUBindGroup[];
-    // private baseSize: { width: number; height: number };
-    // Workgroup size is (16,16,1)
-    a(this, "fillMipMapKernel");
-    // Workgroup size is (1,1,1)
-    a(this, "fillMipMapSmallerKernel");
-    this.fillMipMapTextureInOutLayout = e.createBindGroupLayout({
-      label: "MipMap Generation fillMipMap Texture In-Out",
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.COMPUTE,
-          storageTexture: {
-            format: G,
-            viewDimension: "2d-array"
-          }
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.COMPUTE,
-          texture: {
-            sampleType: "unfilterable-float",
-            viewDimension: "2d-array"
-          }
-        }
-      ]
-    });
-    const t = e.createShaderModule({
-      label: "sky-sea/mipmap.wgsl",
-      code: je
-    }), r = e.createPipelineLayout({
-      label: "MipMap Generation fillMipMap Kernel",
-      bindGroupLayouts: [this.fillMipMapTextureInOutLayout]
-    });
-    this.fillMipMapKernel = e.createComputePipeline({
-      label: "MipMap Generation fillMipMap Kernel",
-      layout: r,
-      compute: {
-        module: t,
-        entryPoint: "fillMipMap"
-      }
-    }), this.fillMipMapSmallerKernel = e.createComputePipeline({
-      label: "MipMap Generation fillMipMapSmaller Kernel",
-      layout: r,
-      compute: {
-        module: t,
-        entryPoint: "fillMipMapSmaller"
-      }
-    });
-  }
+`, C = "rgba16float";
+class Ve {
+  /*
+   * @group(0) @binding(0) var out_next_mip_level: texture_storage_2d<rgba16float, write>;
+   * @group(0) @binding(1) var in_previous_mip_level: texture_2d<f32>;
+   */
+  fillMipMapTextureInOutLayout;
+  // private fillMipMapTextureBindGroups: GPUBindGroup[];
+  // private baseSize: { width: number; height: number };
+  // Workgroup size is (16,16,1)
+  fillMipMapKernel;
+  // Workgroup size is (1,1,1)
+  fillMipMapSmallerKernel;
   /**
    * Validates a texture for generating mipmaps, and throw an error upon any
    * incompatibilities. This then generates the device bind groups that will
@@ -5207,11 +5163,11 @@ class Ye {
    * @returns The bindings can be used for generating mipmaps.
    */
   createBindGroups(e, t) {
-    if (t.format != G)
+    if (t.format != C)
       throw new RangeError(
         `Invalid source texture (label ${t.label}) for MipMap generation`,
         {
-          cause: `Source format is ${t.format} when expected ${G}`
+          cause: `Source format is ${t.format} when expected ${C}`
         }
       );
     if (t.dimension != "2d")
@@ -5245,17 +5201,17 @@ class Ye {
         ...new Array(
           Math.min(r, t.mipLevelCount) - 1
         ).keys()
-      ].map((i, n) => {
-        const o = n + 1, s = n;
+      ].map((a, i) => {
+        const s = i + 1, n = i;
         return e.createBindGroup({
-          label: `MipMap Generation for '${t.label}' IO Bind Group '${s} => ${o}'`,
+          label: `MipMap Generation for '${t.label}' IO Bind Group '${n} => ${s}'`,
           layout: this.fillMipMapTextureInOutLayout,
           entries: [
             {
               binding: 0,
               resource: t.createView({
                 dimension: "2d-array",
-                baseMipLevel: o,
+                baseMipLevel: s,
                 mipLevelCount: 1
               })
             },
@@ -5263,7 +5219,7 @@ class Ye {
               binding: 1,
               resource: t.createView({
                 dimension: "2d-array",
-                baseMipLevel: s,
+                baseMipLevel: n,
                 mipLevelCount: 1
               })
             }
@@ -5272,6 +5228,51 @@ class Ye {
       }),
       arrayLevelCount: t.depthOrArrayLayers
     };
+  }
+  constructor(e) {
+    this.fillMipMapTextureInOutLayout = e.createBindGroupLayout({
+      label: "MipMap Generation fillMipMap Texture In-Out",
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          storageTexture: {
+            format: C,
+            viewDimension: "2d-array"
+          }
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          texture: {
+            sampleType: "unfilterable-float",
+            viewDimension: "2d-array"
+          }
+        }
+      ]
+    });
+    const t = e.createShaderModule({
+      label: "sky-sea/mipmap.wgsl",
+      code: ke
+    }), r = e.createPipelineLayout({
+      label: "MipMap Generation fillMipMap Kernel",
+      bindGroupLayouts: [this.fillMipMapTextureInOutLayout]
+    });
+    this.fillMipMapKernel = e.createComputePipeline({
+      label: "MipMap Generation fillMipMap Kernel",
+      layout: r,
+      compute: {
+        module: t,
+        entryPoint: "fillMipMap"
+      }
+    }), this.fillMipMapSmallerKernel = e.createComputePipeline({
+      label: "MipMap Generation fillMipMapSmaller Kernel",
+      layout: r,
+      compute: {
+        module: t,
+        entryPoint: "fillMipMapSmaller"
+      }
+    });
   }
   /**
    * Record the commands that update mip-maps for a texture. This generates
@@ -5285,100 +5286,59 @@ class Ye {
    *  texture to access the mip levels of.
    */
   recordUpdateMipMaps(e, t) {
-    t.bindGroupsByMipLevel.forEach((r, i) => {
+    t.bindGroupsByMipLevel.forEach((r, a) => {
       e.setBindGroup(0, r);
-      const n = 1 << i, o = t.level0Size.width / n, s = t.level0Size.height / n;
-      o >= 16 && s >= 16 ? (e.setPipeline(this.fillMipMapKernel), e.dispatchWorkgroups(
-        o / 16,
+      const i = 1 << a, s = t.level0Size.width / i, n = t.level0Size.height / i;
+      s >= 16 && n >= 16 ? (e.setPipeline(this.fillMipMapKernel), e.dispatchWorkgroups(
         s / 16,
+        n / 16,
         t.arrayLevelCount
       )) : (e.setPipeline(this.fillMipMapSmallerKernel), e.dispatchWorkgroups(
-        o,
         s,
+        n,
         t.arrayLevelCount
       ));
     });
   }
 }
-const Xe = 9.8, Qe = 100, Ke = "rg32float", $ = "rg32float", $e = "rgba16float", Z = "rgba16float", F = "rgba32float", Ze = 4, J = 4;
-class Je extends R {
-  constructor(t) {
+const He = 9.8, je = 100, Ye = "rg32float", K = "rg32float", Xe = "rgba16float", $ = "rgba16float", G = "rgba32float", Qe = 4, Z = 4;
+class Ke extends A {
+  data = {
+    fourier_grid_size: 1,
+    gravity: He,
+    padding0: 0,
+    wave_period_seconds: je,
+    wind_speed_meters_per_second: 10,
+    wind_fetch_meters: 10 * 1e3,
+    wave_swell: 0.3,
+    padding1: 0,
+    cascades: new Array(4)
+  };
+  constructor(e) {
     super(
-      t,
-      8 + Ze * J,
+      e,
+      8 + Qe * Z,
       "Fourier Waves UBO"
     );
-    a(this, "data", {
-      fourier_grid_size: 1,
-      gravity: Xe,
-      padding0: 0,
-      wave_period_seconds: Qe,
-      wind_speed_meters_per_second: 10,
-      wind_fetch_meters: 10 * 1e3,
-      wave_swell: 0.3,
-      padding1: 0,
-      cascades: new Array(4)
-    });
   }
   packed() {
-    const t = new ArrayBuffer(this.buffer.size), r = new DataView(t), i = new Float32Array(t);
-    r.setUint32(0, this.data.fourier_grid_size, !0), r.setFloat32(4, this.data.gravity, !0), r.setFloat32(8, this.data.padding0, !0), r.setFloat32(12, this.data.wave_period_seconds, !0), r.setFloat32(16, this.data.wind_speed_meters_per_second, !0), r.setFloat32(20, this.data.wind_fetch_meters, !0), r.setFloat32(24, this.data.wave_swell, !0), r.setFloat32(28, this.data.padding1, !0);
-    const n = 8;
-    return this.data.cascades.forEach((o, s) => {
-      const l = n + s * J;
-      i.set(o.wave_number_min_max, l), i[l + 2] = o.wave_patch_extent_meters, i[l + 3] = 0;
+    const e = new ArrayBuffer(this.buffer.size), t = new DataView(e), r = new Float32Array(e);
+    t.setUint32(0, this.data.fourier_grid_size, !0), t.setFloat32(4, this.data.gravity, !0), t.setFloat32(8, this.data.padding0, !0), t.setFloat32(12, this.data.wave_period_seconds, !0), t.setFloat32(16, this.data.wind_speed_meters_per_second, !0), t.setFloat32(20, this.data.wind_fetch_meters, !0), t.setFloat32(24, this.data.wave_swell, !0), t.setFloat32(28, this.data.padding1, !0);
+    const a = 8;
+    return this.data.cascades.forEach((i, s) => {
+      const n = a + s * Z;
+      r.set(i.wave_number_min_max, n), r[n + 2] = i.wave_patch_extent_meters, r[n + 3] = 0;
     }), t;
   }
 }
-function et() {
-  const u = Math.random(), e = Math.random(), t = Math.sqrt(-2 * Math.log(u)), r = 2 * Math.PI * e, i = t * Math.cos(r), n = t * Math.sin(r);
-  return [i, n];
+function $e() {
+  const o = Math.random(), e = Math.random(), t = Math.sqrt(-2 * Math.log(o)), r = 2 * Math.PI * e, a = t * Math.cos(r), i = t * Math.sin(r);
+  return [a, i];
 }
-class tt {
-  constructor(e, t, r) {
-    a(this, "Dx_Dy_Dz_Dxdz_Spatial");
-    a(this, "Dydx_Dydz_Dxdx_Dzdz_Spatial");
-    a(this, "turbulenceJacobian");
-    /**
-     * Contains `(Dx,Dy,Dz,d/dz Dx)` packed in RGBA, where `(Dx,Dy,Dz)` is the
-     * displacement of the ocean surface at the sampled point and `d/di` is the
-     * partial derivative with respect to coordinate `i`. The dimension is
-     * `2d-array`, and each array layer represents one cascade.
-     * @readonly
-     */
-    a(this, "Dx_Dy_Dz_Dxdz_SpatialAllMips");
-    /**
-     * Contains `(d/dx Dy,d/dz Dy,d/dx Dx,d/dz Dz)` packed in RGBA, where
-     * `(Dx,Dy,Dz)` is the displacement of the ocean surface at the sampled
-     * point and `d/di` is the partial derivative with respect to coordinate
-     * `i`. The dimension is `2d-array`, and each array layer represents one
-     * cascade.
-     */
-    a(this, "Dydx_Dydz_Dxdx_Dzdz_SpatialAllMips");
-    /**
-     * Contains (turbulence, jacobian, 0, 0) packed in RGBA. The jacobian is a
-     * value derived from the surface derivatives. Turbulence is an arbitrary
-     * derived value on the interval [0,1], where 1 represents a calm surface
-     * and 0 represents a turbulent surface. Turbulence is accumulated between
-     * frames and is a good source for how much foam to render at a position.
-     * The elements of the javascript array are identically defined, but rotated
-     * each frame.
-     * @see {@link FFTWaveSpectrumResources.turbulenceMapIndex} for
-     * which index is active.
-     */
-    a(this, "turbulenceJacobianOneMip");
-    e.mipLevelCount != t.mipLevelCount && console.warn(
-      `FFT Wave Displacement maps do not have identical mip levels. ${e.mipLevelCount} vs ${t.mipLevelCount}`
-    ), this.Dx_Dy_Dz_Dxdz_Spatial = e, this.Dydx_Dydz_Dxdx_Dzdz_Spatial = t, this.turbulenceJacobian = r, this.Dx_Dy_Dz_Dxdz_SpatialAllMips = this.Dx_Dy_Dz_Dxdz_Spatial.createView({
-      label: `FFT Wave DisplacementMaps for ${this.Dx_Dy_Dz_Dxdz_Spatial.label}`
-    }), this.Dydx_Dydz_Dxdx_Dzdz_SpatialAllMips = this.Dydx_Dydz_Dxdx_Dzdz_Spatial.createView({
-      label: `FFT Wave DisplacementMaps for ${this.Dydx_Dydz_Dxdx_Dzdz_Spatial.label}`
-    }), this.turbulenceJacobianOneMip = this.turbulenceJacobian.map(
-      (i, n) => i.createView({
-        label: `FFT Wave DisplacementMaps for ${this.turbulenceJacobian[n].label} index ${n}`
-      })
-    );
-  }
+class Ze {
+  Dx_Dy_Dz_Dxdz_Spatial;
+  Dydx_Dydz_Dxdx_Dzdz_Spatial;
+  turbulenceJacobian;
   /**
    * The number of mip levels for every map in this collection.
    * @readonly
@@ -5386,8 +5346,216 @@ class tt {
   get mipLevelCount() {
     return this.Dx_Dy_Dz_Dxdz_Spatial.mipLevelCount;
   }
+  /**
+   * Contains `(Dx,Dy,Dz,d/dz Dx)` packed in RGBA, where `(Dx,Dy,Dz)` is the
+   * displacement of the ocean surface at the sampled point and `d/di` is the
+   * partial derivative with respect to coordinate `i`. The dimension is
+   * `2d-array`, and each array layer represents one cascade.
+   * @readonly
+   */
+  Dx_Dy_Dz_Dxdz_SpatialAllMips;
+  /**
+   * Contains `(d/dx Dy,d/dz Dy,d/dx Dx,d/dz Dz)` packed in RGBA, where
+   * `(Dx,Dy,Dz)` is the displacement of the ocean surface at the sampled
+   * point and `d/di` is the partial derivative with respect to coordinate
+   * `i`. The dimension is `2d-array`, and each array layer represents one
+   * cascade.
+   */
+  Dydx_Dydz_Dxdx_Dzdz_SpatialAllMips;
+  /**
+   * Contains (turbulence, jacobian, 0, 0) packed in RGBA. The jacobian is a
+   * value derived from the surface derivatives. Turbulence is an arbitrary
+   * derived value on the interval [0,1], where 1 represents a calm surface
+   * and 0 represents a turbulent surface. Turbulence is accumulated between
+   * frames and is a good source for how much foam to render at a position.
+   * The elements of the javascript array are identically defined, but rotated
+   * each frame.
+   * @see {@link FFTWaveSpectrumResources.turbulenceMapIndex} for
+   * which index is active.
+   */
+  turbulenceJacobianOneMip;
+  constructor(e, t, r) {
+    e.mipLevelCount != t.mipLevelCount && console.warn(
+      `FFT Wave Displacement maps do not have identical mip levels. ${e.mipLevelCount} vs ${t.mipLevelCount}`
+    ), this.Dx_Dy_Dz_Dxdz_Spatial = e, this.Dydx_Dydz_Dxdx_Dzdz_Spatial = t, this.turbulenceJacobian = r, this.Dx_Dy_Dz_Dxdz_SpatialAllMips = this.Dx_Dy_Dz_Dxdz_Spatial.createView({
+      label: `FFT Wave DisplacementMaps for ${this.Dx_Dy_Dz_Dxdz_Spatial.label}`
+    }), this.Dydx_Dydz_Dxdx_Dzdz_SpatialAllMips = this.Dydx_Dydz_Dxdx_Dzdz_Spatial.createView({
+      label: `FFT Wave DisplacementMaps for ${this.Dydx_Dydz_Dxdx_Dzdz_Spatial.label}`
+    }), this.turbulenceJacobianOneMip = this.turbulenceJacobian.map(
+      (a, i) => a.createView({
+        label: `FFT Wave DisplacementMaps for ${this.turbulenceJacobian[i].label} index ${i}`
+      })
+    );
+  }
 }
-class rt {
+class Je {
+  /*
+   * We produce a discrete spectrum of waves, for which the various values
+   * will be stored in square textures. This dimension determines the diameter
+   * of that square, so the total number of frequencies we produce. Our
+   * spectrum is discrete so we can apply an IDFT algorithm to determine the
+   * displacement when rendering the sums of these waves. (x,z) position in
+   * this grid uniquely identifies a wave with wave vector k = (k_x,k_z)
+   */
+  gridSize;
+  cascadeCount;
+  /**
+   * The extent used by every texture parameterized by the fourier grid.
+   */
+  get textureGridSize() {
+    return {
+      width: this.gridSize,
+      height: this.gridSize,
+      depthOrArrayLayers: this.cascadeCount
+    };
+  }
+  initialAmplitudeKernel;
+  timeDependentAmplitudeKernel;
+  accumulateTurbulenceKernel;
+  dfftResources;
+  mipMapGenerator;
+  cascades;
+  /*
+   * Final output maps that store the results of the FFT.
+   * Is mipmapped and has array layers, one layer for each cascade.
+   */
+  Dx_Dy_Dz_Dxdz_SpatialArray;
+  Dydx_Dydz_Dxdx_Dzdz_SpatialArray;
+  /*
+   * Array layer N contains the jacobian computed from layers 1 through N.
+   * Each layer is a cascade, so it is done this way in case we only sample the lower cascades.
+   * We do not want the turbulence from higher cascades to affect the lower cascades.
+   *
+   * We need two storage textures since we cannot natively have read_write storage. They are swapped out each frame.
+   */
+  turbulenceJacobianArrays;
+  turbulenceJacobianGroup1;
+  turbulenceJacobianIndex = 0;
+  /**
+   * Gets the index of the turbulence-jacobian map that will be (or was)
+   * written into this frame.
+   * @readonly
+   */
+  get turbulenceMapIndex() {
+    return this.turbulenceJacobianIndex;
+  }
+  Dx_Dy_Dz_Dxdz_SpatialArray_MipMapBindings;
+  Dydx_Dydz_Dxdx_Dzdz_SpatialArray_MipMapBindings;
+  waveSettings;
+  createCascades(e, t, r, a) {
+    const i = this.textureGridSize, s = i.width * i.height * i.depthOrArrayLayers, n = e.createTexture({
+      label: "FFT Wave Gaussian Noise",
+      format: Ye,
+      size: i,
+      usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+    }), u = 2, l = 8, _ = new Float32Array(
+      s * u
+    );
+    for (let f = 0; f < _.length; f++)
+      _[f] = $e()[0];
+    e.queue.writeTexture(
+      { texture: n },
+      _,
+      {
+        bytesPerRow: l * i.width,
+        rowsPerImage: i.height
+      },
+      i
+    );
+    const c = new Ke(e);
+    c.data.fourier_grid_size = r, a.forEach((f, w) => {
+      c.data.cascades[w] = {
+        wave_number_min_max: S.create(...f.waveNumberMinMax),
+        wave_patch_extent_meters: f.patchExtentMeters,
+        padding0: 0
+      };
+    }), c.writeToGPU(e.queue);
+    const d = e.createTexture({
+      label: "FFT Wave Fourier Amplitude h_0(k)",
+      format: K,
+      size: i,
+      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+    }), v = e.createBindGroup({
+      label: "FFT Wave Initial Amplitude h_0(k) Group 0",
+      layout: this.initialAmplitudeKernel.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 0,
+          resource: d.createView()
+        },
+        {
+          binding: 1,
+          resource: n.createView()
+        }
+      ]
+    }), g = e.createBindGroup({
+      label: "FFT Wave Initial Amplitude h_0(k) Group 1",
+      layout: this.initialAmplitudeKernel.getBindGroupLayout(1),
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: t.buffer }
+        },
+        {
+          binding: 1,
+          resource: { buffer: c.buffer }
+        }
+      ]
+    }), m = e.createTexture(
+      {
+        label: "FFT Wave Packed (Dx + iDy, Dz + iDxdz) Amplitude",
+        format: G,
+        size: i,
+        usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
+      }
+    ), h = e.createTexture({
+      label: "FFT Wave Packed (Dydx + iDydz, Dxdx + iDzdz) Amplitude",
+      format: m.format,
+      size: i,
+      usage: m.usage
+    }), p = e.createBindGroup({
+      label: "FFT Wave Time Dependent Fourier Amplitude h(k,t) Group 0",
+      layout: this.timeDependentAmplitudeKernel.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 2,
+          resource: m.createView()
+        },
+        {
+          binding: 3,
+          resource: h.createView()
+        },
+        {
+          binding: 4,
+          resource: d.createView()
+        }
+      ]
+    }), x = e.createBindGroup({
+      label: "FFT Wave Time Dependent Fourier Amplitude h(k,t) Group 1",
+      layout: this.timeDependentAmplitudeKernel.getBindGroupLayout(1),
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: t.buffer }
+        },
+        {
+          binding: 1,
+          resource: { buffer: c.buffer }
+        }
+      ]
+    });
+    return {
+      gaussianNoiseArray: n,
+      initialAmplitudeArray: d,
+      waveSettings: c,
+      initialAmplitudeGroup0: v,
+      initialAmplitudeGroup1: g,
+      packed_Dx_plus_iDy_Dz_iDxdz_AmplitudeArray: m,
+      packed_Dydx_plus_iDydz_Dxdx_plus_iDzdz_AmplitudeArray: h,
+      timeDependentAmplitudeGroup0: p,
+      timeDependentAmplitudeGroup1: x
+    };
+  }
   /**
    * Instantiates all the cascades and resources.
    * @param device - The WebGPU device to use.
@@ -5395,50 +5563,15 @@ class rt {
    * 	pipelines.
    */
   constructor(e, t, r) {
-    /*
-     * We produce a discrete spectrum of waves, for which the various values
-     * will be stored in square textures. This dimension determines the diameter
-     * of that square, so the total number of frequencies we produce. Our
-     * spectrum is discrete so we can apply an IDFT algorithm to determine the
-     * displacement when rendering the sums of these waves. (x,z) position in
-     * this grid uniquely identifies a wave with wave vector k = (k_x,k_z)
-     */
-    a(this, "gridSize");
-    a(this, "cascadeCount");
-    a(this, "initialAmplitudeKernel");
-    a(this, "timeDependentAmplitudeKernel");
-    a(this, "accumulateTurbulenceKernel");
-    a(this, "dfftResources");
-    a(this, "mipMapGenerator");
-    a(this, "cascades");
-    /*
-     * Final output maps that store the results of the FFT.
-     * Is mipmapped and has array layers, one layer for each cascade.
-     */
-    a(this, "Dx_Dy_Dz_Dxdz_SpatialArray");
-    a(this, "Dydx_Dydz_Dxdx_Dzdz_SpatialArray");
-    /*
-     * Array layer N contains the jacobian computed from layers 1 through N.
-     * Each layer is a cascade, so it is done this way in case we only sample the lower cascades.
-     * We do not want the turbulence from higher cascades to affect the lower cascades.
-     *
-     * We need two storage textures since we cannot natively have read_write storage. They are swapped out each frame.
-     */
-    a(this, "turbulenceJacobianArrays");
-    a(this, "turbulenceJacobianGroup1");
-    a(this, "turbulenceJacobianIndex", 0);
-    a(this, "Dx_Dy_Dz_Dxdz_SpatialArray_MipMapBindings");
-    a(this, "Dydx_Dydz_Dxdx_Dzdz_SpatialArray_MipMapBindings");
-    a(this, "waveSettings");
     this.gridSize = Math.pow(2, r);
-    const i = e.createBindGroupLayout({
+    const a = e.createBindGroupLayout({
       label: "FFT Wave Initial Amplitude h_0(k) Group 0",
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
           storageTexture: {
-            format: $,
+            format: K,
             viewDimension: "2d-array",
             access: "write-only"
           }
@@ -5452,7 +5585,7 @@ class rt {
           }
         }
       ]
-    }), n = e.createBindGroupLayout({
+    }), i = e.createBindGroupLayout({
       label: "FFT Wave Initial Amplitude h_0(k) Group 1",
       entries: [
         {
@@ -5470,25 +5603,25 @@ class rt {
           }
         }
       ]
-    }), o = e.createShaderModule({
+    }), s = e.createShaderModule({
       label: "FFT Wave",
-      code: We
+      code: Be
     });
     this.initialAmplitudeKernel = e.createComputePipeline({
       label: "FFT Wave Initial Amplitude h_0(k)",
       layout: e.createPipelineLayout({
         label: "FFT Wave Initial Amplitude h_0(k)",
         bindGroupLayouts: [
-          i,
-          n
+          a,
+          i
         ]
       }),
       compute: {
-        module: o,
+        module: s,
         entryPoint: "computeInitialAmplitude"
       }
-    }), this.mipMapGenerator = new Ye(e);
-    const s = e.createBindGroupLayout(
+    }), this.mipMapGenerator = new Ve(e);
+    const n = e.createBindGroupLayout(
       {
         label: "FFT Wave Time Dependent Fourier Amplitude h(k,t) Group 0",
         entries: [
@@ -5496,7 +5629,7 @@ class rt {
             binding: 2,
             visibility: GPUShaderStage.COMPUTE,
             storageTexture: {
-              format: F,
+              format: G,
               viewDimension: "2d-array",
               access: "write-only"
             }
@@ -5505,7 +5638,7 @@ class rt {
             binding: 3,
             visibility: GPUShaderStage.COMPUTE,
             storageTexture: {
-              format: F,
+              format: G,
               viewDimension: "2d-array",
               access: "write-only"
             }
@@ -5520,7 +5653,7 @@ class rt {
           }
         ]
       }
-    ), l = e.createBindGroupLayout(
+    ), u = e.createBindGroupLayout(
       {
         label: "FFT Wave Time Dependent Fourier Amplitude h(k,t) Group 1",
         entries: [
@@ -5542,16 +5675,16 @@ class rt {
       layout: e.createPipelineLayout({
         label: "FFT Wave Time Dependent Fourier Amplitude h(k,t)",
         bindGroupLayouts: [
-          s,
-          l
+          n,
+          u
         ]
       }),
       compute: {
-        module: o,
+        module: s,
         entryPoint: "computeTimeDependentAmplitude"
       }
     });
-    const _ = e.createBindGroupLayout({
+    const l = e.createBindGroupLayout({
       label: "FFT Wave Accumulate Turbulence Group 0",
       entries: [
         {
@@ -5559,7 +5692,7 @@ class rt {
           visibility: GPUShaderStage.COMPUTE,
           storageTexture: {
             viewDimension: "2d-array",
-            format: Z
+            format: $
           }
         },
         {
@@ -5587,7 +5720,7 @@ class rt {
           }
         }
       ]
-    }), m = e.createBindGroupLayout({
+    }), _ = e.createBindGroupLayout({
       label: "FFT Wave Accumulate Turbulence Group 1",
       entries: [
         {
@@ -5602,39 +5735,39 @@ class rt {
       layout: e.createPipelineLayout({
         label: "FFT Wave Accumulate Turbulence",
         bindGroupLayouts: [
-          _,
-          m
+          l,
+          _
         ]
       }),
       compute: {
-        module: o,
+        module: s,
         entryPoint: "accumulateTurbulence"
       }
     });
-    function c(b) {
-      const f = 2 * b;
+    function c(x) {
+      const f = 2 * x;
       return 2 * Math.PI / f;
     }
-    const v = [200, 50, 10], h = [
+    const d = [200, 50, 10], v = [
       1e-3,
-      ...v.map(
-        (b) => c(b / this.gridSize)
+      ...d.map(
+        (x) => c(x / this.gridSize)
       ),
       1e3
-    ], y = v.map((b, f) => ({
-      patchExtentMeters: b,
+    ], g = d.map((x, f) => ({
+      patchExtentMeters: x,
       waveNumberMinMax: [
-        h[f],
-        h[f + 1]
+        v[f],
+        v[f + 1]
       ]
     }));
-    this.cascadeCount = y.length, this.dfftResources = new He(
+    this.cascadeCount = g.length, this.dfftResources = new We(
       e,
       r,
       this.cascadeCount
     ), this.Dx_Dy_Dz_Dxdz_SpatialArray = e.createTexture({
       label: "FFT Wave Final Displacement Array",
-      format: $e,
+      format: Xe,
       dimension: "2d",
       size: this.textureGridSize,
       mipLevelCount: r,
@@ -5649,14 +5782,14 @@ class rt {
       e,
       t,
       this.gridSize,
-      y
+      g
     );
-    const d = 15360, g = this.textureGridSize.width * this.textureGridSize.height * this.textureGridSize.depthOrArrayLayers, p = new Uint16Array(
-      g * 4
-    ).fill(d);
-    this.turbulenceJacobianArrays = [0, 0].map((b, f) => e.createTexture({
+    const m = 15360, h = this.textureGridSize.width * this.textureGridSize.height * this.textureGridSize.depthOrArrayLayers, p = new Uint16Array(
+      h * 4
+    ).fill(m);
+    this.turbulenceJacobianArrays = [0, 0].map((x, f) => e.createTexture({
       label: `FFT Wave (Turbulence,Jacobian) Array ${f}`,
-      format: Z,
+      format: $,
       size: this.textureGridSize,
       mipLevelCount: r,
       usage: GPUTextureUsage.STORAGE_BINDING | // write to
@@ -5665,7 +5798,7 @@ class rt {
       GPUTextureUsage.COPY_DST
       // initialize/wipe turbulence to 1.0
     })).reduce(
-      (b, f, M, P) => {
+      (x, f, w, D) => {
         e.queue.writeTexture(
           { texture: f },
           p,
@@ -5675,7 +5808,7 @@ class rt {
           },
           this.textureGridSize
         );
-        const U = e.createBindGroup({
+        const R = e.createBindGroup({
           layout: this.accumulateTurbulenceKernel.getBindGroupLayout(
             0
           ),
@@ -5688,7 +5821,7 @@ class rt {
             },
             {
               binding: 6,
-              resource: P[(M + 1) % P.length].createView({})
+              resource: D[(w + 1) % D.length].createView({})
             },
             {
               binding: 7,
@@ -5704,9 +5837,9 @@ class rt {
             }
           ]
         });
-        return b.concat({
+        return x.concat({
           textureArray: f,
-          bindGroup: U,
+          bindGroup: R,
           mipMapBindings: this.mipMapGenerator.createBindGroups(
             e,
             f
@@ -5737,162 +5870,30 @@ class rt {
     };
   }
   /**
-   * The extent used by every texture parameterized by the fourier grid.
-   */
-  get textureGridSize() {
-    return {
-      width: this.gridSize,
-      height: this.gridSize,
-      depthOrArrayLayers: this.cascadeCount
-    };
-  }
-  /**
-   * Gets the index of the turbulence-jacobian map that will be (or was)
-   * written into this frame.
-   * @readonly
-   */
-  get turbulenceMapIndex() {
-    return this.turbulenceJacobianIndex;
-  }
-  createCascades(e, t, r, i) {
-    const n = this.textureGridSize, o = n.width * n.height * n.depthOrArrayLayers, s = e.createTexture({
-      label: "FFT Wave Gaussian Noise",
-      format: Ke,
-      size: n,
-      usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
-    }), l = 2, _ = 8, m = new Float32Array(
-      o * l
-    );
-    for (let f = 0; f < m.length; f++)
-      m[f] = et()[0];
-    e.queue.writeTexture(
-      { texture: s },
-      m,
-      {
-        bytesPerRow: _ * n.width,
-        rowsPerImage: n.height
-      },
-      n
-    );
-    const c = new Je(e);
-    c.data.fourier_grid_size = r, i.forEach((f, M) => {
-      c.data.cascades[M] = {
-        wave_number_min_max: T.create(...f.waveNumberMinMax),
-        wave_patch_extent_meters: f.patchExtentMeters,
-        padding0: 0
-      };
-    }), c.writeToGPU(e.queue);
-    const v = e.createTexture({
-      label: "FFT Wave Fourier Amplitude h_0(k)",
-      format: $,
-      size: n,
-      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
-    }), h = e.createBindGroup({
-      label: "FFT Wave Initial Amplitude h_0(k) Group 0",
-      layout: this.initialAmplitudeKernel.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: v.createView()
-        },
-        {
-          binding: 1,
-          resource: s.createView()
-        }
-      ]
-    }), y = e.createBindGroup({
-      label: "FFT Wave Initial Amplitude h_0(k) Group 1",
-      layout: this.initialAmplitudeKernel.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: t.buffer }
-        },
-        {
-          binding: 1,
-          resource: { buffer: c.buffer }
-        }
-      ]
-    }), d = e.createTexture(
-      {
-        label: "FFT Wave Packed (Dx + iDy, Dz + iDxdz) Amplitude",
-        format: F,
-        size: n,
-        usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
-      }
-    ), g = e.createTexture({
-      label: "FFT Wave Packed (Dydx + iDydz, Dxdx + iDzdz) Amplitude",
-      format: d.format,
-      size: n,
-      usage: d.usage
-    }), p = e.createBindGroup({
-      label: "FFT Wave Time Dependent Fourier Amplitude h(k,t) Group 0",
-      layout: this.timeDependentAmplitudeKernel.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 2,
-          resource: d.createView()
-        },
-        {
-          binding: 3,
-          resource: g.createView()
-        },
-        {
-          binding: 4,
-          resource: v.createView()
-        }
-      ]
-    }), b = e.createBindGroup({
-      label: "FFT Wave Time Dependent Fourier Amplitude h(k,t) Group 1",
-      layout: this.timeDependentAmplitudeKernel.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: t.buffer }
-        },
-        {
-          binding: 1,
-          resource: { buffer: c.buffer }
-        }
-      ]
-    });
-    return {
-      gaussianNoiseArray: s,
-      initialAmplitudeArray: v,
-      waveSettings: c,
-      initialAmplitudeGroup0: h,
-      initialAmplitudeGroup1: y,
-      packed_Dx_plus_iDy_Dz_iDxdz_AmplitudeArray: d,
-      packed_Dydx_plus_iDydz_Dxdx_plus_iDzdz_AmplitudeArray: g,
-      timeDependentAmplitudeGroup0: p,
-      timeDependentAmplitudeGroup1: b
-    };
-  }
-  /**
    * @returns The views into all the FFT Wave textures, for read-only display
    *  purposes.
    */
   views() {
     return {
-      gaussianNoise: new w(
+      gaussianNoise: new T(
         this.cascades.gaussianNoiseArray
       ),
-      initialAmplitude: new w(
+      initialAmplitude: new T(
         this.cascades.initialAmplitudeArray
       ),
-      packed_Dx_plus_iDy_Dz_iDxdz_Amplitude: new w(
+      packed_Dx_plus_iDy_Dz_iDxdz_Amplitude: new T(
         this.cascades.packed_Dx_plus_iDy_Dz_iDxdz_AmplitudeArray
       ),
-      packed_Dydx_plus_iDydz_Dxdx_plus_iDzdz_Amplitude: new w(
+      packed_Dydx_plus_iDydz_Dxdx_plus_iDzdz_Amplitude: new T(
         this.cascades.packed_Dydx_plus_iDydz_Dxdx_plus_iDzdz_AmplitudeArray
       ),
-      turbulenceJacobian: new w(
+      turbulenceJacobian: new T(
         this.turbulenceJacobianArrays[0].textureArray
       ),
-      Dx_Dy_Dz_Dxdz_Spatial: new w(
+      Dx_Dy_Dz_Dxdz_Spatial: new T(
         this.Dx_Dy_Dz_Dxdz_SpatialArray
       ),
-      Dydx_Dydz_Dxdx_Dzdz_Spatial: new w(
+      Dydx_Dydz_Dxdx_Dzdz_Spatial: new T(
         this.Dydx_Dydz_Dxdx_Dzdz_SpatialArray
       )
     };
@@ -5902,7 +5903,7 @@ class rt {
    *  ocean spectrum.
    */
   displacementMaps() {
-    return new tt(
+    return new Ze(
       this.Dx_Dy_Dz_Dxdz_SpatialArray,
       this.Dydx_Dydz_Dxdx_Dzdz_SpatialArray,
       this.turbulenceJacobianArrays.map((e) => e.textureArray)
@@ -5918,41 +5919,41 @@ class rt {
    * @param timestampInterval - The interval to record timing information
    *  into.
    */
-  record(e, t, r, i) {
+  record(e, t, r, a) {
     if (r.gravity != this.waveSettings.gravity || r.waveSwell != this.waveSettings.waveSwell || r.windSpeedMetersPerSeconds != this.waveSettings.windSpeedMetersPerSeconds || r.windFetchMeters != this.waveSettings.windFetchMeters) {
       this.waveSettings = structuredClone(r);
-      const l = t.beginComputePass({
+      const u = t.beginComputePass({
         label: "FFT Wave Initial Amplitude"
-      }), _ = this.cascades.waveSettings;
-      _.data.wave_swell = this.waveSettings.waveSwell, _.data.wind_fetch_meters = this.waveSettings.windFetchMeters, _.data.wind_speed_meters_per_second = this.waveSettings.windSpeedMetersPerSeconds, _.data.gravity = this.waveSettings.gravity, _.writeToGPU(e.queue), l.setPipeline(this.initialAmplitudeKernel), l.setBindGroup(0, this.cascades.initialAmplitudeGroup0), l.setBindGroup(1, this.cascades.initialAmplitudeGroup1);
-      const m = this.textureGridSize;
-      l.dispatchWorkgroups(
-        m.width / 16,
-        m.height / 16,
-        m.depthOrArrayLayers / 1
-      ), l.end();
-    }
-    {
-      const l = t.beginComputePass({
-        label: "FFT Wave Fourier Amplitude Realization",
-        timestampWrites: i !== void 0 ? {
-          querySet: i.querySet,
-          beginningOfPassWriteIndex: i.beginWriteIndex
-        } : void 0
-      });
-      l.setPipeline(this.timeDependentAmplitudeKernel), l.setBindGroup(
-        0,
-        this.cascades.timeDependentAmplitudeGroup0
-      ), l.setBindGroup(
-        1,
-        this.cascades.timeDependentAmplitudeGroup1
-      );
+      }), l = this.cascades.waveSettings;
+      l.data.wave_swell = this.waveSettings.waveSwell, l.data.wind_fetch_meters = this.waveSettings.windFetchMeters, l.data.wind_speed_meters_per_second = this.waveSettings.windSpeedMetersPerSeconds, l.data.gravity = this.waveSettings.gravity, l.writeToGPU(e.queue), u.setPipeline(this.initialAmplitudeKernel), u.setBindGroup(0, this.cascades.initialAmplitudeGroup0), u.setBindGroup(1, this.cascades.initialAmplitudeGroup1);
       const _ = this.textureGridSize;
-      l.dispatchWorkgroups(
+      u.dispatchWorkgroups(
         _.width / 16,
         _.height / 16,
         _.depthOrArrayLayers / 1
-      ), l.end();
+      ), u.end();
+    }
+    {
+      const u = t.beginComputePass({
+        label: "FFT Wave Fourier Amplitude Realization",
+        timestampWrites: a !== void 0 ? {
+          querySet: a.querySet,
+          beginningOfPassWriteIndex: a.beginWriteIndex
+        } : void 0
+      });
+      u.setPipeline(this.timeDependentAmplitudeKernel), u.setBindGroup(
+        0,
+        this.cascades.timeDependentAmplitudeGroup0
+      ), u.setBindGroup(
+        1,
+        this.cascades.timeDependentAmplitudeGroup1
+      );
+      const l = this.textureGridSize;
+      u.dispatchWorkgroups(
+        l.width / 16,
+        l.height / 16,
+        l.depthOrArrayLayers / 1
+      ), u.end();
     }
     this.dfftResources.recordPerform(
       e,
@@ -5969,37 +5970,37 @@ class rt {
       !0,
       void 0
     );
-    const o = t.beginComputePass({
+    const s = t.beginComputePass({
       label: "Turbulence Accumulation"
     });
-    o.setPipeline(this.accumulateTurbulenceKernel), o.setBindGroup(
+    s.setPipeline(this.accumulateTurbulenceKernel), s.setBindGroup(
       0,
       this.turbulenceJacobianArrays[this.turbulenceJacobianIndex].bindGroup
-    ), o.setBindGroup(1, this.turbulenceJacobianGroup1), o.dispatchWorkgroups(
+    ), s.setBindGroup(1, this.turbulenceJacobianGroup1), s.dispatchWorkgroups(
       this.gridSize / 16,
       this.gridSize / 16,
       this.cascadeCount / 1
-    ), o.end();
-    const s = t.beginComputePass({
+    ), s.end();
+    const n = t.beginComputePass({
       label: "MipMap Generation",
-      timestampWrites: i !== void 0 ? {
-        querySet: i.querySet,
-        endOfPassWriteIndex: i.endWriteIndex
+      timestampWrites: a !== void 0 ? {
+        querySet: a.querySet,
+        endOfPassWriteIndex: a.endWriteIndex
       } : void 0
     });
     this.mipMapGenerator.recordUpdateMipMaps(
-      s,
+      n,
       this.Dx_Dy_Dz_Dxdz_SpatialArray_MipMapBindings
     ), this.mipMapGenerator.recordUpdateMipMaps(
-      s,
+      n,
       this.Dydx_Dydz_Dxdx_Dzdz_SpatialArray_MipMapBindings
     ), this.mipMapGenerator.recordUpdateMipMaps(
-      s,
+      n,
       this.turbulenceJacobianArrays[this.turbulenceJacobianIndex].mipMapBindings
-    ), this.turbulenceJacobianIndex += 1, this.turbulenceJacobianIndex %= this.turbulenceJacobianArrays.length, s.end();
+    ), this.turbulenceJacobianIndex += 1, this.turbulenceJacobianIndex %= this.turbulenceJacobianArrays.length, n.end();
   }
 }
-const at = `const PI = 3.141592653589793;
+const et = `const PI = 3.141592653589793;
 const METERS_PER_MM = 1000000;
 struct Atmosphere
 {
@@ -6530,49 +6531,69 @@ fn rasterizationFragment(frag_interpolated: VertexOut) -> FragmentOut
 	);
     return output;
 }
-`, ee = 4;
-class it extends R {
-  constructor(t) {
-    const r = 12 + 4 * ee;
+`, J = 4;
+class tt extends A {
+  data = {
+    patch_world_half_extent: 50,
+    b_gerstner: !0,
+    b_displacement_map: !0,
+    vertex_size: 1e3,
+    gbuffer_extent: S.create(1, 1),
+    foam_scale: 1,
+    foam_bias: 0,
+    padding0: b.create(0, 0, 0),
+    procedural_wave_count: 12,
+    cascades: [
+      { patch_size_meters: 200 },
+      { patch_size_meters: 50 },
+      { patch_size_meters: 10 },
+      { patch_size_meters: 0 }
+    ]
+  };
+  constructor(e) {
+    const t = 12 + 4 * J;
     super(
+      e,
       t,
-      r,
       "Wave Surface Displacement Patch World Half Extent UBO"
     );
-    a(this, "data", {
-      patch_world_half_extent: 50,
-      b_gerstner: !0,
-      b_displacement_map: !0,
-      vertex_size: 1e3,
-      gbuffer_extent: T.create(1, 1),
-      foam_scale: 1,
-      foam_bias: 0,
-      padding0: S.create(0, 0, 0),
-      procedural_wave_count: 12,
-      cascades: [
-        { patch_size_meters: 200 },
-        { patch_size_meters: 50 },
-        { patch_size_meters: 10 },
-        { patch_size_meters: 0 }
-      ]
-    });
   }
   packed() {
-    const t = new ArrayBuffer(this.buffer.size), r = new DataView(t), i = new Float32Array(t);
-    r.setFloat32(0, this.data.patch_world_half_extent, !0), r.setUint32(4, this.data.b_gerstner ? 1 : 0, !0), r.setUint32(8, this.data.b_displacement_map ? 1 : 0, !0), r.setUint32(12, this.data.vertex_size, !0), i.set(this.data.gbuffer_extent, 4), r.setFloat32(24, this.data.foam_scale, !0), r.setFloat32(28, this.data.foam_bias, !0), i.set(this.data.padding0, 8), r.setUint32(44, this.data.procedural_wave_count, !0);
-    const n = S.create(0, 0, 0);
-    for (let o = 0; o < ee; o++) {
-      const s = 12 + o * 4;
-      i.set(n, s), r.setFloat32(
+    const e = new ArrayBuffer(this.buffer.size), t = new DataView(e), r = new Float32Array(e);
+    t.setFloat32(0, this.data.patch_world_half_extent, !0), t.setUint32(4, this.data.b_gerstner ? 1 : 0, !0), t.setUint32(8, this.data.b_displacement_map ? 1 : 0, !0), t.setUint32(12, this.data.vertex_size, !0), r.set(this.data.gbuffer_extent, 4), t.setFloat32(24, this.data.foam_scale, !0), t.setFloat32(28, this.data.foam_bias, !0), r.set(this.data.padding0, 8), t.setUint32(44, this.data.procedural_wave_count, !0);
+    const a = b.create(0, 0, 0);
+    for (let i = 0; i < J; i++) {
+      const s = 12 + i * 4;
+      r.set(a, s), t.setFloat32(
         (s + 3) * 4,
-        this.data.cascades[o].patch_size_meters,
+        this.data.cascades[i].patch_size_meters,
         !0
       );
     }
     return t;
   }
 }
-class nt {
+class rt {
+  oceanSurfaceRasterizationPipeline;
+  /*
+   * @group(0) @binding(0) var<uniform> u_settings: WaveSurfaceDisplacementUBO;
+   * @group(0) @binding(1) var<uniform> u_global: GlobalUBO;
+   */
+  group0;
+  /*
+   * @group(1) @binding(0) var displacement_map_sampler: sampler;
+   * @group(1) @binding(1) var Dx_Dy_Dz_Dxdz_spatial: texture_2d<f32>;
+   * @group(1) @binding(2) var Dydx_Dydz_Dxdx_Dzdz_spatial: texture_2d<f32>;
+   * @group(1) @binding(3) var<uniform> u_waves: array<PlaneWave, WAVE_COUNT>;
+   */
+  group1;
+  /*
+   * @group(2) @binding(0) var turbulence_jacobian: texture_2d_array<f32>;
+   */
+  group2ByTurbulenceMapIndex;
+  settingsUBO;
+  baseIndexCount;
+  indices;
   /**
    * Initializes all resources.
    * @param device - The WebGPU device to use.
@@ -6583,118 +6604,98 @@ class nt {
    * @param displacementMaps - 2D array textures
    *  that multiple cascades of ocean wave spectra.
    */
-  constructor(e, t, r, i) {
-    a(this, "oceanSurfaceRasterizationPipeline");
-    /*
-     * @group(0) @binding(0) var<uniform> u_settings: WaveSurfaceDisplacementUBO;
-     * @group(0) @binding(1) var<uniform> u_global: GlobalUBO;
-     */
-    a(this, "group0");
-    /*
-     * @group(1) @binding(0) var displacement_map_sampler: sampler;
-     * @group(1) @binding(1) var Dx_Dy_Dz_Dxdz_spatial: texture_2d<f32>;
-     * @group(1) @binding(2) var Dydx_Dydz_Dxdx_Dzdz_spatial: texture_2d<f32>;
-     * @group(1) @binding(3) var<uniform> u_waves: array<PlaneWave, WAVE_COUNT>;
-     */
-    a(this, "group1");
-    /*
-     * @group(2) @binding(0) var turbulence_jacobian: texture_2d_array<f32>;
-     */
-    a(this, "group2ByTurbulenceMapIndex");
-    a(this, "settingsUBO");
-    a(this, "baseIndexCount");
-    a(this, "indices");
+  constructor(e, t, r, a) {
     this.baseIndexCount = 6279174, this.indices = e.createBuffer({
       size: 6279174 * 4,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
       label: "Wave Surface Displacement Indices"
     });
-    const _ = new Uint32Array(6279174);
-    let m = 0;
-    for (let D = 0; D < 1023; D++)
-      for (let A = 0; A < 1023; A++) {
-        const E = A + D * 1024, N = E + 1, L = E + 1024, oe = L + 1, W = new Uint32Array([
+    const l = new Uint32Array(6279174);
+    let _ = 0;
+    for (let z = 0; z < 1023; z++)
+      for (let P = 0; P < 1023; P++) {
+        const U = P + z * 1024, q = U + 1, E = U + 1024, se = E + 1, N = new Uint32Array([
+          U,
           E,
-          L,
-          N,
-          N,
-          L,
-          oe
+          q,
+          q,
+          E,
+          se
         ]);
-        _.set(W, m), m += W.length;
+        l.set(N, _), _ += N.length;
       }
-    e.queue.writeBuffer(this.indices, 0, _);
-    const c = 12, v = 4, h = 4 * v, y = e.createBuffer({
-      size: c * h,
+    e.queue.writeBuffer(this.indices, 0, l);
+    const c = 12, d = 4, v = 4 * d, g = e.createBuffer({
+      size: c * v,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
       label: "Wave Surface Displacement Waves"
-    }), d = 9.8, g = 60, p = g * g * d / (2 * Math.PI), b = new Array(
+    }), m = 9.8, h = 60, p = h * h * m / (2 * Math.PI), x = new Array(
       {
-        direction: T.create(0.4, 2),
+        direction: S.create(0.4, 2),
         amplitude: 0.25,
-        wavelength: p / (12 * 12)
+        wavelength: p / 144
       },
       {
-        direction: T.create(0.6, 2),
+        direction: S.create(0.6, 2),
         amplitude: 0.3,
-        wavelength: p / (14 * 14)
+        wavelength: p / 196
       },
       {
-        direction: T.create(0.8, 2),
+        direction: S.create(0.8, 2),
         amplitude: 0.35,
-        wavelength: p / (12 * 12)
+        wavelength: p / 144
       },
       {
-        direction: T.create(1, 2),
+        direction: S.create(1, 2),
         amplitude: 0.4,
-        wavelength: p / (16 * 16)
+        wavelength: p / 256
       },
       {
-        direction: T.create(1.2, 2),
+        direction: S.create(1.2, 2),
         amplitude: 0.45,
-        wavelength: p / (12 * 12)
+        wavelength: p / 144
       },
       {
-        direction: T.create(1.4, 2),
+        direction: S.create(1.4, 2),
         amplitude: 0.4,
-        wavelength: p / (14 * 14)
+        wavelength: p / 196
       },
       {
-        direction: T.create(1.6, 2),
+        direction: S.create(1.6, 2),
         amplitude: 0.35,
-        wavelength: p / (12 * 12)
+        wavelength: p / 144
       },
       {
-        direction: T.create(1.8, 2),
+        direction: S.create(1.8, 2),
         amplitude: 0.3,
-        wavelength: p / (16 * 16)
+        wavelength: p / 256
       },
       {
-        direction: T.create(0.8, 1.5),
+        direction: S.create(0.8, 1.5),
         amplitude: 0.02,
-        wavelength: p / (30 * 30)
+        wavelength: p / 900
       },
       {
-        direction: T.create(1.1, 1.5),
+        direction: S.create(1.1, 1.5),
         amplitude: 0.02,
-        wavelength: p / (30 * 30)
+        wavelength: p / 900
       },
       {
-        direction: T.create(1.2, 1.5),
+        direction: S.create(1.2, 1.5),
         amplitude: 0.02,
-        wavelength: p / (30 * 30)
+        wavelength: p / 900
       },
       {
-        direction: T.create(1.3, 1.5),
+        direction: S.create(1.3, 1.5),
         amplitude: 0.02,
-        wavelength: p / (30 * 30)
+        wavelength: p / 900
       }
-    ), f = new Float32Array(c * v);
-    let M = 0;
-    b.forEach((D) => {
-      f.set(D.direction, M), f[M + 2] = D.amplitude, f[M + 3] = D.wavelength, M += 4;
-    }), e.queue.writeBuffer(y, 0, f), this.settingsUBO = new it(e), this.settingsUBO.data.vertex_size = 1024, this.settingsUBO.data.procedural_wave_count = b.length;
-    const P = e.createBindGroupLayout({
+    ), f = new Float32Array(c * d);
+    let w = 0;
+    x.forEach((z) => {
+      f.set(z.direction, w), f[w + 2] = z.amplitude, f[w + 3] = z.wavelength, w += 4;
+    }), e.queue.writeBuffer(g, 0, f), this.settingsUBO = new tt(e), this.settingsUBO.data.vertex_size = 1024, this.settingsUBO.data.procedural_wave_count = x.length;
+    const D = e.createBindGroupLayout({
       label: "Wave Surface Displacement Group 1 Compute (Displacement Map)",
       entries: [
         {
@@ -6721,7 +6722,7 @@ class nt {
     });
     this.group1 = e.createBindGroup({
       label: "Wave Surface Displacement Group 1 Compute (Displacement Map)",
-      layout: P,
+      layout: D,
       entries: [
         {
           binding: 0,
@@ -6737,19 +6738,19 @@ class nt {
         },
         {
           binding: 1,
-          resource: i.Dx_Dy_Dz_Dxdz_SpatialAllMips
+          resource: a.Dx_Dy_Dz_Dxdz_SpatialAllMips
         },
         {
           binding: 2,
-          resource: i.Dydx_Dydz_Dxdx_Dzdz_SpatialAllMips
+          resource: a.Dydx_Dydz_Dxdx_Dzdz_SpatialAllMips
         },
         {
           binding: 3,
-          resource: { buffer: y }
+          resource: { buffer: g }
         }
       ]
     });
-    const U = e.createBindGroupLayout({
+    const R = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -6758,17 +6759,17 @@ class nt {
         }
       ]
     });
-    this.group2ByTurbulenceMapIndex = i.turbulenceJacobianOneMip.map((D, A) => e.createBindGroup({
-      label: `Wave Surface Displacement Group 2 Compute (Turbulence) index ${A}`,
-      layout: U,
+    this.group2ByTurbulenceMapIndex = a.turbulenceJacobianOneMip.map((z, P) => e.createBindGroup({
+      label: `Wave Surface Displacement Group 2 Compute (Turbulence) index ${P}`,
+      layout: R,
       entries: [
         {
           binding: 0,
-          resource: D
+          resource: z
         }
       ]
     }));
-    const B = e.createBindGroupLayout({
+    const I = e.createBindGroupLayout({
       entries: [
         {
           // settings
@@ -6786,7 +6787,7 @@ class nt {
       label: "Wave Surface Displacement Group 0"
     });
     this.group0 = e.createBindGroup({
-      layout: B,
+      layout: I,
       entries: [
         {
           binding: 0,
@@ -6803,20 +6804,20 @@ class nt {
       ],
       label: "Wave Surface Displacement Group 0"
     });
-    const q = e.createShaderModule({
-      code: at,
+    const B = e.createShaderModule({
+      code: et,
       label: "Wave Surface Displacement"
     });
     this.oceanSurfaceRasterizationPipeline = e.createRenderPipeline({
       layout: e.createPipelineLayout({
-        bindGroupLayouts: [B, P, U]
+        bindGroupLayouts: [I, D, R]
       }),
       vertex: {
-        module: q,
+        module: B,
         entryPoint: "screenSpaceWarped"
       },
       fragment: {
-        module: q,
+        module: B,
         entryPoint: "rasterizationFragment",
         targets: [
           {
@@ -6853,29 +6854,29 @@ class nt {
    * @param gbuffer - The gbuffer that will be filled with the rasterized
    *  ocean surface.
    */
-  record(e, t, r, i, n, o) {
-    this.settingsUBO.data.patch_world_half_extent = n.fft ? 100 : 300, this.settingsUBO.data.b_gerstner = n.gerstner, this.settingsUBO.data.b_displacement_map = n.fft, this.settingsUBO.data.foam_bias = n.foamBias, this.settingsUBO.data.gbuffer_extent = T.create(
-      o.extent.width,
-      o.extent.height
-    ), this.settingsUBO.data.foam_scale = n.foamScale, this.settingsUBO.writeToGPU(e.queue);
-    const s = t.beginRenderPass({
+  record(e, t, r, a, i, s) {
+    this.settingsUBO.data.patch_world_half_extent = i.fft ? 100 : 300, this.settingsUBO.data.b_gerstner = i.gerstner, this.settingsUBO.data.b_displacement_map = i.fft, this.settingsUBO.data.foam_bias = i.foamBias, this.settingsUBO.data.gbuffer_extent = S.create(
+      s.extent.width,
+      s.extent.height
+    ), this.settingsUBO.data.foam_scale = i.foamScale, this.settingsUBO.writeToGPU(e.queue);
+    const n = t.beginRenderPass({
       label: "Wave Surface Rasterization",
       colorAttachments: [
         {
           clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: "clear",
           storeOp: "store",
-          view: o.colorWithSurfaceWorldDepthInAlphaView
+          view: s.colorWithSurfaceWorldDepthInAlphaView
         },
         {
           clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: "clear",
           storeOp: "store",
-          view: o.normalWithSurfaceFoamStrengthInAlphaView
+          view: s.normalWithSurfaceFoamStrengthInAlphaView
         }
       ],
       depthStencilAttachment: {
-        view: o.depthView,
+        view: s.depthView,
         depthClearValue: 1,
         depthLoadOp: "clear",
         depthStoreOp: "store"
@@ -6886,15 +6887,15 @@ class nt {
         endOfPassWriteIndex: r.endWriteIndex
       } : void 0
     });
-    s.setPipeline(
+    n.setPipeline(
       this.oceanSurfaceRasterizationPipeline
-    ), s.setBindGroup(0, this.group0), s.setBindGroup(1, this.group1), s.setBindGroup(
+    ), n.setBindGroup(0, this.group0), n.setBindGroup(1, this.group1), n.setBindGroup(
       2,
-      this.group2ByTurbulenceMapIndex[i]
-    ), s.setIndexBuffer(this.indices, "uint32"), s.drawIndexed(this.baseIndexCount, 1), s.end();
+      this.group2ByTurbulenceMapIndex[a]
+    ), n.setIndexBuffer(this.indices, "uint32"), n.drawIndexed(this.baseIndexCount, 1), n.end();
   }
 }
-const st = `@group(0) @binding(0) var b_texture: texture_2d<f32>;
+const at = `@group(0) @binding(0) var b_texture: texture_2d<f32>;
 @group(0) @binding(0) var b_texture_array: texture_2d_array<f32>;
 @group(0) @binding(0) var b_texture_3d: texture_3d<f32>;
 @group(0) @binding(1) var b_sampler: sampler;
@@ -6989,27 +6990,105 @@ fn fragmentMain3D(frag_interpolated: VertexOut) -> FragmentOut
 	);
 }
 `;
-class ot {
-  constructor() {
-    a(this, "color_gain", z.create(1, 1, 1, 1));
-    a(this, "vertex_scale", z.create(1, 1, 1, 1));
-    a(this, "swap_ba_rg", !1);
-    a(this, "channel_mask", 7);
-    a(this, "depth_or_array_layer", 0);
-    a(this, "mip_level_u32", 0);
-  }
+class it {
+  color_gain = M.create(1, 1, 1, 1);
+  vertex_scale = M.create(1, 1, 1, 1);
+  swap_ba_rg = !1;
+  channel_mask = 7;
+  depth_or_array_layer = 0;
+  mip_level_u32 = 0;
 }
-class ut extends R {
-  constructor(t) {
-    super(t, 12, "Fullscreen Quad UBO");
-    a(this, "data", new ot());
+class nt extends A {
+  data = new it();
+  constructor(e) {
+    super(e, 12, "Fullscreen Quad UBO");
   }
   packed() {
-    const t = new ArrayBuffer(this.buffer.size), r = new DataView(t);
-    return new Float32Array(t).set(this.data.color_gain, 0 / 4), new Float32Array(t).set(this.data.vertex_scale, 16 / 4), r.setUint32(32, this.data.swap_ba_rg ? 1 : 0, !0), r.setUint32(36, this.data.channel_mask, !0), r.setFloat32(40, this.data.depth_or_array_layer, !0), r.setUint32(44, this.data.mip_level_u32, !0), t;
+    const e = new ArrayBuffer(this.buffer.size), t = new DataView(e);
+    return new Float32Array(e).set(this.data.color_gain, 0 / 4), new Float32Array(e).set(this.data.vertex_scale, 16 / 4), t.setUint32(32, this.data.swap_ba_rg ? 1 : 0, !0), t.setUint32(36, this.data.channel_mask, !0), t.setFloat32(40, this.data.depth_or_array_layer, !0), t.setUint32(44, this.data.mip_level_u32, !0), t;
   }
 }
-class lt {
+class st {
+  // keep layout for resetting textures when resizing them
+  group0Layout;
+  group0LayoutArray;
+  group0Layout3D;
+  group0ByOutputTexture;
+  group0Sampler;
+  ubo;
+  fullscreenQuadIndexBuffer;
+  group1;
+  pipeline;
+  pipelineArray;
+  pipeline3D;
+  /**
+   * The view format of the texture that will be passed to draw.
+   * @see {@link record} for the function that takes in the view of this
+   *  format.
+   */
+  attachmentFormat;
+  /**
+   * Generate and save bind groups for a given tag, so it can be read at
+   * draw time.
+   * @param device - The WebGPU device to use.
+   * @param tag - The tag that can be passed
+   * 	at draw time to use this texture for sampling.
+   * @param texture - The texture to generate bindings
+   * 	for.
+   */
+  setOutput(e, t, r) {
+    let a = this.group0Layout;
+    switch (r.viewDimension) {
+      case "2d": {
+        a = this.group0Layout;
+        break;
+      }
+      case "2d-array": {
+        a = this.group0LayoutArray;
+        break;
+      }
+      case "3d": {
+        a = this.group0Layout3D;
+        break;
+      }
+      default:
+        throw new RangeError(
+          `Unsupported texture dimension '${r.viewDimension}'`
+        );
+    }
+    this.group0ByOutputTexture.set(t, {
+      texture: r,
+      bindGroup: e.createBindGroup({
+        layout: a,
+        entries: [
+          {
+            binding: 0,
+            resource: r.view
+          },
+          {
+            binding: 1,
+            resource: this.group0Sampler
+          }
+        ],
+        label: `Fullscreen Quad Group 0 Texture '${r.view.label}'`
+      })
+    });
+  }
+  /**
+   * Enumerates properties of bound textures by tag. Useful for reflecting in
+   * UI without references to the underlying textures.
+   * @returns Returns an iterable of all the properties and tag of each
+   *  texture that is bound. Tag will be unique across all elements.
+   */
+  getAllTextureProperties() {
+    return [...this.group0ByOutputTexture.entries()].map(
+      ([e, { texture: t }]) => ({
+        tag: e,
+        mipLevelCount: t.mipLevelCount,
+        depthOrArrayLayerCount: t.extent.depthOrArrayLayers
+      })
+    );
+  }
   /**
    * Instantiates all resources.
    * @param device - The WebGPU device to use.
@@ -7018,24 +7097,6 @@ class lt {
    *  view used as the attachment at draw time.
    */
   constructor(e, t) {
-    // keep layout for resetting textures when resizing them
-    a(this, "group0Layout");
-    a(this, "group0LayoutArray");
-    a(this, "group0Layout3D");
-    a(this, "group0ByOutputTexture");
-    a(this, "group0Sampler");
-    a(this, "ubo");
-    a(this, "fullscreenQuadIndexBuffer");
-    a(this, "group1");
-    a(this, "pipeline");
-    a(this, "pipelineArray");
-    a(this, "pipeline3D");
-    /**
-     * The view format of the texture that will be passed to draw.
-     * @see {@link record} for the function that takes in the view of this
-     *  format.
-     */
-    a(this, "attachmentFormat");
     this.attachmentFormat = t;
     const r = new Uint32Array([0, 1, 2, 0, 2, 3]);
     this.fullscreenQuadIndexBuffer = e.createBuffer({
@@ -7098,8 +7159,8 @@ class lt {
     }), this.group0ByOutputTexture = /* @__PURE__ */ new Map(), this.group0Sampler = e.createSampler({
       magFilter: "nearest",
       minFilter: "nearest"
-    }), this.ubo = new ut(e);
-    const i = e.createBindGroupLayout({
+    }), this.ubo = new nt(e);
+    const a = e.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -7110,7 +7171,7 @@ class lt {
       label: "Fullscreen Quad Group 1"
     });
     this.group1 = e.createBindGroup({
-      layout: i,
+      layout: a,
       entries: [
         {
           binding: 0,
@@ -7118,17 +7179,17 @@ class lt {
         }
       ]
     });
-    const n = e.createShaderModule({
-      code: st,
+    const i = e.createShaderModule({
+      code: at,
       label: "Fullscreen Quad"
     });
     this.pipeline = e.createRenderPipeline({
       vertex: {
-        module: n,
+        module: i,
         entryPoint: "vertexMain"
       },
       fragment: {
-        module: n,
+        module: i,
         entryPoint: "fragmentMain",
         targets: [
           {
@@ -7142,16 +7203,16 @@ class lt {
         frontFace: "ccw"
       },
       layout: e.createPipelineLayout({
-        bindGroupLayouts: [this.group0Layout, i]
+        bindGroupLayouts: [this.group0Layout, a]
       }),
       label: "Fullscreen Quad 2D"
     }), this.pipelineArray = e.createRenderPipeline({
       vertex: {
-        module: n,
+        module: i,
         entryPoint: "vertexMain"
       },
       fragment: {
-        module: n,
+        module: i,
         entryPoint: "fragmentMainArray",
         targets: [
           {
@@ -7165,16 +7226,16 @@ class lt {
         frontFace: "ccw"
       },
       layout: e.createPipelineLayout({
-        bindGroupLayouts: [this.group0LayoutArray, i]
+        bindGroupLayouts: [this.group0LayoutArray, a]
       }),
       label: "Fullscreen Quad 2D Array"
     }), this.pipeline3D = e.createRenderPipeline({
       vertex: {
-        module: n,
+        module: i,
         entryPoint: "vertexMain"
       },
       fragment: {
-        module: n,
+        module: i,
         entryPoint: "fragmentMain3D",
         targets: [
           {
@@ -7188,72 +7249,10 @@ class lt {
         frontFace: "ccw"
       },
       layout: e.createPipelineLayout({
-        bindGroupLayouts: [this.group0Layout3D, i]
+        bindGroupLayouts: [this.group0Layout3D, a]
       }),
       label: "Fullscreen Quad 3D"
     });
-  }
-  /**
-   * Generate and save bind groups for a given tag, so it can be read at
-   * draw time.
-   * @param device - The WebGPU device to use.
-   * @param tag - The tag that can be passed
-   * 	at draw time to use this texture for sampling.
-   * @param texture - The texture to generate bindings
-   * 	for.
-   */
-  setOutput(e, t, r) {
-    let i = this.group0Layout;
-    switch (r.viewDimension) {
-      case "2d": {
-        i = this.group0Layout;
-        break;
-      }
-      case "2d-array": {
-        i = this.group0LayoutArray;
-        break;
-      }
-      case "3d": {
-        i = this.group0Layout3D;
-        break;
-      }
-      default:
-        throw new RangeError(
-          `Unsupported texture dimension '${r.viewDimension}'`
-        );
-    }
-    this.group0ByOutputTexture.set(t, {
-      texture: r,
-      bindGroup: e.createBindGroup({
-        layout: i,
-        entries: [
-          {
-            binding: 0,
-            resource: r.view
-          },
-          {
-            binding: 1,
-            resource: this.group0Sampler
-          }
-        ],
-        label: `Fullscreen Quad Group 0 Texture '${r.view.label}'`
-      })
-    });
-  }
-  /**
-   * Enumerates properties of bound textures by tag. Useful for reflecting in
-   * UI without references to the underlying textures.
-   * @returns Returns an iterable of all the properties and tag of each
-   *  texture that is bound. Tag will be unique across all elements.
-   */
-  getAllTextureProperties() {
-    return [...this.group0ByOutputTexture.entries()].map(
-      ([e, { texture: t }]) => ({
-        tag: e,
-        mipLevelCount: t.mipLevelCount,
-        depthOrArrayLayerCount: t.extent.depthOrArrayLayers
-      })
-    );
   }
   /**
    * Record the rendering of a fullscreen quad, sampling the texture that
@@ -7271,87 +7270,87 @@ class lt {
    * @param timestamps - The interval to record
    * 	timing information into.
    */
-  record(e, t, r, i, n, o) {
-    const s = { r: 0, g: 0, b: 0, a: 1 }, l = this.group0ByOutputTexture.get(i);
-    if (l === void 0) {
+  record(e, t, r, a, i, s) {
+    const n = { r: 0, g: 0, b: 0, a: 1 }, u = this.group0ByOutputTexture.get(a);
+    if (u === void 0) {
       console.warn("FullscreenQuadPass: No texture to output.");
       return;
     }
-    const _ = t.beginRenderPass({
+    const l = t.beginRenderPass({
       colorAttachments: [
         {
-          clearValue: s,
+          clearValue: n,
           loadOp: "clear",
           storeOp: "store",
           view: r
         }
       ],
-      timestampWrites: o !== void 0 ? {
-        querySet: o.querySet,
-        beginningOfPassWriteIndex: o.beginWriteIndex,
-        endOfPassWriteIndex: o.endWriteIndex
+      timestampWrites: s !== void 0 ? {
+        querySet: s.querySet,
+        beginningOfPassWriteIndex: s.beginWriteIndex,
+        endOfPassWriteIndex: s.endWriteIndex
       } : void 0,
       label: "Fullscreen Pass"
     });
-    switch (this.ubo.data.color_gain = z.create(
-      n.colorGain.r,
-      n.colorGain.g,
-      n.colorGain.b,
+    switch (this.ubo.data.color_gain = M.create(
+      i.colorGain.r,
+      i.colorGain.g,
+      i.colorGain.b,
       1
-    ), this.ubo.data.vertex_scale = z.create(
+    ), this.ubo.data.vertex_scale = M.create(
       1,
-      n.flip ? -1 : 1,
+      i.flip ? -1 : 1,
       1,
       1
-    ), this.ubo.data.mip_level_u32 = Math.round(n.mipLevel), this.ubo.data.depth_or_array_layer = n.arrayLayer, this.ubo.data.channel_mask = (n.channelMasks.r ? 1 : 0) + (n.channelMasks.g ? 2 : 0) + (n.channelMasks.b ? 4 : 0), this.ubo.data.swap_ba_rg = n.swapBARG, this.ubo.writeToGPU(e.queue), _.setIndexBuffer(
+    ), this.ubo.data.mip_level_u32 = Math.round(i.mipLevel), this.ubo.data.depth_or_array_layer = i.arrayLayer, this.ubo.data.channel_mask = (i.channelMasks.r ? 1 : 0) + (i.channelMasks.g ? 2 : 0) + (i.channelMasks.b ? 4 : 0), this.ubo.data.swap_ba_rg = i.swapBARG, this.ubo.writeToGPU(e.queue), l.setIndexBuffer(
       this.fullscreenQuadIndexBuffer,
       "uint32",
       0,
       this.fullscreenQuadIndexBuffer.size
-    ), _.setBindGroup(1, this.group1), l.texture.viewDimension) {
+    ), l.setBindGroup(1, this.group1), u.texture.viewDimension) {
       case "2d": {
-        _.setPipeline(this.pipeline);
+        l.setPipeline(this.pipeline);
         break;
       }
       case "2d-array": {
-        _.setPipeline(this.pipelineArray);
+        l.setPipeline(this.pipelineArray);
         break;
       }
       case "3d": {
-        _.setPipeline(this.pipeline3D);
+        l.setPipeline(this.pipeline3D);
         break;
       }
       default:
         throw new Error(
-          `Unsupported texture dimension '${l.texture.viewDimension}'`
+          `Unsupported texture dimension '${u.texture.viewDimension}'`
         );
     }
-    _.setBindGroup(0, l.bindGroup), _.drawIndexed(6, 1, 0, 0, 0), _.end();
+    l.setBindGroup(0, u.bindGroup), l.drawIndexed(6, 1, 0, 0, 0), l.end();
   }
 }
-const I = [
+const O = [
   "SkyviewLUT",
   "AerialPerspectiveLUT",
   "FFTWaves",
   "OceanSurface",
   "AtmosphereCamera",
   "FullscreenQuad"
-], te = ["DrawToDraw", ...I];
-class re {
+], ee = ["DrawToDraw", ...O];
+class te {
+  values;
+  sum = 0;
+  average_ = 0;
+  /*
+   * Count how many values are valid. Starts at zero, goes to values.length,
+   * and stays there. Necessary to keep runningSum valid before the buffer can
+   * be filled once.
+   */
+  count = 0;
+  /*
+   * Index into values of next value to write
+   */
+  index = 0;
   constructor(e) {
-    a(this, "values");
-    a(this, "sum", 0);
-    a(this, "average_", 0);
-    /*
-     * Count how many values are valid. Starts at zero, goes to values.length,
-     * and stays there. Necessary to keep runningSum valid before the buffer can
-     * be filled once.
-     */
-    a(this, "count", 0);
-    /*
-     * Index into values of next value to write
-     */
-    a(this, "index", 0);
     this.values = new Array(e).fill(0);
   }
   /**
@@ -7370,53 +7369,19 @@ class re {
     this.index >= this.values.length && (this.index = 0), this.index < this.count && (this.sum -= this.values[this.index]), this.values[this.index] = e, this.sum += e, this.count = Math.min(this.values.length, this.count + 1), this.average_ = this.sum / this.count, this.index += 1;
   }
 }
-class _t {
-  constructor(e) {
-    // Defined only when timestamp querying is supported
-    a(this, "queryBuffers");
-    a(this, "frametimeAverages");
-    a(this, "timestampIndexMapping", /* @__PURE__ */ new Map());
-    a(this, "timestampQueryIndex", 0);
-    a(this, "uiDisplay");
-    a(this, "initialized");
-    if (this.frametimeAverages = /* @__PURE__ */ new Map([
-      ["DrawToDraw", new re(400)]
-    ]), this.uiDisplay = {
-      averageFPS: 0,
-      frametimeControllers: /* @__PURE__ */ new Map()
-    }, !e.features.has("timestamp-query")) {
-      console.warn(
-        "WebGPU feature 'timestamp-query' is not supported. Continuing, but without performance information about specific stages."
-      ), this.initialized = !0;
-      return;
-    }
-    const r = 8, i = 2 * I.length;
-    this.queryBuffers = {
-      querySet: e.createQuerySet({
-        type: "timestamp",
-        count: i
-      }),
-      writeBuffer: e.createBuffer({
-        size: r * i,
-        usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.QUERY_RESOLVE
-      }),
-      readBuffer: e.createBuffer({
-        size: r * i,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
-      })
-    }, I.forEach((n) => {
-      this.frametimeAverages.set(
-        n,
-        new re(400)
-      );
-    }), this.initialized = !0;
-  }
+class ot {
+  // Defined only when timestamp querying is supported
+  queryBuffers;
+  frametimeAverages;
+  timestampIndexMapping = /* @__PURE__ */ new Map();
+  timestampQueryIndex = 0;
+  uiDisplay;
+  initialized;
   get averageFPS() {
     return this.uiDisplay.averageFPS;
   }
   destroy() {
-    var e, t, r;
-    (e = this.queryBuffers) == null || e.querySet.destroy(), (t = this.queryBuffers) == null || t.writeBuffer.destroy(), (r = this.queryBuffers) == null || r.readBuffer.destroy(), this.initialized = !1;
+    this.queryBuffers?.querySet.destroy(), this.queryBuffers?.writeBuffer.destroy(), this.queryBuffers?.readBuffer.destroy(), this.initialized = !1;
   }
   /**
    * Bind the frametime values and averageFPS to the passed UI, under a single
@@ -7425,7 +7390,7 @@ class _t {
    */
   setupUI(e) {
     const t = e.addFolder("Performance").close();
-    t.add(this.uiDisplay, "averageFPS").decimals(1).disable().name("Average FPS").listen(), te.forEach((r) => {
+    t.add(this.uiDisplay, "averageFPS").decimals(1).disable().name("Average FPS").listen(), ee.forEach((r) => {
       this.uiDisplay.frametimeControllers.set(
         r,
         t.add({ value: 0 }, "value").name(`${r} (ms)`).decimals(6).disable()
@@ -7439,8 +7404,7 @@ class _t {
    *  recorded for displaying the overall average FPS.
    */
   beginFrame(e) {
-    var t;
-    (t = this.frametimeAverages.get("DrawToDraw")) == null || t.push(e), this.timestampQueryIndex = 0, this.timestampIndexMapping.clear();
+    this.frametimeAverages.get("DrawToDraw")?.push(e), this.timestampQueryIndex = 0, this.timestampIndexMapping.clear();
   }
   /**
    * Call this before recording each interval of GPU work you wish to time. If
@@ -7500,40 +7464,70 @@ class _t {
    * all the timing and updates the bound UI.
    */
   postSubmitCommands() {
-    var t;
-    if (this.uiDisplay.averageFPS = 1e3 / (((t = this.frametimeAverages.get("DrawToDraw")) == null ? void 0 : t.average) ?? 1e3), this.queryBuffers == null || this.queryBuffers.readBuffer.mapState !== "unmapped")
+    if (this.uiDisplay.averageFPS = 1e3 / (this.frametimeAverages.get("DrawToDraw")?.average ?? 1e3), this.queryBuffers == null || this.queryBuffers.readBuffer.mapState !== "unmapped")
       return;
     const e = this.queryBuffers.readBuffer;
     e.mapAsync(GPUMapMode.READ, 0, e.size).then(() => {
-      const r = new BigInt64Array(
+      const t = new BigInt64Array(
         e.getMappedRange(0, e.size)
       );
-      this.timestampIndexMapping.forEach((i, n) => {
-        var l;
+      this.timestampIndexMapping.forEach((r, a) => {
         const s = Number(
-          r.at(i + 1) - r.at(i)
+          t.at(r + 1) - t.at(r)
         ) / 1e6;
-        (l = this.frametimeAverages.get(n)) == null || l.push(s);
-      }), te.forEach((i) => {
-        var o, s;
-        const n = (o = this.frametimeAverages.get(i)) == null ? void 0 : o.average;
-        n !== void 0 && ((s = this.uiDisplay.frametimeControllers.get(i)) == null || s.setValue(n));
+        this.frametimeAverages.get(a)?.push(s);
+      }), ee.forEach((r) => {
+        const a = this.frametimeAverages.get(r)?.average;
+        a !== void 0 && this.uiDisplay.frametimeControllers.get(r)?.setValue(a);
       }), e.unmap();
-    }).catch((r) => {
+    }).catch((t) => {
       this.initialized && console.error(
         new Error(
           "Failed while retrieving frametime values from GPU:",
-          { cause: r }
+          { cause: t }
         )
       );
     });
   }
+  constructor(e) {
+    if (this.frametimeAverages = /* @__PURE__ */ new Map([
+      ["DrawToDraw", new te(400)]
+    ]), this.uiDisplay = {
+      averageFPS: 0,
+      frametimeControllers: /* @__PURE__ */ new Map()
+    }, !e.features.has("timestamp-query")) {
+      console.warn(
+        "WebGPU feature 'timestamp-query' is not supported. Continuing, but without performance information about specific stages."
+      ), this.initialized = !0;
+      return;
+    }
+    const r = 8, a = 2 * O.length;
+    this.queryBuffers = {
+      querySet: e.createQuerySet({
+        type: "timestamp",
+        count: a
+      }),
+      writeBuffer: e.createBuffer({
+        size: r * a,
+        usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.QUERY_RESOLVE
+      }),
+      readBuffer: e.createBuffer({
+        size: r * a,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+      })
+    }, O.forEach((i) => {
+      this.frametimeAverages.set(
+        i,
+        new te(400)
+      );
+    }), this.initialized = !0;
+  }
 }
-const ct = { width: 2048, height: 1024 }, mt = { width: 1024, height: 1024 }, dt = { width: 1024, height: 512 }, pt = {
+const ut = { width: 2048, height: 1024 }, lt = { width: 1024, height: 1024 }, _t = { width: 1024, height: 512 }, ct = {
   width: 32,
   height: 32,
   depthOrArrayLayers: 32
-}, se = [0.25, 0.3333, 0.5, 0.75, 1, 1.5, 2, 4], O = /* @__PURE__ */ new Map([
+}, ne = [0.25, 0.3333, 0.5, 0.75, 1, 1.5, 2, 4], F = /* @__PURE__ */ new Map([
   [
     "bad",
     {
@@ -7553,43 +7547,43 @@ const ct = { width: 2048, height: 1024 }, mt = { width: 1024, height: 1024 }, dt
     }
   ]
 ]);
-function ft(u, e, t) {
-  u.add(e, "renderScale", se).name("Render Resolution Scale").decimals(1).onFinishChange((_) => {
+function dt(o, e, t) {
+  o.add(e, "renderScale", ne).name("Render Resolution Scale").decimals(1).onFinishChange((l) => {
     t();
   }).listen();
-  const r = u.addFolder("Camera").open();
+  const r = o.addFolder("Camera").open();
   r.add(e.oceanCamera, "translationX").name("Camera X").min(-100).max(100), r.add(e.oceanCamera, "translationY").name("Camera Y").min(10).max(2e3), r.add(e.oceanCamera, "translationZ").name("Camera Z").min(-100).max(100);
-  const i = 0.01;
-  r.add(e.oceanCamera, "eulerAnglesX").name("Camera Pitch").min(-Math.PI / 2 + i).max(Math.PI / 2 - i), r.add(e.oceanCamera, "eulerAnglesY").name("Camera Yaw").min(-Math.PI).max(Math.PI);
-  const n = u.addFolder("Sun").open();
-  n.add(e.orbit, "timeHours").min(0).max(24).name("Time in Hours").listen(), n.add(e.orbit, "timeSpeedupFactor").min(1).max(5e4).step(1).name("Time Multiplier"), n.add(e.orbit, "paused").name("Pause Sun"), n.add(
+  const a = 0.01;
+  r.add(e.oceanCamera, "eulerAnglesX").name("Camera Pitch").min(-Math.PI / 2 + a).max(Math.PI / 2 - a), r.add(e.oceanCamera, "eulerAnglesY").name("Camera Yaw").min(-Math.PI).max(Math.PI);
+  const i = o.addFolder("Sun").open();
+  i.add(e.orbit, "timeHours").min(0).max(24).name("Time in Hours").listen(), i.add(e.orbit, "timeSpeedupFactor").min(1).max(5e4).step(1).name("Time Multiplier"), i.add(e.orbit, "paused").name("Pause Sun"), i.add(
     {
       fn: () => {
         e.orbit.timeHours = e.orbit.reversed ? 18 + 0.5 : 6 - 0.5;
       }
     },
     "fn"
-  ).name("Skip to Sunrise"), n.add(
+  ).name("Skip to Sunrise"), i.add(
     {
       fn: () => {
         e.orbit.timeHours = e.orbit.reversed ? 6 + 0.5 : 18 - 0.5;
       }
     },
     "fn"
-  ).name("Skip to Sunset"), n.add(e.orbit, "reversed").name("Reverse Sun"), n.add(e.orbit, "sunsetAzimuthRadians").name("Sun Azimuth").min(0).max(2 * Math.PI), n.add(e.orbit, "inclinationRadians").name("Sun Inclination").min(0).max(Math.PI);
-  const o = u.addFolder("Ocean").close();
-  o.add(e.oceanSurfaceSettings, "gerstner").name("Gerstner Waves"), o.add(e.oceanSurfaceSettings, "fft").name("FFT Accelerated Waves"), o.add(e.time, "pause").name("Pause Waves"), o.add(e.oceanSurfaceSettings, "foamScale").name("Foam Scale").min(-30).max(30), o.add(e.oceanSurfaceSettings, "foamBias").name("Foam Bias").min(-1).max(1), o.add(e.fourierWavesSettings, "gravity").name("Gravity (m / s^2)").min(0.01).max(20), o.add(e.fourierWavesSettings, "waveSwell").name("Wave Swell").min(0.01).max(1), o.add(e.fourierWavesSettings, "windFetchMeters").name("Wind Fetch (m)").min(10 * 1e3).max(100 * 1e3), o.add(e.fourierWavesSettings, "windSpeedMetersPerSeconds").name("Wind Speed (m/s)").min(0.01).max(50);
-  const s = u.addFolder("Debug").close(), l = [];
-  s.add(e, "renderFromOceanPOV").name("Render from Ocean POV").onFinishChange((_) => {
-    l.forEach((m) => {
-      m.enable(!_);
+  ).name("Skip to Sunset"), i.add(e.orbit, "reversed").name("Reverse Sun"), i.add(e.orbit, "sunsetAzimuthRadians").name("Sun Azimuth").min(0).max(2 * Math.PI), i.add(e.orbit, "inclinationRadians").name("Sun Inclination").min(0).max(Math.PI);
+  const s = o.addFolder("Ocean").close();
+  s.add(e.oceanSurfaceSettings, "gerstner").name("Gerstner Waves"), s.add(e.oceanSurfaceSettings, "fft").name("FFT Accelerated Waves"), s.add(e.time, "pause").name("Pause Waves"), s.add(e.oceanSurfaceSettings, "foamScale").name("Foam Scale").min(-30).max(30), s.add(e.oceanSurfaceSettings, "foamBias").name("Foam Bias").min(-1).max(1), s.add(e.fourierWavesSettings, "gravity").name("Gravity (m / s^2)").min(0.01).max(20), s.add(e.fourierWavesSettings, "waveSwell").name("Wave Swell").min(0.01).max(1), s.add(e.fourierWavesSettings, "windFetchMeters").name("Wind Fetch (m)").min(10 * 1e3).max(100 * 1e3), s.add(e.fourierWavesSettings, "windSpeedMetersPerSeconds").name("Wind Speed (m/s)").min(0.01).max(50);
+  const n = o.addFolder("Debug").close(), u = [];
+  n.add(e, "renderFromOceanPOV").name("Render from Ocean POV").onFinishChange((l) => {
+    u.forEach((_) => {
+      _.enable(!l);
     });
-  }), l.push(
-    s.add(e.debugCamera, "translationX").name("Camera X").min(-5e3).max(5e3),
-    s.add(e.debugCamera, "translationY").name("Camera Y").min(10).max(5e3),
-    s.add(e.debugCamera, "translationZ").name("Camera Z").min(-5e3).max(5e3),
-    s.add(e.debugCamera, "eulerAnglesX").name("Camera Pitch").min(-Math.PI / 2 + i).max(Math.PI / 2 - i),
-    s.add(e.debugCamera, "eulerAnglesY").name("Camera Yaw").min(-Math.PI).max(Math.PI),
+  }), u.push(
+    n.add(e.debugCamera, "translationX").name("Camera X").min(-5e3).max(5e3),
+    n.add(e.debugCamera, "translationY").name("Camera Y").min(10).max(5e3),
+    n.add(e.debugCamera, "translationZ").name("Camera Z").min(-5e3).max(5e3),
+    n.add(e.debugCamera, "eulerAnglesX").name("Camera Pitch").min(-Math.PI / 2 + a).max(Math.PI / 2 - a),
+    n.add(e.debugCamera, "eulerAnglesY").name("Camera Yaw").min(-Math.PI).max(Math.PI),
     /* Non-zero camera roll breaks certain horizon calculations in shaders
     debugFolder
     	.add(this.settings.cameraSettings.debugCamera, "eulerAnglesZ")
@@ -7597,101 +7591,101 @@ function ft(u, e, t) {
     	.min(-Math.PI)
     	.max(Math.PI),
     */
-    s.add(
+    n.add(
       {
         fn: () => {
           Object.assign(
             e.debugCamera,
             structuredClone(e.oceanCamera)
-          ), s.controllers.forEach((_) => {
-            _.updateDisplay();
+          ), n.controllers.forEach((l) => {
+            l.updateDisplay();
           });
         }
       },
       "fn"
     ).name("Reset to match main camera")
-  ), l.forEach((_) => _.enable(!1));
+  ), u.forEach((l) => l.enable(!1));
 }
-function ae(u, e, t) {
-  const r = new ne(u, { width: 1, height: 1 }), i = new Te(u);
-  i.writeToGPU(u.queue);
-  const n = new ze(
-    u,
+function re(o, e, t) {
+  const r = new ie(o, { width: 1, height: 1 }), a = new xe(o);
+  a.writeToGPU(o.queue);
+  const i = new Te(
+    o,
+    ut,
+    a
+  ), s = o.features.has("float32-filterable"), n = new Me(
+    o,
+    lt,
+    i.view,
+    s,
+    a
+  ), u = new De(
+    o,
+    _t,
+    i.view,
+    n.view,
+    s,
+    a
+  ), l = new Ue(
+    o,
     ct,
-    i
-  ), o = u.features.has("float32-filterable"), s = new Pe(
-    u,
-    mt,
+    i.view,
     n.view,
+    s,
+    a
+  ), _ = new Je(
     o,
-    i
-  ), l = new Re(
-    u,
-    dt,
-    n.view,
-    s.view,
-    o,
-    i
-  ), _ = new Ce(
-    u,
-    pt,
-    n.view,
-    s.view,
-    o,
-    i
-  ), m = new rt(
-    u,
-    i,
+    a,
     e.fftGridSizeLog2
-  ), c = m.views(), v = new nt(
-    u,
-    i,
-    r.formats,
-    m.displacementMaps()
-  ), h = new Ee(
-    u,
-    r.readGroupLayout,
-    n.view,
-    s.view,
-    l.view,
-    _.view,
+  ), c = _.views(), d = new rt(
     o,
-    i
-  ), y = new lt(
-    u,
+    a,
+    r.formats,
+    _.displacementMaps()
+  ), v = new Ae(
+    o,
+    r.readGroupLayout,
+    i.view,
+    n.view,
+    u.view,
+    l.view,
+    s,
+    a
+  ), g = new st(
+    o,
     t
-  ), d = r.colorRenderables();
+  ), m = r.colorRenderables();
   [
     [
       "Scene",
-      new w(
-        h.outputColor
+      new T(
+        v.outputColor
       )
     ],
     [
       "GBufferColor",
-      d.colorWithSurfaceWorldDepthInAlpha
+      m.colorWithSurfaceWorldDepthInAlpha
     ],
     [
       "GBufferNormal",
-      d.normalWithSurfaceFoamStrengthInAlpha
+      m.normalWithSurfaceFoamStrengthInAlpha
     ],
     [
       "AtmosphereTransmittanceLUT",
-      new w(n.texture)
+      new T(i.texture)
     ],
     [
       "AtmosphereMultiscatterLUT",
-      new w(s.texture)
+      new T(n.texture)
     ],
     [
       "AtmosphereSkyviewLUT",
-      new w(l.texture)
+      new T(u.texture)
     ],
     [
       "AtmosphereAerialPerspectiveLUT",
-      new w(
-        _.texture
+      new T(
+        l.texture
       )
     ],
     ["FFTWaveSpectrumGaussianNoise", c.gaussianNoise],
@@ -7713,90 +7707,123 @@ function ae(u, e, t) {
       "FFTWaveDydx_Dydz_Dxdx_Dzdz_Spatial",
       c.Dydx_Dydz_Dxdx_Dzdz_Spatial
     ]
-  ].forEach(([p, b]) => {
-    y.setOutput(u, p, b);
+  ].forEach(([p, x]) => {
+    g.setOutput(o, p, x);
   });
-  const g = u.createCommandEncoder({
+  const h = o.createCommandEncoder({
     label: "Atmosphere LUT Initialization"
   });
-  return n.record(g), s.record(g), u.queue.submit([g.finish()]), {
-    aerialPerspectiveLUTPassResources: _,
-    atmosphereCameraPassResources: h,
-    fftWaveSpectrumResources: m,
-    fullscreenQuadPassResources: y,
+  return i.record(h), n.record(h), o.queue.submit([h.finish()]), {
+    aerialPerspectiveLUTPassResources: l,
+    atmosphereCameraPassResources: v,
+    fftWaveSpectrumResources: _,
+    fullscreenQuadPassResources: g,
     gbuffer: r,
-    globalUBO: i,
-    multiscatterLUTPassResources: s,
-    skyviewLUTPassResources: l,
-    transmittanceLUTPassResources: n,
-    waveSurfaceDisplacementPassResources: v
+    globalUBO: a,
+    multiscatterLUTPassResources: n,
+    skyviewLUTPassResources: u,
+    transmittanceLUTPassResources: i,
+    waveSurfaceDisplacementPassResources: d
   };
 }
-function ie(u) {
-  switch (u) {
+function ae(o) {
+  switch (o) {
     case "bgra8unorm":
       return "bgra8unorm-srgb";
     case "rgba8unorm":
       return "rgba8unorm-srgb";
     default:
       return console.warn(
-        `Using unsupported canvas format "${u}", color encoding will be off.`
-      ), u;
+        `Using unsupported canvas format "${o}", color encoding will be off.`
+      ), o;
   }
 }
-function ht(u, e, t, r) {
+function mt(o, e, t, r) {
   e.data.time.deltaTimeSeconds = t.time.deltaTimeSeconds, e.data.time.timeSeconds = t.time.timeSeconds;
-  const i = 2 * Math.PI / 24, n = (12 - t.orbit.timeHours) * i, o = S.create(
+  const a = 2 * Math.PI / 24, i = (12 - t.orbit.timeHours) * a, s = b.create(
     -Math.sin(t.orbit.sunsetAzimuthRadians),
     0,
     Math.cos(t.orbit.sunsetAzimuthRadians)
-  ), s = S.create(
+  ), n = b.create(
     Math.cos(t.orbit.sunsetAzimuthRadians) * Math.cos(t.orbit.inclinationRadians),
     Math.sin(t.orbit.inclinationRadians),
     Math.sin(t.orbit.sunsetAzimuthRadians) * Math.cos(t.orbit.inclinationRadians)
-  ), l = S.add(
-    S.scale(o, Math.sin(n)),
-    S.scale(s, Math.cos(n))
+  ), u = b.add(
+    b.scale(s, Math.sin(i)),
+    b.scale(n, Math.cos(i))
   );
-  S.scale(l, -1, e.data.light.forward);
-  const _ = 60 * Math.PI / 180, v = x.perspective(_, r, 0.1, 1e3), h = (y, d) => {
-    const g = [
-      d.translationX,
-      d.translationY,
-      d.translationZ,
+  b.scale(u, -1, e.data.light.forward);
+  const l = 60 * Math.PI / 180, d = y.perspective(l, r, 0.1, 1e3), v = (g, m) => {
+    const h = [
+      m.translationX,
+      m.translationY,
+      m.translationZ,
       1
-    ], p = x.rotationX(d.eulerAnglesX), b = x.rotationY(d.eulerAnglesY), f = x.rotationZ(d.eulerAnglesZ), M = x.mul(
-      x.translation(z.create(...g)),
-      x.mul(b, x.mul(p, f))
-    ), P = x.inverse(M);
-    Object.assign(y, {
-      invProj: x.inverse(v),
-      invView: M,
-      projView: x.mul(v, P),
-      position: z.create(...g),
-      forward: z.create(
-        ...x.multiply(M, z.create(0, 0, -1, 0))
+    ], p = y.rotationX(m.eulerAnglesX), x = y.rotationY(m.eulerAnglesY), f = y.rotationZ(m.eulerAnglesZ), w = y.mul(
+      y.translation(M.create(...h)),
+      y.mul(x, y.mul(p, f))
+    ), D = y.inverse(w);
+    Object.assign(g, {
+      invProj: y.inverse(d),
+      invView: w,
+      projView: y.mul(d, D),
+      position: M.create(...h),
+      forward: M.create(
+        ...y.multiply(w, M.create(0, 0, -1, 0))
       )
     });
   };
-  h(e.data.ocean_camera, t.oceanCamera), h(
+  v(e.data.ocean_camera, t.oceanCamera), v(
     e.data.camera,
     t.renderFromOceanPOV ? t.oceanCamera : t.debugCamera
-  ), e.writeToGPU(u);
+  ), e.writeToGPU(o);
 }
-class gt {
+class pt {
+  resources;
+  unscaledResolution;
+  renderOutputController;
+  parameters;
+  performance;
+  performanceConfig;
+  device;
+  quit = !1;
+  dummyFrameCounter;
+  canvasTextureFormat;
+  destroy() {
+    this.performance.destroy(), this.device.destroy();
+  }
+  presentationInterface() {
+    return {
+      device: this.device,
+      format: this.canvasTextureFormat,
+      viewFormats: [
+        this.resources.fullscreenQuadPassResources.attachmentFormat
+      ]
+    };
+  }
+  setupUI(e) {
+    dt(e, this.parameters, () => {
+      this.updateResizableResources();
+    }), this.renderOutputController.setupUI(e), this.performance.setupUI(e);
+  }
+  setPerformanceConfig(e) {
+    const t = F.get(e) ?? F.get("bad");
+    if (t.fftGridSizeLog2 !== this.performanceConfig.fftGridSizeLog2 || t.oceanSurfaceVertexSize !== this.performanceConfig.oceanSurfaceVertexSize || t.renderScale !== this.performanceConfig.renderScale) {
+      this.performanceConfig = t, this.resources = re(
+        this.device,
+        this.performanceConfig,
+        ae(this.canvasTextureFormat)
+      ), this.parameters.renderScale = this.performanceConfig.renderScale, this.updateResizableResources();
+      for (const a of this.resources.fullscreenQuadPassResources.getAllTextureProperties())
+        this.renderOutputController.setTextureProperties(a);
+    }
+  }
+  setLowPerformanceMode(e) {
+    const t = e ? "bad" : "good";
+    this.setPerformanceConfig(t);
+  }
   constructor(e, t) {
-    a(this, "resources");
-    a(this, "unscaledResolution");
-    a(this, "renderOutputController");
-    a(this, "parameters");
-    a(this, "performance");
-    a(this, "performanceConfig");
-    a(this, "device");
-    a(this, "quit", !1);
-    a(this, "dummyFrameCounter");
-    a(this, "canvasTextureFormat");
-    this.device = e, this.canvasTextureFormat = t, this.performanceConfig = O.get("good"), this.renderOutputController = new Ie(), this.parameters = {
+    this.device = e, this.canvasTextureFormat = t, this.performanceConfig = F.get("good"), this.renderOutputController = new Ge(), this.parameters = {
       oceanSurfaceSettings: {
         gerstner: !0,
         fft: !0,
@@ -7840,81 +7867,48 @@ class gt {
         sunsetAzimuthRadians: Math.PI
       },
       renderScale: 1
-    }, this.resources = ae(
+    }, this.resources = re(
       this.device,
       this.performanceConfig,
-      ie(t)
+      ae(t)
     );
     for (const r of this.resources.fullscreenQuadPassResources.getAllTextureProperties())
       this.renderOutputController.setTextureProperties(r);
-    this.unscaledResolution = { width: 128, height: 128 }, this.performance = new _t(this.device), this.dummyFrameCounter = 10;
-  }
-  destroy() {
-    this.performance.destroy(), this.device.destroy();
-  }
-  presentationInterface() {
-    return {
-      device: this.device,
-      format: this.canvasTextureFormat,
-      viewFormats: [
-        this.resources.fullscreenQuadPassResources.attachmentFormat
-      ]
-    };
-  }
-  setupUI(e) {
-    ft(e, this.parameters, () => {
-      this.updateResizableResources();
-    }), this.renderOutputController.setupUI(e), this.performance.setupUI(e);
-  }
-  setPerformanceConfig(e) {
-    const t = O.get(e) ?? O.get("bad");
-    if (t.fftGridSizeLog2 !== this.performanceConfig.fftGridSizeLog2 || t.oceanSurfaceVertexSize !== this.performanceConfig.oceanSurfaceVertexSize || t.renderScale !== this.performanceConfig.renderScale) {
-      this.performanceConfig = t, this.resources = ae(
-        this.device,
-        this.performanceConfig,
-        ie(this.canvasTextureFormat)
-      ), this.parameters.renderScale = this.performanceConfig.renderScale, this.updateResizableResources();
-      for (const i of this.resources.fullscreenQuadPassResources.getAllTextureProperties())
-        this.renderOutputController.setTextureProperties(i);
-    }
-  }
-  setLowPerformanceMode(e) {
-    const t = e ? "bad" : "good";
-    this.setPerformanceConfig(t);
+    this.unscaledResolution = { width: 128, height: 128 }, this.performance = new ot(this.device), this.dummyFrameCounter = 10;
   }
   tickTime(e) {
-    const i = this.parameters.oceanSurfaceSettings.fft ? 100 : 60, n = this.parameters.time;
-    n.pause ? n.deltaTimeSeconds = 0 : (n.deltaTimeSeconds = e / 1e3, n.timeSeconds += n.deltaTimeSeconds), n.timeSeconds -= Math.floor(n.timeSeconds / i) * i;
-    const o = this.parameters.orbit;
-    o.paused || (o.timeHours += (o.reversed ? -1 : 1) * o.timeSpeedupFactor * e / 36e5, o.timeHours = o.timeHours - Math.floor(o.timeHours / 24) * 24);
+    const a = this.parameters.oceanSurfaceSettings.fft ? 100 : 60, i = this.parameters.time;
+    i.pause ? i.deltaTimeSeconds = 0 : (i.deltaTimeSeconds = e / 1e3, i.timeSeconds += i.deltaTimeSeconds), i.timeSeconds -= Math.floor(i.timeSeconds / a) * a;
+    const s = this.parameters.orbit;
+    s.paused || (s.timeHours += (s.reversed ? -1 : 1) * s.timeSpeedupFactor * e / 36e5, s.timeHours = s.timeHours - Math.floor(s.timeHours / 24) * 24);
   }
-  draw(e, t, r, i) {
+  draw(e, t, r, a) {
     if (this.resources === void 0)
       return;
     if (this.dummyFrameCounter > 0) {
       this.dummyFrameCounter -= 1;
       return;
     }
-    const n = e.createView({
+    const i = e.createView({
       format: "bgra8unorm-srgb"
     });
-    this.performance.beginFrame(i), this.tickTime(i), ht(
+    this.performance.beginFrame(a), this.tickTime(a), mt(
       this.device.queue,
       this.resources.globalUBO,
       this.parameters,
       t
     );
-    const o = this.device.createCommandEncoder({
+    const s = this.device.createCommandEncoder({
       label: "Main"
     });
     this.resources.fftWaveSpectrumResources.record(
       this.device,
-      o,
+      s,
       this.parameters.fourierWavesSettings,
       this.performance.queueTimestampInterval("FFTWaves")
     ), this.resources.waveSurfaceDisplacementPassResources.record(
       this.device,
-      o,
+      s,
       this.performance.queueTimestampInterval("OceanSurface"),
       this.resources.fftWaveSpectrumResources.turbulenceMapIndex,
       {
@@ -7925,63 +7919,63 @@ class gt {
       },
       this.resources.gbuffer
     ), this.resources.skyviewLUTPassResources.record(
-      o,
+      s,
       this.performance.queueTimestampInterval("SkyviewLUT")
     ), this.resources.aerialPerspectiveLUTPassResources.record(
-      o,
+      s,
       this.performance.queueTimestampInterval("AerialPerspectiveLUT")
     ), this.resources.atmosphereCameraPassResources.record(
-      o,
+      s,
       this.performance.queueTimestampInterval("AtmosphereCamera"),
       this.resources.gbuffer
     );
-    const s = this.renderOutputController.current();
+    const n = this.renderOutputController.current();
     this.resources.fullscreenQuadPassResources.record(
       this.device,
-      o,
-      n,
-      s.tag,
-      s.transform,
+      s,
+      i,
+      n.tag,
+      n.transform,
       this.performance.queueTimestampInterval("FullscreenQuad")
-    ), this.performance.preSubmitCommands(o), this.device.queue.submit([o.finish()]), this.performance.postSubmitCommands();
+    ), this.performance.preSubmitCommands(s), this.device.queue.submit([s.finish()]), this.performance.postSubmitCommands();
   }
   updateResizableResources() {
     if (this.resources === void 0)
       return;
-    const e = (s) => ({
-      width: Math.floor(this.unscaledResolution.width * s),
+    const e = (n) => ({
+      width: Math.floor(this.unscaledResolution.width * n),
       height: Math.floor(
-        this.unscaledResolution.height * s
+        this.unscaledResolution.height * n
       )
-    }), t = (s) => s.width < 8192 && s.height < 8192 && s.width * s.height * 16 < 268435456;
+    }), t = (n) => n.width < 8192 && n.height < 8192 && n.width * n.height * 16 < 268435456;
     let r = this.parameters.renderScale;
-    const i = e(r);
-    t(i) || (se.slice().reverse().some((s) => {
-      if (t(e(s)))
-        return r = s, !0;
+    const a = e(r);
+    t(a) || (ne.slice().reverse().some((n) => {
+      if (t(e(n)))
+        return r = n, !0;
     }), console.warn(
-      `During resize: Texture size (${i.width},${i.height}) exceeds WebGPU guaranteed limit (8192, 8192).
+      `During resize: Texture size (${a.width},${a.height}) exceeds WebGPU guaranteed limit (8192, 8192).
 					Defaulting to highest possible render scale of ${r}`
     )), this.parameters.renderScale = r;
-    const n = e(this.parameters.renderScale);
+    const i = e(this.parameters.renderScale);
     console.log(
-      `Resizing to (${n.width},${n.height})`
-    ), this.resources.gbuffer = new ne(
+      `Resizing to (${i.width},${i.height})`
+    ), this.resources.gbuffer = new ie(
       this.device,
-      n,
+      i,
       this.resources.gbuffer
     );
-    const o = this.resources.gbuffer.colorRenderables();
+    const s = this.resources.gbuffer.colorRenderables();
     this.resources.fullscreenQuadPassResources.setOutput(
       this.device,
       "GBufferColor",
-      o.colorWithSurfaceWorldDepthInAlpha
+      s.colorWithSurfaceWorldDepthInAlpha
     ), this.resources.fullscreenQuadPassResources.setOutput(
       this.device,
       "GBufferNormal",
-      o.normalWithSurfaceFoamStrengthInAlpha
+      s.normalWithSurfaceFoamStrengthInAlpha
     ), this.resources.atmosphereCameraPassResources.resize(
-      n,
+      i,
       this.device,
       this.resources.transmittanceLUTPassResources.view,
       this.resources.multiscatterLUTPassResources.view,
@@ -7990,18 +7984,18 @@ class gt {
     ), this.resources.fullscreenQuadPassResources.setOutput(
       this.device,
       "Scene",
-      new w(
+      new T(
         this.resources.atmosphereCameraPassResources.outputColor
       )
     );
-    for (const s of this.resources.fullscreenQuadPassResources.getAllTextureProperties())
-      this.renderOutputController.setTextureProperties(s);
+    for (const n of this.resources.fullscreenQuadPassResources.getAllTextureProperties())
+      this.renderOutputController.setTextureProperties(n);
   }
   handleResize(e, t) {
     this.unscaledResolution.width === e && this.unscaledResolution.height === t || (this.unscaledResolution.width = e, this.unscaledResolution.height = t, this.updateResizableResources());
   }
 }
-const xt = (u, e) => new gt(u, e);
+const ht = (o, e) => new pt(o, e);
 export {
-  xt as SkySeaAppConstructor
+  ht as SkySeaAppConstructor
 };

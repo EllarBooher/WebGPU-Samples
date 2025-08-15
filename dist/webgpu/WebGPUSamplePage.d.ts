@@ -1,4 +1,4 @@
-import { default as React } from 'react';
+import { default as React, ReactNode } from 'react';
 import { SampleID } from './Samples';
 /**
  * A component that handles the initialization of the rendering application for
@@ -16,4 +16,4 @@ import { SampleID } from './Samples';
 export declare const AppLoader: ({ sampleID, styleOverrides, }: {
     sampleID: SampleID;
     styleOverrides?: React.CSSProperties;
-}) => JSX.Element;
+}) => ReactNode;
