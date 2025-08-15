@@ -1,9 +1,9 @@
 import { JSX, memo, useEffect, useState } from "react";
-import "./EmbeddedReadme.css";
-import "prism-themes/themes/prism-one-dark.min.css";
-
 import parseToHTML, { DOMNode, domToReact, Element } from "html-react-parser";
 import { SampleID, SampleInitDescriptorByID } from "./Samples";
+
+import "./EmbeddedReadme.css";
+import "prism-themes/themes/prism-one-dark.min.css";
 
 const repoRoot =
 	"https://github.com/EllarBooher/WebGPU-Samples/tree/main/lib/webgpu";
@@ -70,6 +70,8 @@ export const EmbeddedReadme = memo(function EmbeddedReadme({
 			if (href.startsWith("#") === true) {
 				return (
 					<button
+						role="link"
+						className="webgpu-samples-hash-link"
 						onClick={() =>
 							document.getElementById(href.slice(1))?.scrollIntoView()
 						}

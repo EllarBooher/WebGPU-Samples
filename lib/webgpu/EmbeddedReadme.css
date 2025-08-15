@@ -53,3 +53,17 @@
 .webgpu-samples-citation-text {
 	overflow-wrap: anywhere;
 }
+
+.webgpu-samples-hash-link {
+	color: var(--webgpu-samples-text-color-link);
+	padding: 0;
+	font-size: 1em;
+	border: none;
+	background: none;
+	text-decoration: underline;
+}
+
+.webgpu-samples-hash-link:hover {
+	cursor: pointer;
+	color: white;
+}
