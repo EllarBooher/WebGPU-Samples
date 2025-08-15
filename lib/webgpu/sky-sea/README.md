@@ -60,7 +60,7 @@ $$
 \begin{align*}
 \theta(\mathbf k,\mathbf r,t) &= \mathbf k \cdot (\mathbf r_x,\mathbf r_z) - \omega(\mathbf k) t \\
 \hat{\mathbf k} &= \frac{\mathbf k}{\left\|\mathbf k\right\|} \\
-\mathbf D(\mathbf r,t) &= \sum_{\mathbf k} \left(-A\hat{\mathbf k}_x \sin(\theta),A\cos(\theta),-A\hat{\mathbf k}_z \sin(\theta)\right)
+\mathbf D(\mathbf r,t) &= \sum_{\mathbf k} \left(-A\hat{\mathbf k} _x \sin(\theta),A\cos(\theta),-A\hat{\mathbf k} _z \sin(\theta)\right)
 \end{align*}
 $$
 
@@ -73,8 +73,8 @@ Calculating a single vertex displacement on this grid as a naive sum is $O(n^2)$
 $$
 \begin{align*}
  \tilde{h}(\mathbf k,t) &: \text{Frequency domain amplitude}\\
-\tilde {\mathbf h}(\mathbf k,t) &= \tilde{h}(\mathbf k,t)\left(-i\hat{\mathbf k}_x,1,-i\hat{\mathbf k}_z\right) \\
-\mathbf D(\mathbf r,t) &= \sum_{\mathbf k} \tilde{\mathbf h}(\mathbf k,t)e^{i\mathbf k \cdot \mathbf r} \\
+\tilde {\mathbf h}(\mathbf k,t) &= \tilde{h}(\mathbf k,t)\left(-i\hat{\mathbf k} _x,1,-i\hat{\mathbf k} _z\right) \\
+\mathbf D(\mathbf r,t) &= \sum _{\mathbf k} \tilde{\mathbf h}(\mathbf k,t)e^{i\mathbf k \cdot \mathbf r} \\
 \end{align*}
 $$
 
@@ -99,16 +99,16 @@ The discrete fourier transform is a sum, so the derivative distributes over it. 
 $$
 \begin{align*}
 x_i &\in {x,z} \\
-\frac{\partial}{\partial x_i}\mathbf D_{x_i}(\mathbf k,\mathbf r,t) &= \frac{\partial}{\partial x_i}\sum_{\mathbf k} \tilde{\mathbf h}_{x_i}(\mathbf k,t)e^{i\mathbf k \cdot \mathbf r} \\
-&= \sum_{\mathbf k} \tilde{\mathbf h}_{x_i}(\mathbf k,t)\frac{\partial}{\partial x_i}e^{i\mathbf k \cdot \mathbf r} \\
-&= \sum_{\mathbf k} i\mathbf k_{x_i}\tilde{\mathbf h}_{x_i}(\mathbf k,t)e^{i\mathbf k \cdot \mathbf r}
+\frac{\partial}{\partial x_i}\mathbf D_{x_i}(\mathbf k,\mathbf r,t) &= \frac{\partial}{\partial x_i}\sum_{\mathbf k} \tilde{\mathbf h} _{x_i}(\mathbf k,t)e^{i\mathbf k \cdot \mathbf r} \\
+&= \sum _{\mathbf k} \tilde{\mathbf h} _{x_i}(\mathbf k,t)\frac{\partial}{\partial x_i}e^{i\mathbf k \cdot \mathbf r} \\
+&= \sum _{\mathbf k} i\mathbf k _{x_i}\tilde{\mathbf h} _{x_i}(\mathbf k,t)e^{i\mathbf k \cdot \mathbf r}
 \end{align*}
 $$
 
 We can improve the performance further. Since the displacement is real-valued, we can pack two IFFTs into one by summing two streams of input data while multiplying one by $i$. The discrete fourier transform is a linear sum, so multiplying the inputs by a scalar multiplies the output by that same scalar. For example:
 
 $$
-\tilde{\mathbf h}_x(k,t)+i\tilde{\mathbf h}_z(k,t)\xmapsto{IFFT}\mathbf D_x+i\mathbf D_z
+\tilde{\mathbf h} _x(k,t)+i\tilde{\mathbf h} _z(k,t)\xmapsto{IFFT}\mathbf D_x+i\mathbf D_z
 $$
 
 From this we can easily extract $\mathbf D_x$ and $\mathbf D_z$ since they will be in separate vector components. Furthermore, since textures have four components, we can pack two IFFTs into one set of dispatches via concatenation. See `computeTimeDependentAmplitude` of [`fourier_waves.wgsl`](../../shaders/sky-sea/ocean/fourier_waves.wgsl#L354) for how we pack the spectrum data and compute $\tilde{\mathbf h}$.
@@ -147,18 +147,16 @@ $$
 \mathbf P &: \text{Surface position} \\
 \mathbf L &: \text{Light direction outgoing from surface} \\
 \mathbf N &: \text{Surface normal} \\
-\mathbf V &\coloneqq \operatorname{normalize}(\mathbf C - \mathbf P) \\
-\mathbf H &\coloneqq \operatorname{normalize(\mathbf L + \mathbf V)} \\
-R(\mathbf v,\mathbf n) &: \text{Fresnel factor for perfect reflection for} \\
-&\;\; \text{ outgoing $\mathbf v$ and surface normal $\mathbf n$} \\
+\mathbf V &\coloneqq \mathrm{normalize}(\mathbf C - \mathbf P) \\
+\mathbf H &\coloneqq \mathrm{normalize(\mathbf L + \mathbf V)} \\
+R(\mathbf v,\mathbf n) &: \text{Fresnel factor for outgoing $\mathbf v$ and surface normal $\mathbf n$} \\
 L_{out}(\mathbf p,\mathbf v) &: \text{Outgoing luminance from position $\mathbf p$ to direction $\mathbf v$ } \\
 L_{in}(\mathbf p,\mathbf v) &: \text{Incoming luminance to position $\mathbf p$ from direction $\mathbf v$} \\
-\mathbf T_{segment}(\mathbf x, \mathbf y) &: \text{Spectral transmittance between positions $\mathbf x$ and $\mathbf y$} \\
-\mathbf T_{ray}(\mathbf o,\mathbf d) &: \text{Spectral transmittance to atmospheric boundary for} \\
-&\;\; \text{ ray of origin $\mathbf o$ and direction $\mathbf d$} \\
-\operatorname{BRDF}(\mathbf a, \mathbf b) &: \text{BRDF for outgoing directions $\mathbf a$ and $\mathbf b$} \\
-\operatorname{BRDF_s} &: \text{Specular microfacet BRDF} \\
-\operatorname{BRDF_d} &: \text{Diffuse Lambertian BRDF} \\
+\mathbf T_{segment}(\mathbf x, \mathbf y) &: \text{Transmittance between positions $\mathbf x$ and $\mathbf y$} \\
+\mathbf T_{ray}(\mathbf o,\mathbf d) &: \text{Transmittance to atmospheric boundary for a ray} \\
+\mathrm{BRDF}(\mathbf a, \mathbf b) &: \text{BRDF for outgoing directions $\mathbf a$ and $\mathbf b$} \\
+\mathrm{BRDF_s} &: \text{Specular microfacet BRDF} \\
+\mathrm{BRDF_d} &: \text{Diffuse Lambertian BRDF} \\
 \omega &: \text{Solid angle in steradians} \\
 \end{align*}
 $$
@@ -176,14 +174,14 @@ Estimating the luminance from the sky dome accurately is difficult, see [[3]](#b
 
 $$
 \begin{align*}
-L_{sky} &= \omega_s\:L_{in,sky}(\mathbf C,\mathbf v_s)\:\operatorname{BRDF_s}(\mathbf v_s,\mathbf V)R_s  \\
-&+ \omega_d\:L_{in,sky}(\mathbf C,\mathbf v_d)\:\operatorname{BRDF_d}(\mathbf v_d,\mathbf V)R_d \\
+L_{sky} &= \omega_s\:L_{in,sky}(\mathbf C,\mathbf v_s)\:\mathrm{BRDF_s}(\mathbf v_s,\mathbf V)R_s  \\
+&+ \omega_d\:L_{in,sky}(\mathbf C,\mathbf v_d)\:\mathrm{BRDF_d}(\mathbf v_d,\mathbf V)R_d \\
 \omega_s &= \frac{4\pi}{200}\\
-\mathbf v_{s} &= \operatorname{reflect(\mathbf V, \mathbf N)} \\
+\mathbf v_{s} &= \mathrm{reflect(\mathbf V, \mathbf N)} \\
 R_s &= R(\mathbf v_s, \mathbf N) \\
 \omega_d &= 2\pi \\
-\mathbf v_{d} &= \operatorname{normalize(\mathbf L+(0,1,0))} \\
-R_d &= 1 - R(\mathbf v_d, \operatorname{normalize}(\mathbf v_d+\mathbf L)) \\
+\mathbf v_{d} &= \mathrm{normalize(\mathbf L+(0,1,0))} \\
+R_d &= 1 - R(\mathbf v_d, \mathrm{normalize}(\mathbf v_d+\mathbf L)) \\
 \end{align*}
 $$
 
@@ -199,7 +197,7 @@ $$
 \begin{align*}
 S(\mathbf p, \mathbf l) \in [0,1] &: \text{Sun visibility at surface position $\mathbf p$ and light direction $\mathbf l$} \\
 L_{sun} &= S(\mathbf P, \mathbf L)\:\mathbf T_{ray}(\mathbf P,\mathbf L)\:E_{sun}\:BRDF_{sun} \\
-BRDF_{sun} &= \operatorname{lerp}\left(BRDF_d(\mathbf L, \mathbf V),BRDF_s(\mathbf L, \mathbf V),\mathbf R(\mathbf L,\mathbf H)\right)\\
+BRDF_{sun} &= \mathrm{lerp}\left(BRDF_d(\mathbf L, \mathbf V),BRDF_s(\mathbf L, \mathbf V),\mathbf R(\mathbf L,\mathbf H)\right)\\
 \end{align*}
 $$
 
