@@ -2,27 +2,9 @@ import HelloCubePak from "../../shaders/hello_cube.wgsl";
 import { mat4 } from "wgpu-matrix";
 import { RendererApp, RendererAppConstructor } from "../RendererApp";
 import { GUI } from "lil-gui";
+import POSSIBLE_WEBGPU_FEATURES from "../Features";
 
 // Draw a simple cube
-
-const POSSIBLE_WEBGPU_FEATURES = new Set<string>([
-	"depth-clip-control",
-	"depth32float-stencil8",
-	"texture-compression-bc",
-	"texture-compression-bc-sliced-3d",
-	"texture-compression-etc2",
-	"texture-compression-astc",
-	"texture-compression-astc-sliced-3d",
-	"timestamp-query",
-	"indirect-first-instance",
-	"shader-f16",
-	"rg11b10ufloat-renderable",
-	"bgra8unorm-storage",
-	"float32-filterable",
-	"float32-blendable",
-	"clip-distances",
-	"dual-source-blending",
-]);
 
 class HelloCubeApp implements RendererApp {
 	quit = false;
