@@ -1,7 +1,7 @@
 import { RendererAppConstructor } from "./RendererApp";
 import POSSIBLE_WEBGPU_FEATURES from "./Features";
 
-export const SampleIDs = ["hello-cube", "sky-sea"] as const;
+export const SampleIDs = ["hello-cube", "sky-sea", "sandstone"] as const;
 export type SampleID = (typeof SampleIDs)[number];
 
 /**
@@ -41,6 +41,14 @@ export const SampleDisplayDescriptorByID = new Map<
 			name: "Sky and Sea",
 			description:
 				"Real-time rendering of a dynamic sun over the open ocean, with various models for surface waves and raymarched atmospheric scattering.",
+		},
+	],
+	[
+		"sandstone",
+		{
+			name: "Sandstone",
+			description:
+				"Physics simulation of stratified sedimentary rock erosion and deposition over millions of years.",
 		},
 	],
 ]);
@@ -106,6 +114,19 @@ export const SampleInitDescriptorByID = new Map<
 			import: (): Promise<RendererAppConstructor> =>
 				import("./sky-sea/SkySea").then((value) => {
 					return value.SkySeaAppConstructor;
+				}),
+		},
+	],
+	[
+		"sandstone",
+		{
+			projectFolder: "sandstone",
+			requiredLimits: new Map(),
+			requiredFeatures: new Set(),
+			optionalFeatures: new Set(),
+			import: (): Promise<RendererAppConstructor> =>
+				import("./sandstone/Sandstone").then((value) => {
+					return value.SandstoneAppConstructor;
 				}),
 		},
 	],
