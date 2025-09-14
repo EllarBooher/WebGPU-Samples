@@ -6,7 +6,7 @@
 //
 // Then the fragment stage draws only the fragments that pass a ray-sphere intersection.
 
-// sizeof  :  4 * 64 = 256
+// sizeof  :  5 * 64 = 256
 // alignof :  16
 struct CameraUBO
 {
@@ -24,6 +24,9 @@ struct CameraUBO
 
 	// camera -> clip
 	proj: mat4x4<f32>,
+
+	// camera -> world
+	model: mat4x4<f32>,
 }
 
 const PARTICLE_RADIUS_SQUARED = 1;
@@ -146,7 +149,7 @@ fn fragmentMain(
 	let hit_position = hit.t0 * ray_direction_normalized + ray_origin;
 
 	var out: FragmentOut;
-	out.color = vec4<f32>(normalize(hit_position - frag_interpolated.particle_center_camera), 1.0);
+	out.color = u_camera.model * vec4<f32>(0.5 * (normalize(hit_position) + vec3(1.0)), 0.0);
 
 	return out;
 }

@@ -69,7 +69,7 @@ class CameraUBO extends UBO {
 	};
 
 	constructor(device: GPUDevice) {
-		const SIZEOF_CAMERA_UBO = 256;
+		const SIZEOF_CAMERA_UBO = 5 * 64;
 		const BYTES_PER_FLOAT32 = 4;
 		super(device, SIZEOF_CAMERA_UBO / BYTES_PER_FLOAT32, "Camera UBO");
 	}
@@ -109,6 +109,7 @@ class CameraUBO extends UBO {
 			focalLength,
 			...mat2x4_zeroed,
 			...proj,
+			...transform,
 		]);
 	}
 }
@@ -126,7 +127,10 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			},
 			{
 				binding: 1,
-				visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+				visibility:
+					GPUShaderStage.VERTEX |
+					GPUShaderStage.COMPUTE |
+					GPUShaderStage.FRAGMENT,
 				buffer: { type: "uniform" },
 			},
 		],
@@ -186,7 +190,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	);
 
 	const particles = new Float32Array([
-		-4, -2, -5, 0, 0, 0, -5, 0, 0, 1, -5, 0, 2, 2, -5, 0,
+		-4, -2, -5, 0, 0, 0, -5, 0, 0, 2, -5, 0, 2, 2, -5, 0,
 	]);
 	const particleBuffer = device.createBuffer({
 		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
