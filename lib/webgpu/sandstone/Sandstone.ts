@@ -127,10 +127,69 @@ class CameraUBO extends UBO {
 	}
 }
 
-export const SandstoneAppConstructor: RendererAppConstructor = (
-	device,
-	_presentFormat
-): RendererApp => {
+interface Particles {
+	// Centers of particles in world space
+	centers: GPUBuffer;
+	// Each particle has 4 vertices, for the quad when rendering a debug view
+	vertices: GPUBuffer;
+	// The small grid we project to when converting to a mesh
+	projectedGrid: GPUBuffer;
+}
+
+const buildParticles = (device: GPUDevice): Particles => {
+	const particles = new Float32Array(PARTICLE_COUNT * 4);
+	for (let x = 0; x < 16; x++) {
+		for (let y = 0; y < 16; y++) {
+			for (let z = 0; z < 16; z++) {
+				const particleIdx = x * 16 * 16 + y * 16 + z;
+				particles[4 * particleIdx] =
+					x * PARTICLE_RADIUS * 2.0 +
+					0.5 * Math.random() * PARTICLE_RADIUS;
+				particles[4 * particleIdx + 1] =
+					y * PARTICLE_RADIUS * 2.0 +
+					0.5 * Math.random() * PARTICLE_RADIUS;
+				particles[4 * particleIdx + 2] =
+					z * PARTICLE_RADIUS * 2.0 +
+					0.5 * Math.random() * PARTICLE_RADIUS;
+				particles[4 * particleIdx + 3] = 1;
+			}
+		}
+	}
+
+	const centers = device.createBuffer({
+		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
+		size: particles.byteLength,
+		label: "Sandstone Particles",
+	});
+	device.queue.writeBuffer(centers, 0, particles);
+
+	const vertices = device.createBuffer({
+		size: 16 * 4 * PARTICLE_COUNT,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+	});
+
+	const projectedGrid = device.createBuffer({
+		size: 16 * GRID_DIMENSION * GRID_DIMENSION * GRID_DIMENSION,
+		usage: GPUBufferUsage.STORAGE,
+	});
+
+	return { centers, vertices, projectedGrid };
+};
+
+// Capable of drawing particles as spheres
+interface ParticleDebugPipeline {
+	pipeline_populateVertexBuffer: GPUComputePipeline;
+	pipeline_render: GPURenderPipeline;
+	group0: GPUBindGroup;
+	group1Render: GPUBindGroup;
+	group1Compute: GPUBindGroup;
+	particleQuadIndexBuffer: GPUBuffer;
+}
+const buildParticleDebugPipeline = (
+	device: GPUDevice,
+	particles: Particles,
+	cameraUBO: CameraUBO
+): ParticleDebugPipeline => {
 	const group0Layout = device.createBindGroupLayout({
 		entries: [
 			{
@@ -147,7 +206,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				buffer: { type: "uniform" },
 			},
 		],
-		label: `Sandstone Group0`,
+		label: `ParticleDebugPipeline Group0`,
 	});
 	const group1LayoutCompute = device.createBindGroupLayout({
 		entries: [
@@ -170,7 +229,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 	const shaderModule = device.createShaderModule({
 		code: ParticlesDebugPak,
-		label: "Sandstone ParticlesDebugPak",
+		label: "ParticleDebugPipeline ParticlesDebugPak",
 	});
 	const pipeline_render = device.createRenderPipeline({
 		vertex: { module: shaderModule, entryPoint: "vertexMain" },
@@ -190,9 +249,9 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		primitive: { cullMode: "none" },
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [group0Layout, group1LayoutRender],
-			label: "Sandstone render",
+			label: "ParticleDebugPipeline render",
 		}),
-		label: "Sandstone render",
+		label: "ParticleDebugPipeline render",
 	});
 	const pipeline_populateVertexBuffer = device.createComputePipeline({
 		compute: {
@@ -204,67 +263,28 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [group0Layout, group1LayoutCompute],
-			label: "Sandstone compute",
+			label: "ParticleDebugPipeline compute",
 		}),
-		label: "Sandstone compute",
-	});
-
-	const resolution = { width: 128.0, height: 128.0 };
-	const outputColor = buildOutputColorResources(
-		device,
-		resolution,
-		"Sandstone"
-	);
-
-	const particles = new Float32Array(PARTICLE_COUNT * 4);
-	for (let x = 0; x < 16; x++) {
-		for (let y = 0; y < 16; y++) {
-			for (let z = 0; z < 16; z++) {
-				const particleIdx = x * 16 * 16 + y * 16 + z;
-				particles[4 * particleIdx] = x * PARTICLE_RADIUS * 2.0;
-				particles[4 * particleIdx + 1] = y * PARTICLE_RADIUS * 2.0;
-				particles[4 * particleIdx + 2] = z * PARTICLE_RADIUS * 2.0;
-				particles[4 * particleIdx + 3] = 1;
-			}
-		}
-	}
-
-	const particleBuffer = device.createBuffer({
-		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
-		size: particles.byteLength,
-		label: "Sandstone Particles",
-	});
-	device.queue.writeBuffer(particleBuffer, 0, particles);
-
-	const cameraUBO = new CameraUBO(device);
-	cameraUBO.writeToGPU(device.queue);
-
-	const debugBufferDst = device.createBuffer({
-		size: 16 * 4 * PARTICLE_COUNT,
-		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-	});
-	const debugBufferSrc = device.createBuffer({
-		size: debugBufferDst.size,
-		usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE,
+		label: "ParticleDebugPipeline compute",
 	});
 
 	const group0 = device.createBindGroup({
 		entries: [
-			{ binding: 0, resource: particleBuffer },
+			{ binding: 0, resource: particles.centers },
 			{ binding: 1, resource: cameraUBO.buffer },
 		],
 		layout: pipeline_render.getBindGroupLayout(0),
-		label: "Sandstone 0",
+		label: "ParticleDebugPipeline 0",
 	});
 	const group1Render = device.createBindGroup({
-		entries: [{ binding: 0, resource: debugBufferSrc }],
+		entries: [{ binding: 0, resource: particles.vertices }],
 		layout: pipeline_render.getBindGroupLayout(1),
-		label: "Sandstone render 1",
+		label: "ParticleDebugPipeline render 1",
 	});
 	const group1Compute = device.createBindGroup({
-		entries: [{ binding: 0, resource: debugBufferSrc }],
+		entries: [{ binding: 0, resource: particles.vertices }],
 		layout: pipeline_populateVertexBuffer.getBindGroupLayout(1),
-		label: "Sandstone compute 1",
+		label: "ParticleDebugPipeline compute 1",
 	});
 
 	const particleQuadIndices = new Uint32Array([0, 1, 2, 0, 2, 3]);
@@ -274,19 +294,102 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	});
 	device.queue.writeBuffer(particleQuadIndexBuffer, 0, particleQuadIndices);
 
-	const permanentResources = {
-		shaderModule,
+	return {
 		pipeline_render,
 		pipeline_populateVertexBuffer,
-		particleQuadIndexBuffer,
-		fullscreenQuad: new FullscreenQuadPassResources(device, COLOR_FORMAT),
-		particleBuffer,
-		cameraUBO,
 		group0,
 		group1Render,
 		group1Compute,
+		particleQuadIndexBuffer,
+	};
+};
+
+const drawParticleDebugPipeline = ({
+	commandEncoder,
+	color,
+	depth,
+	pipeline,
+}: {
+	commandEncoder: GPUCommandEncoder;
+	color: RenderOutputTexture;
+	depth: RenderOutputTexture;
+	pipeline: ParticleDebugPipeline;
+}): void => {
+	const compute = commandEncoder.beginComputePass({
+		label: "Sandstone populateVertexBuffer",
+	});
+
+	compute.setPipeline(pipeline.pipeline_populateVertexBuffer);
+	compute.setBindGroup(0, pipeline.group0);
+	compute.setBindGroup(1, pipeline.group1Compute);
+	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
+
+	compute.end();
+
+	const pass = commandEncoder.beginRenderPass({
+		label: "Sandstone Render Pass",
+		colorAttachments: [
+			{
+				loadOp: "clear",
+				storeOp: "store",
+				view: color.view,
+				clearValue: { r: 0.0, g: 0.0, b: 0.2, a: 1.0 },
+			},
+		],
+		depthStencilAttachment: {
+			view: depth.view,
+			depthStoreOp: "store",
+			depthLoadOp: "clear",
+			depthClearValue: 0.0,
+		},
+	});
+
+	pass.setPipeline(pipeline.pipeline_render);
+	pass.setIndexBuffer(pipeline.particleQuadIndexBuffer, "uint32");
+	pass.setBindGroup(0, pipeline.group0);
+	pass.setBindGroup(1, pipeline.group1Render);
+	pass.drawIndexed(6, PARTICLE_COUNT);
+
+	pass.end();
+};
+
+export const SandstoneAppConstructor: RendererAppConstructor = (
+	device,
+	_presentFormat
+): RendererApp => {
+	const resolution = { width: 128.0, height: 128.0 };
+	const outputColor = buildOutputColorResources(
+		device,
+		resolution,
+		"Sandstone"
+	);
+
+	const cameraUBO = new CameraUBO(device);
+	cameraUBO.writeToGPU(device.queue);
+
+	const pipelineParameters = {
+		debugParticles: false,
+	};
+
+	const particles = buildParticles(device);
+
+	const particleDebugPipeline = buildParticleDebugPipeline(
+		device,
+		particles,
+		cameraUBO
+	);
+
+	const debugBufferDst = device.createBuffer({
+		size: particles.vertices.size,
+		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+	});
+
+	const permanentResources = {
+		particleDebugPipeline,
+		fullscreenQuad: new FullscreenQuadPassResources(device, COLOR_FORMAT),
+		cameraUBO,
 		debugBufferDst,
-		debugBufferSrc,
+		particles,
 	};
 
 	const transientResources = {
@@ -351,6 +454,11 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.name("Camera Yaw")
 			.min(-Math.PI)
 			.max(Math.PI);
+
+		const pipeline = gui.addFolder("Pipeline").open();
+		pipeline
+			.add(pipelineParameters, "debugParticles")
+			.name("Debug Particles");
 	};
 
 	const draw = (presentTexture: GPUTexture): void => {
@@ -362,44 +470,25 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			label: "Sandstone Main",
 		});
 
-		const compute = main.beginComputePass({
-			label: "Sandstone populateVertexBuffer",
-		});
-		compute.setPipeline(permanentResources.pipeline_populateVertexBuffer);
-		compute.setBindGroup(0, permanentResources.group0);
-		compute.setBindGroup(1, permanentResources.group1Compute);
-		compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
-
-		compute.end();
-
-		const pass = main.beginRenderPass({
-			label: "Sandstone Render Pass",
-			colorAttachments: [
-				{
-					loadOp: "clear",
-					storeOp: "store",
-					view: transientResources.outputColor.color.view,
-					clearValue: { r: 0.0, g: 0.0, b: 0.2, a: 1.0 },
-				},
-			],
-			depthStencilAttachment: {
-				view: transientResources.outputColor.depth.view,
-				depthStoreOp: "store",
-				depthLoadOp: "clear",
-				depthClearValue: 0.0,
-			},
-		});
-
-		pass.setPipeline(permanentResources.pipeline_render);
-		pass.setIndexBuffer(
-			permanentResources.particleQuadIndexBuffer,
-			"uint32"
-		);
-		pass.setBindGroup(0, permanentResources.group0);
-		pass.setBindGroup(1, permanentResources.group1Render);
-		pass.drawIndexed(6, PARTICLE_COUNT);
-
-		pass.end();
+		if (pipelineParameters.debugParticles) {
+			drawParticleDebugPipeline({
+				commandEncoder: main,
+				color: transientResources.outputColor.color,
+				depth: transientResources.outputColor.depth,
+				pipeline: permanentResources.particleDebugPipeline,
+			});
+		} else {
+			main.beginRenderPass({
+				colorAttachments: [
+					{
+						view: transientResources.outputColor.color.view,
+						loadOp: "clear",
+						storeOp: "store",
+						clearValue: { r: 0.4, g: 0.6, b: 0.9, a: 0 },
+					},
+				],
+			}).end();
+		}
 
 		permanentResources.fullscreenQuad.record(
 			device,
@@ -420,7 +509,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		if (permanentResources.debugBufferDst.mapState === "unmapped") {
 			copying = true;
 			main.copyBufferToBuffer(
-				permanentResources.debugBufferSrc,
+				permanentResources.particles.vertices,
 				permanentResources.debugBufferDst
 			);
 		}
