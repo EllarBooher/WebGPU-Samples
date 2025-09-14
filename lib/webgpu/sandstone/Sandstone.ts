@@ -1,4 +1,5 @@
 import { RendererApp, RendererAppConstructor } from "../RendererApp";
+import { GUI as LilGUI } from "lil-gui";
 import ParticlesDebugPak from "../../shaders/sandstone/particles_debug.wgsl";
 import { FullscreenQuadPassResources } from "../sky-sea/FullscreenQuad";
 import { RenderOutputTexture } from "../sky-sea/RenderOutputController";
@@ -280,6 +281,37 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	};
 
 	let done = false;
+	const setupUI = (gui: LilGUI): void => {
+		const cameraParameters = gui.addFolder("Camera").open();
+		cameraParameters
+			.add(cameraUBO.data, "translationX")
+			.name("Camera X")
+			.min(-10.0)
+			.max(10.0);
+		cameraParameters
+			.add(cameraUBO.data, "translationY")
+			.name("Camera Y")
+			.min(-10.0)
+			.max(10.0);
+		cameraParameters
+			.add(cameraUBO.data, "translationZ")
+			.name("Camera Z")
+			.min(-10.0)
+			.max(10.0);
+
+		const EULER_ANGLES_X_SAFETY_MARGIN = 0.01;
+		cameraParameters
+			.add(cameraUBO.data, "eulerAnglesX")
+			.name("Camera Pitch")
+			.min(-Math.PI / 2.0 + EULER_ANGLES_X_SAFETY_MARGIN)
+			.max(Math.PI / 2.0 - EULER_ANGLES_X_SAFETY_MARGIN);
+		cameraParameters
+			.add(cameraUBO.data, "eulerAnglesY")
+			.name("Camera Yaw")
+			.min(-Math.PI)
+			.max(Math.PI);
+	};
+
 	const draw = (presentTexture: GPUTexture): void => {
 		cameraUBO.data.aspectRatio =
 			presentTexture.width / presentTexture.height;
@@ -414,6 +446,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		quit: false,
 		presentationInterface: () => ({ device, format: FORMAT }),
 		draw,
+		setupUI,
 		destroy,
 		handleResize,
 	};
