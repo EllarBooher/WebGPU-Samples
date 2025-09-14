@@ -150,9 +150,10 @@ fn fragmentMain(
 	}
 
 	let hit_position = hit.t0 * ray_direction_normalized + ray_origin;
+	let normal_world = normalize((u_camera.model * vec4<f32>(normalize(hit_position), 0.0)).xyz);
 
 	var out: FragmentOut;
-	out.color = u_camera.model * vec4<f32>(0.5 * (normalize(hit_position) + vec3(1.0)), 0.0);
+	out.color = vec4<f32>(0.5 * (normal_world + 1.0), 1.0);
 	out.depth = (u_camera.proj * vec4<f32>(hit_position + frag_interpolated.particle_center_camera, 1.0)).z;
 
 	return out;
