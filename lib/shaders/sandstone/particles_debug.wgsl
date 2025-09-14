@@ -53,6 +53,7 @@ struct VertexOut {
 }
 
 struct FragmentOut {
+	@builtin(frag_depth) depth: f32,
 	@location(0) color: vec4<f32>
 }
 
@@ -67,15 +68,17 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 	// Remember, particle center is not the generally the center of the ellipse.
 	let particle_center = (u_camera.view * vec4<f32>(particles[particle_idx.x].xyz,1.0)).xyz;
 
+	let depth = particle_center.z - sqrt(PARTICLE_RADIUS_SQUARED);
+
 	// General form of ellipse
 	// https://iquilezles.org/articles/sphereproj/
 	let a = PARTICLE_RADIUS_SQUARED - dot(particle_center.yz, particle_center.yz);
 	let b = 2.0 * particle_center.x * particle_center.y;
 	let c = PARTICLE_RADIUS_SQUARED - dot(particle_center.xz, particle_center.xz);
-	let d = 2.0 * particle_center.x * particle_center.z * u_camera.focal_length;
-	let e = 2.0 * particle_center.y * particle_center.z * u_camera.focal_length;
+	let d = 2.0 * particle_center.x * particle_center.z * depth;
+	let e = 2.0 * particle_center.y * particle_center.z * depth;
 	let f = (PARTICLE_RADIUS_SQUARED - dot(particle_center.xy,particle_center.xy))
-		  * u_camera.focal_length * u_camera.focal_length;
+		  * depth * depth;
 
 
 	// Various derived properties of an ellipse
@@ -107,7 +110,7 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 		) / discriminant;
 
 		// Negate due to handed-ness
-		vertices_out[particle_idx.x * 4 + vertex_idx] = -vec4<f32>(x_vertex, y_vertex, u_camera.focal_length, 0);
+		vertices_out[particle_idx.x * 4 + vertex_idx] = vec4<f32>(x_vertex, y_vertex, depth, 0);
 	}
 }
 
@@ -150,6 +153,7 @@ fn fragmentMain(
 
 	var out: FragmentOut;
 	out.color = u_camera.model * vec4<f32>(0.5 * (normalize(hit_position) + vec3(1.0)), 0.0);
+	out.depth = (u_camera.proj * vec4<f32>(hit_position + frag_interpolated.particle_center_camera, 1.0)).z;
 
 	return out;
 }

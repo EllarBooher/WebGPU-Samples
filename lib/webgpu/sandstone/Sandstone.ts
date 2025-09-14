@@ -12,11 +12,13 @@ interface Extent2D {
 }
 
 interface OutputColorResources {
-	texture: RenderOutputTexture;
+	color: RenderOutputTexture;
+	depth: RenderOutputTexture;
 	destroy: () => void;
 }
 
-const FORMAT = "rgba16float";
+const COLOR_FORMAT: GPUTextureFormat = "rgba16float";
+const DEPTH_FORMAT: GPUTextureFormat = "depth32float";
 const PARTICLE_RADIUS = 0.1;
 const PARTICLE_COUNT = 16 * 16 * 16;
 
@@ -27,18 +29,27 @@ const buildOutputColorResources = (
 ): OutputColorResources => {
 	const texture = device.createTexture({
 		size: resolution,
-		format: FORMAT,
+		format: COLOR_FORMAT,
 		usage:
 			GPUTextureUsage.STORAGE_BINDING |
 			GPUTextureUsage.TEXTURE_BINDING |
 			GPUTextureUsage.RENDER_ATTACHMENT,
-		label: `${label} OutputColorResources.texture`,
+		label: `${label} OutputColorResources.color`,
+	});
+	const depth = device.createTexture({
+		size: resolution,
+		format: DEPTH_FORMAT,
+		usage:
+			GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+		label: `${label} OutputColorResources.depth`,
 	});
 
 	return {
-		texture: new RenderOutputTexture(texture),
+		color: new RenderOutputTexture(texture),
+		depth: new RenderOutputTexture(depth),
 		destroy: (): void => {
 			texture.destroy();
+			depth.destroy();
 		},
 	};
 };
@@ -96,8 +107,8 @@ class CameraUBO extends UBO {
 		);
 		const view = mat4.inverse(transform);
 		const fov = (60 * Math.PI) / 180;
-		const near = 0.1;
-		const far = 1000;
+		const far = 0.1;
+		const near = 1000;
 
 		const proj = mat4.perspective(fov, this.data.aspectRatio, near, far);
 		const projView = mat4.mul(proj, view);
@@ -171,6 +182,11 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			},
 			entryPoint: "fragmentMain",
 		},
+		depthStencil: {
+			format: DEPTH_FORMAT,
+			depthWriteEnabled: true,
+			depthCompare: "greater",
+		},
 		primitive: { cullMode: "none" },
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [group0Layout, group1LayoutRender],
@@ -212,7 +228,6 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			}
 		}
 	}
-	console.log(particles);
 
 	const particleBuffer = device.createBuffer({
 		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
@@ -264,7 +279,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		pipeline_render,
 		pipeline_populateVertexBuffer,
 		particleQuadIndexBuffer,
-		fullscreenQuad: new FullscreenQuadPassResources(device, FORMAT),
+		fullscreenQuad: new FullscreenQuadPassResources(device, COLOR_FORMAT),
 		particleBuffer,
 		cameraUBO,
 		group0,
@@ -302,7 +317,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		permanentResources.fullscreenQuad.setOutput(
 			device,
 			"Scene",
-			outputColor.texture
+			outputColor.color
 		);
 	};
 
@@ -363,10 +378,16 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				{
 					loadOp: "clear",
 					storeOp: "store",
-					view: transientResources.outputColor.texture.view,
+					view: transientResources.outputColor.color.view,
 					clearValue: { r: 0.0, g: 0.0, b: 0.2, a: 1.0 },
 				},
 			],
+			depthStencilAttachment: {
+				view: transientResources.outputColor.depth.view,
+				depthStoreOp: "store",
+				depthLoadOp: "clear",
+				depthClearValue: 0.0,
+			},
 		});
 
 		pass.setPipeline(permanentResources.pipeline_render);
@@ -470,7 +491,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 	return {
 		quit: false,
-		presentationInterface: () => ({ device, format: FORMAT }),
+		presentationInterface: () => ({ device, format: COLOR_FORMAT }),
 		draw,
 		setupUI,
 		destroy,
