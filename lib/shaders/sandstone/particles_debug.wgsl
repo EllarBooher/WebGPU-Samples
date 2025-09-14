@@ -1,4 +1,5 @@
 #include raycast.inc.wgsl
+#include types.inc.wgsl
 
 // Render a buffer of particle positions, as many tiny spheres.
 //
@@ -6,31 +7,8 @@
 //
 // Then the fragment stage draws only the fragments that pass a ray-sphere intersection.
 
-// sizeof  :  5 * 64 = 256
-// alignof :  16
-struct CameraUBO
-{
-	// world -> camera
-	view: mat4x4<f32>,
-
-	// world -> clip
-	proj_view: mat4x4<f32>,
-
-    position: vec4<f32>,
-	padding0: vec3<f32>,
-	focal_length: f32,
-
-	padding1: mat2x4<f32>,
-
-	// camera -> clip
-	proj: mat4x4<f32>,
-
-	// camera -> world
-	model: mat4x4<f32>,
-}
-
 override PARTICLE_RADIUS_SQUARED: f32;
-const PARTICLE_AXIS_TWIDDLES: array<vec2<f32>,4> = array(
+const VERTEX_TWIDDLES: array<vec2<f32>,4> = array(
 	vec2<f32>(1.0, 1.0),
 	vec2<f32>(1.0, -1.0),
 	vec2<f32>(-1.0, -1.0),
@@ -95,7 +73,7 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 		// The boundaries of the bounding box of our ellipse are all conjugate
 		// solutions of the same quadratic equation, so these +-1 twiddle factors
 		// select them based on which corner of the box we want
-		let vertex_selector = PARTICLE_AXIS_TWIDDLES[vertex_idx];
+		let vertex_selector = VERTEX_TWIDDLES[vertex_idx];
 
 		let x_vertex = (
 			x_num

@@ -1,6 +1,7 @@
 import { RendererApp, RendererAppConstructor } from "../RendererApp";
 import { GUI as LilGUI } from "lil-gui";
 import ParticlesDebugPak from "../../shaders/sandstone/particles_debug.wgsl";
+import ParticleMeshifyPak from "../../shaders/sandstone/particles_meshify.wgsl";
 import { FullscreenQuadPassResources } from "../sky-sea/FullscreenQuad";
 import { RenderOutputTexture } from "../sky-sea/RenderOutputController";
 import { UBO } from "../sky-sea/util/UBO";
@@ -19,8 +20,11 @@ interface OutputColorResources {
 
 const COLOR_FORMAT: GPUTextureFormat = "rgba16float";
 const DEPTH_FORMAT: GPUTextureFormat = "depth32float";
+// Particle radius is purely for debug purposes, the particles have no size in the model.
 const PARTICLE_RADIUS = 0.1;
-const PARTICLE_COUNT = 16 * 16 * 16;
+const PARTICLE_GAP = 0.2;
+const PARTICLE_COUNT = 64 * 64 * 64;
+const GRID_DIMENSION = 32;
 
 const buildOutputColorResources = (
 	device: GPUDevice,
@@ -72,9 +76,9 @@ class CameraUBO extends UBO {
 	 * {@link packed}, to be written to the GPU.
 	 */
 	public readonly data: CameraParameters = {
-		translationX: 1.6,
-		translationY: 1.6,
-		translationZ: 6,
+		translationX: 6.4,
+		translationY: 6.4,
+		translationZ: 20,
 		eulerAnglesX: 0,
 		eulerAnglesY: 0,
 		eulerAnglesZ: 0,
@@ -88,7 +92,7 @@ class CameraUBO extends UBO {
 	}
 
 	protected override packed(): Float32Array {
-		const vec3_zeroed = new Float32Array(3).fill(0.0);
+		const vec2_zeroed = new Float32Array(2).fill(0.0);
 		const mat2x4_zeroed = new Float32Array(4 * 2).fill(0.0);
 
 		const position = [
@@ -118,7 +122,8 @@ class CameraUBO extends UBO {
 			...view,
 			...projView,
 			...position,
-			...vec3_zeroed,
+			...vec2_zeroed,
+			this.data.aspectRatio,
 			focalLength,
 			...mat2x4_zeroed,
 			...proj,
@@ -138,20 +143,23 @@ interface Particles {
 
 const buildParticles = (device: GPUDevice): Particles => {
 	const particles = new Float32Array(PARTICLE_COUNT * 4);
-	for (let x = 0; x < 16; x++) {
-		for (let y = 0; y < 16; y++) {
-			for (let z = 0; z < 16; z++) {
-				const particleIdx = x * 16 * 16 + y * 16 + z;
-				particles[4 * particleIdx] =
-					x * PARTICLE_RADIUS * 2.0 +
-					0.5 * Math.random() * PARTICLE_RADIUS;
-				particles[4 * particleIdx + 1] =
-					y * PARTICLE_RADIUS * 2.0 +
-					0.5 * Math.random() * PARTICLE_RADIUS;
-				particles[4 * particleIdx + 2] =
-					z * PARTICLE_RADIUS * 2.0 +
-					0.5 * Math.random() * PARTICLE_RADIUS;
-				particles[4 * particleIdx + 3] = 1;
+	for (let x = 0; x < 64; x++) {
+		for (let y = 0; y < 64; y++) {
+			for (let z = 0; z < 64; z++) {
+				const particleIdx = x * 64 * 64 + y * 64 + z;
+
+				let [posX, posY, posZ] = [0.0, 0.0, 0.0];
+
+				if (Math.random() > 0.5) {
+					posX = PARTICLE_GAP * (x + 0.5 * Math.random());
+					posY = PARTICLE_GAP * (y + 0.5 * Math.random());
+					posZ = PARTICLE_GAP * (z + 0.5 * Math.random());
+				}
+
+				particles[4 * particleIdx] = posX;
+				particles[4 * particleIdx + 1] = posY;
+				particles[4 * particleIdx + 2] = posZ;
+				particles[4 * particleIdx + 3] = 1.0;
 			}
 		}
 	}
@@ -234,7 +242,7 @@ const buildParticleDebugPipeline = (
 	const pipeline_render = device.createRenderPipeline({
 		vertex: { module: shaderModule, entryPoint: "vertexMain" },
 		fragment: {
-			targets: [{ format: "rgba16float" }],
+			targets: [{ format: COLOR_FORMAT }],
 			module: shaderModule,
 			constants: {
 				PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
@@ -303,7 +311,6 @@ const buildParticleDebugPipeline = (
 		particleQuadIndexBuffer,
 	};
 };
-
 const drawParticleDebugPipeline = ({
 	commandEncoder,
 	color,
@@ -353,6 +360,196 @@ const drawParticleDebugPipeline = ({
 	pass.end();
 };
 
+// Pipeline that snaps particles to a grid then converts to a mesh with normals
+interface ParticleMeshifyPipeline {
+	pipeline_projectParticlesToGrid: GPUComputePipeline;
+	pipeline_initGrid: GPUComputePipeline;
+	pipeline_render: GPURenderPipeline;
+	group0: GPUBindGroup;
+	group1Compute: GPUBindGroup;
+	group1Render: GPUBindGroup;
+	gridPointQuadIndexBuffer: GPUBuffer;
+}
+const buildParticleMeshifyPipeline = (
+	device: GPUDevice,
+	particles: Particles,
+	cameraUBO: CameraUBO
+): ParticleMeshifyPipeline => {
+	const group0Layout = device.createBindGroupLayout({
+		entries: [
+			{
+				binding: 0,
+				visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX,
+				buffer: { type: "read-only-storage" },
+			},
+			{
+				binding: 1,
+				visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX,
+				buffer: { type: "uniform" },
+			},
+		],
+		label: "ParticleMeshifyPipeline group 0",
+	});
+	const group1LayoutCompute = device.createBindGroupLayout({
+		entries: [
+			{
+				binding: 0,
+				visibility: GPUShaderStage.COMPUTE,
+				buffer: { type: "storage" },
+			},
+		],
+	});
+	const group1LayoutRender = device.createBindGroupLayout({
+		entries: [
+			{
+				binding: 0,
+				visibility: GPUShaderStage.VERTEX,
+				buffer: { type: "read-only-storage" },
+			},
+		],
+	});
+
+	const shaderModule = device.createShaderModule({
+		code: ParticleMeshifyPak,
+		label: "ParticleMeshifyPipeline ParticleMeshifyPak",
+	});
+	const pipeline_render = device.createRenderPipeline({
+		vertex: { module: shaderModule, entryPoint: "vertexMain" },
+		fragment: {
+			targets: [{ format: COLOR_FORMAT }],
+			module: shaderModule,
+			entryPoint: "fragmentMain",
+		},
+		depthStencil: {
+			format: DEPTH_FORMAT,
+			depthWriteEnabled: true,
+			depthCompare: "greater",
+		},
+		primitive: { cullMode: "none" },
+		layout: device.createPipelineLayout({
+			bindGroupLayouts: [group0Layout, group1LayoutRender],
+			label: "ParticleMeshifyPipeline render",
+		}),
+		label: "ParticleMeshifyPipeline render",
+	});
+	const pipeline_projectParticlesToGrid = device.createComputePipeline({
+		compute: {
+			module: shaderModule,
+			entryPoint: "projectParticlesToGrid",
+		},
+		layout: device.createPipelineLayout({
+			bindGroupLayouts: [group0Layout, group1LayoutCompute],
+			label: "ParticleMeshifyPipeline compute",
+		}),
+		label: "ParticleMeshifyPipeline compute",
+	});
+	const pipeline_initGrid = device.createComputePipeline({
+		compute: {
+			module: shaderModule,
+			entryPoint: "initGrid",
+		},
+		layout: device.createPipelineLayout({
+			bindGroupLayouts: [group0Layout, group1LayoutCompute],
+			label: "ParticleMeshifyPipeline initGrid",
+		}),
+		label: "ParticleMeshifyPipeline initGrid",
+	});
+
+	const group0 = device.createBindGroup({
+		entries: [
+			{ binding: 0, resource: particles.centers },
+			{ binding: 1, resource: cameraUBO.buffer },
+		],
+		layout: pipeline_render.getBindGroupLayout(0),
+		label: "ParticleDebugPipeline 0",
+	});
+	const group1Render = device.createBindGroup({
+		entries: [{ binding: 0, resource: particles.vertices }],
+		layout: pipeline_render.getBindGroupLayout(1),
+		label: "ParticleDebugPipeline render 1",
+	});
+	const group1Compute = device.createBindGroup({
+		entries: [{ binding: 0, resource: particles.vertices }],
+		layout: pipeline_projectParticlesToGrid.getBindGroupLayout(1),
+		label: "ParticleDebugPipeline compute 1",
+	});
+
+	const gridPointQuadIndices = new Uint32Array([0, 1, 2, 0, 2, 3]);
+	const gridPointQuadIndexBuffer = device.createBuffer({
+		size: gridPointQuadIndices.byteLength,
+		usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+	});
+	device.queue.writeBuffer(gridPointQuadIndexBuffer, 0, gridPointQuadIndices);
+
+	return {
+		pipeline_render,
+		pipeline_projectParticlesToGrid,
+		pipeline_initGrid,
+		group0,
+		group1Render,
+		group1Compute,
+		gridPointQuadIndexBuffer,
+	};
+};
+const drawParticleMeshifyPipeline = ({
+	commandEncoder,
+	color,
+	depth,
+	pipeline,
+}: {
+	commandEncoder: GPUCommandEncoder;
+	color: RenderOutputTexture;
+	depth: RenderOutputTexture;
+	pipeline: ParticleMeshifyPipeline;
+}): void => {
+	const compute = commandEncoder.beginComputePass({
+		label: "Sandstone populateVertexBuffer",
+	});
+	compute.setBindGroup(0, pipeline.group0);
+	compute.setBindGroup(1, pipeline.group1Compute);
+
+	compute.setPipeline(pipeline.pipeline_initGrid);
+	compute.dispatchWorkgroups(
+		GRID_DIMENSION / 8,
+		GRID_DIMENSION / 8,
+		GRID_DIMENSION / 4
+	);
+
+	compute.setPipeline(pipeline.pipeline_projectParticlesToGrid);
+	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
+
+	compute.end();
+
+	const pass = commandEncoder.beginRenderPass({
+		label: "Sandstone Render Pass",
+		colorAttachments: [
+			{
+				loadOp: "clear",
+				storeOp: "store",
+				view: color.view,
+				clearValue: { r: 0.0, g: 0.2, b: 0.0, a: 1.0 },
+			},
+		],
+		depthStencilAttachment: {
+			view: depth.view,
+			depthStoreOp: "store",
+			depthLoadOp: "clear",
+			depthClearValue: 0.0,
+		},
+	});
+
+	pass.setPipeline(pipeline.pipeline_render);
+	pass.setIndexBuffer(pipeline.gridPointQuadIndexBuffer, "uint32");
+	pass.setBindGroup(0, pipeline.group0);
+	pass.setBindGroup(1, pipeline.group1Render);
+	pass.drawIndexed(6, GRID_DIMENSION * GRID_DIMENSION * GRID_DIMENSION);
+
+	pass.end();
+};
+
+const RenderOutputCategory = ["Debug Particles", "Meshify Particles"] as const;
+type RenderOutputCategory = (typeof RenderOutputCategory)[number];
+
 export const SandstoneAppConstructor: RendererAppConstructor = (
 	device,
 	_presentFormat
@@ -367,13 +564,20 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	const cameraUBO = new CameraUBO(device);
 	cameraUBO.writeToGPU(device.queue);
 
-	const pipelineParameters = {
-		debugParticles: false,
+	const pipelineParameters: {
+		output: RenderOutputCategory;
+	} = {
+		output: "Meshify Particles",
 	};
 
 	const particles = buildParticles(device);
 
 	const particleDebugPipeline = buildParticleDebugPipeline(
+		device,
+		particles,
+		cameraUBO
+	);
+	const particleMeshifyPipeline = buildParticleMeshifyPipeline(
 		device,
 		particles,
 		cameraUBO
@@ -386,6 +590,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 	const permanentResources = {
 		particleDebugPipeline,
+		particleMeshifyPipeline,
 		fullscreenQuad: new FullscreenQuadPassResources(device, COLOR_FORMAT),
 		cameraUBO,
 		debugBufferDst,
@@ -430,18 +635,18 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		cameraParameters
 			.add(cameraUBO.data, "translationX")
 			.name("Camera X")
-			.min(-10.0)
-			.max(10.0);
+			.min(-20.0)
+			.max(20.0);
 		cameraParameters
 			.add(cameraUBO.data, "translationY")
 			.name("Camera Y")
-			.min(-10.0)
+			.min(0.0)
 			.max(10.0);
 		cameraParameters
 			.add(cameraUBO.data, "translationZ")
 			.name("Camera Z")
-			.min(-10.0)
-			.max(10.0);
+			.min(-20.0)
+			.max(20.0);
 
 		const EULER_ANGLES_X_SAFETY_MARGIN = 0.01;
 		cameraParameters
@@ -457,7 +662,8 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 		const pipeline = gui.addFolder("Pipeline").open();
 		pipeline
-			.add(pipelineParameters, "debugParticles")
+			.add(pipelineParameters, "output")
+			.options(["Debug Particles", "Meshify Particles"])
 			.name("Debug Particles");
 	};
 
@@ -470,24 +676,38 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			label: "Sandstone Main",
 		});
 
-		if (pipelineParameters.debugParticles) {
-			drawParticleDebugPipeline({
-				commandEncoder: main,
-				color: transientResources.outputColor.color,
-				depth: transientResources.outputColor.depth,
-				pipeline: permanentResources.particleDebugPipeline,
-			});
-		} else {
-			main.beginRenderPass({
-				colorAttachments: [
-					{
-						view: transientResources.outputColor.color.view,
-						loadOp: "clear",
-						storeOp: "store",
-						clearValue: { r: 0.4, g: 0.6, b: 0.9, a: 0 },
-					},
-				],
-			}).end();
+		switch (pipelineParameters.output) {
+			case "Debug Particles": {
+				drawParticleDebugPipeline({
+					commandEncoder: main,
+					color: transientResources.outputColor.color,
+					depth: transientResources.outputColor.depth,
+					pipeline: permanentResources.particleDebugPipeline,
+				});
+				break;
+			}
+			case "Meshify Particles": {
+				drawParticleMeshifyPipeline({
+					commandEncoder: main,
+					color: transientResources.outputColor.color,
+					depth: transientResources.outputColor.depth,
+					pipeline: permanentResources.particleMeshifyPipeline,
+				});
+				break;
+			}
+			default: {
+				main.beginRenderPass({
+					colorAttachments: [
+						{
+							view: transientResources.outputColor.color.view,
+							loadOp: "clear",
+							storeOp: "store",
+							clearValue: { r: 0.4, g: 0.6, b: 0.9, a: 0 },
+						},
+					],
+				}).end();
+				break;
+			}
 		}
 
 		permanentResources.fullscreenQuad.record(
