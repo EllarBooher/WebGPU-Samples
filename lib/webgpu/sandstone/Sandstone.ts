@@ -17,6 +17,8 @@ interface OutputColorResources {
 }
 
 const FORMAT = "rgba16float";
+const PARTICLE_RADIUS = 0.1;
+const PARTICLE_COUNT = 16 * 16 * 16;
 
 const buildOutputColorResources = (
 	device: GPUDevice,
@@ -59,9 +61,9 @@ class CameraUBO extends UBO {
 	 * {@link packed}, to be written to the GPU.
 	 */
 	public readonly data: CameraParameters = {
-		translationX: 0,
-		translationY: 0,
-		translationZ: 0,
+		translationX: 1.6,
+		translationY: 1.6,
+		translationZ: 6,
 		eulerAnglesX: 0,
 		eulerAnglesY: 0,
 		eulerAnglesZ: 0,
@@ -164,6 +166,9 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		fragment: {
 			targets: [{ format: "rgba16float" }],
 			module: shaderModule,
+			constants: {
+				PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
+			},
 			entryPoint: "fragmentMain",
 		},
 		primitive: { cullMode: "none" },
@@ -174,7 +179,13 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		label: "Sandstone render",
 	});
 	const pipeline_populateVertexBuffer = device.createComputePipeline({
-		compute: { module: shaderModule, entryPoint: "populateVertexBuffer" },
+		compute: {
+			module: shaderModule,
+			entryPoint: "populateVertexBuffer",
+			constants: {
+				PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
+			},
+		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [group0Layout, group1LayoutCompute],
 			label: "Sandstone compute",
@@ -189,9 +200,20 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		"Sandstone"
 	);
 
-	const particles = new Float32Array([
-		-4, -2, -5, 0, 0, 0, -5, 0, 0, 2, -5, 0, 2, 2, -5, 0,
-	]);
+	const particles = new Float32Array(PARTICLE_COUNT * 4);
+	for (let x = 0; x < 16; x++) {
+		for (let y = 0; y < 16; y++) {
+			for (let z = 0; z < 16; z++) {
+				const particleIdx = x * 16 * 16 + y * 16 + z;
+				particles[4 * particleIdx] = x * PARTICLE_RADIUS * 2.0;
+				particles[4 * particleIdx + 1] = y * PARTICLE_RADIUS * 2.0;
+				particles[4 * particleIdx + 2] = z * PARTICLE_RADIUS * 2.0;
+				particles[4 * particleIdx + 3] = 1;
+			}
+		}
+	}
+	console.log(particles);
+
 	const particleBuffer = device.createBuffer({
 		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
 		size: particles.byteLength,
@@ -203,7 +225,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	cameraUBO.writeToGPU(device.queue);
 
 	const debugBufferDst = device.createBuffer({
-		size: 16 * 4 * 20,
+		size: 16 * 4 * PARTICLE_COUNT,
 		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 	});
 	const debugBufferSrc = device.createBuffer({
@@ -331,7 +353,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		compute.setPipeline(permanentResources.pipeline_populateVertexBuffer);
 		compute.setBindGroup(0, permanentResources.group0);
 		compute.setBindGroup(1, permanentResources.group1Compute);
-		compute.dispatchWorkgroups(1, 1, 1);
+		compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
 
 		compute.end();
 
@@ -354,7 +376,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		);
 		pass.setBindGroup(0, permanentResources.group0);
 		pass.setBindGroup(1, permanentResources.group1Render);
-		pass.drawIndexed(6, 4);
+		pass.drawIndexed(6, PARTICLE_COUNT);
 
 		pass.end();
 

@@ -29,7 +29,7 @@ struct CameraUBO
 	model: mat4x4<f32>,
 }
 
-const PARTICLE_RADIUS_SQUARED = 1;
+override PARTICLE_RADIUS_SQUARED: f32;
 const PARTICLE_AXIS_TWIDDLES: array<vec2<f32>,4> = array(
 	vec2<f32>(1.0, 1.0),
 	vec2<f32>(1.0, -1.0),
@@ -56,7 +56,7 @@ struct FragmentOut {
 	@location(0) color: vec4<f32>
 }
 
-@compute @workgroup_size(4, 1, 1)
+@compute @workgroup_size(256, 1, 1)
 fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 {
 	// Generally work in camera space our goal is to get the axes of the
