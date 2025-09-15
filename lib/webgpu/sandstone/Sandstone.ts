@@ -24,7 +24,13 @@ const DEPTH_FORMAT: GPUTextureFormat = "depth32float";
 const PARTICLE_RADIUS = 0.1;
 const PARTICLE_GAP = 0.2;
 const PARTICLE_COUNT = 64 * 64 * 64;
-const GRID_DIMENSION = 32;
+const GRID_DIMENSION = 64;
+
+const SIZEOF_FLOAT32 = 4;
+const SIZEOF_VEC4_F32 = 16;
+
+const SIZEOF_PARTICLE = 2 * SIZEOF_VEC4_F32;
+const SIZEOF_GRID_POINT = SIZEOF_VEC4_F32;
 
 const buildOutputColorResources = (
 	device: GPUDevice,
@@ -132,56 +138,78 @@ class CameraUBO extends UBO {
 	}
 }
 
-interface Particles {
-	// Centers of particles in world space
-	centers: GPUBuffer;
+interface ParticlesDebugConfig {
+	hideNonSurface: boolean;
+}
+class ParticlesDebugConfigUBO extends UBO {
+	public readonly data: ParticlesDebugConfig = {
+		hideNonSurface: false,
+	};
+
+	constructor(device: GPUDevice) {
+		const SIZEOF = 4;
+		const BYTES_PER_FLOAT32 = 4;
+		super(device, SIZEOF / BYTES_PER_FLOAT32, "Camera UBO");
+	}
+
+	protected override packed(): Uint32Array {
+		return new Uint32Array([this.data.hideNonSurface ? 1 : 0]);
+	}
+}
+
+interface ParticlesBuffers {
+	// Array of particle structs
+	particles: GPUBuffer;
 	// Each particle has 4 vertices, for the quad when rendering a debug view
 	vertices: GPUBuffer;
 	// The small grid we project to when converting to a mesh
 	projectedGrid: GPUBuffer;
 }
 
-const buildParticles = (device: GPUDevice): Particles => {
-	const particles = new Float32Array(PARTICLE_COUNT * 4);
+const buildParticles = (device: GPUDevice): ParticlesBuffers => {
+	const verticesBuffer = device.createBuffer({
+		size: PARTICLE_COUNT * 4 * SIZEOF_VEC4_F32,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+	});
+
+	const projectedGridBuffer = device.createBuffer({
+		size:
+			SIZEOF_GRID_POINT *
+			GRID_DIMENSION *
+			GRID_DIMENSION *
+			GRID_DIMENSION,
+		usage: GPUBufferUsage.STORAGE,
+	});
+
+	const f32PerParticle = SIZEOF_PARTICLE / SIZEOF_FLOAT32;
+	const particles = new Float32Array(PARTICLE_COUNT * f32PerParticle);
 	for (let x = 0; x < 64; x++) {
 		for (let y = 0; y < 64; y++) {
 			for (let z = 0; z < 64; z++) {
 				const particleIdx = x * 64 * 64 + y * 64 + z;
 
-				let [posX, posY, posZ] = [0.0, 0.0, 0.0];
-
-				if (Math.random() > 0.5) {
-					posX = PARTICLE_GAP * (x + 0.5 * Math.random());
-					posY = PARTICLE_GAP * (y + 0.5 * Math.random());
-					posZ = PARTICLE_GAP * (z + 0.5 * Math.random());
-				}
-
-				particles[4 * particleIdx] = posX;
-				particles[4 * particleIdx + 1] = posY;
-				particles[4 * particleIdx + 2] = posZ;
-				particles[4 * particleIdx + 3] = 1.0;
+				particles[f32PerParticle * particleIdx] =
+					PARTICLE_GAP * (x + (Math.random() - 0.5));
+				particles[f32PerParticle * particleIdx + 1] =
+					PARTICLE_GAP * (y + (Math.random() - 0.5));
+				particles[f32PerParticle * particleIdx + 2] =
+					PARTICLE_GAP * (z + (Math.random() - 0.5));
+				particles[f32PerParticle * particleIdx + 3] = 1.0;
 			}
 		}
 	}
 
-	const centers = device.createBuffer({
+	const particlesBuffer = device.createBuffer({
+		size: PARTICLE_COUNT * SIZEOF_PARTICLE,
 		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
-		size: particles.byteLength,
-		label: "Sandstone Particles",
 	});
-	device.queue.writeBuffer(centers, 0, particles);
+	device.queue.writeBuffer(particlesBuffer, 0, particles);
 
-	const vertices = device.createBuffer({
-		size: 16 * 4 * PARTICLE_COUNT,
-		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-	});
-
-	const projectedGrid = device.createBuffer({
-		size: 16 * GRID_DIMENSION * GRID_DIMENSION * GRID_DIMENSION,
-		usage: GPUBufferUsage.STORAGE,
-	});
-
-	return { centers, vertices, projectedGrid };
+	return {
+		particles: particlesBuffer,
+		vertices: verticesBuffer,
+		projectedGrid: projectedGridBuffer,
+	};
 };
 
 // Capable of drawing particles as spheres
@@ -195,8 +223,9 @@ interface ParticleDebugPipeline {
 }
 const buildParticleDebugPipeline = (
 	device: GPUDevice,
-	particles: Particles,
-	cameraUBO: CameraUBO
+	particles: ParticlesBuffers,
+	cameraUBO: CameraUBO,
+	particlesDebugConfigUBO: ParticlesDebugConfigUBO
 ): ParticleDebugPipeline => {
 	const group0Layout = device.createBindGroupLayout({
 		entries: [
@@ -211,6 +240,11 @@ const buildParticleDebugPipeline = (
 					GPUShaderStage.VERTEX |
 					GPUShaderStage.COMPUTE |
 					GPUShaderStage.FRAGMENT,
+				buffer: { type: "uniform" },
+			},
+			{
+				binding: 2,
+				visibility: GPUShaderStage.VERTEX,
 				buffer: { type: "uniform" },
 			},
 		],
@@ -278,8 +312,9 @@ const buildParticleDebugPipeline = (
 
 	const group0 = device.createBindGroup({
 		entries: [
-			{ binding: 0, resource: particles.centers },
+			{ binding: 0, resource: particles.particles },
 			{ binding: 1, resource: cameraUBO.buffer },
+			{ binding: 2, resource: particlesDebugConfigUBO.buffer },
 		],
 		layout: pipeline_render.getBindGroupLayout(0),
 		label: "ParticleDebugPipeline 0",
@@ -364,50 +399,54 @@ const drawParticleDebugPipeline = ({
 interface ParticleMeshifyPipeline {
 	pipeline_projectParticlesToGrid: GPUComputePipeline;
 	pipeline_initGrid: GPUComputePipeline;
+	pipeline_identifySurfaceParticles: GPUComputePipeline;
 	pipeline_render: GPURenderPipeline;
-	group0: GPUBindGroup;
-	group1Compute: GPUBindGroup;
-	group1Render: GPUBindGroup;
+	groups: {
+		camera: GPUBindGroup;
+		particlesRead: GPUBindGroup;
+		particlesReadWrite: GPUBindGroup;
+		projectedGridRead: GPUBindGroup;
+		projectedGridReadWrite: GPUBindGroup;
+	};
 	gridPointQuadIndexBuffer: GPUBuffer;
 }
 const buildParticleMeshifyPipeline = (
 	device: GPUDevice,
-	particles: Particles,
+	particles: ParticlesBuffers,
 	cameraUBO: CameraUBO
 ): ParticleMeshifyPipeline => {
-	const group0Layout = device.createBindGroupLayout({
-		entries: [
-			{
-				binding: 0,
-				visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX,
-				buffer: { type: "read-only-storage" },
-			},
-			{
-				binding: 1,
-				visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX,
-				buffer: { type: "uniform" },
-			},
-		],
-		label: "ParticleMeshifyPipeline group 0",
-	});
-	const group1LayoutCompute = device.createBindGroupLayout({
-		entries: [
-			{
-				binding: 0,
-				visibility: GPUShaderStage.COMPUTE,
-				buffer: { type: "storage" },
-			},
-		],
-	});
-	const group1LayoutRender = device.createBindGroupLayout({
-		entries: [
-			{
-				binding: 0,
-				visibility: GPUShaderStage.VERTEX,
-				buffer: { type: "read-only-storage" },
-			},
-		],
-	});
+	const layouts = {
+		camera: device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX,
+					buffer: { type: "uniform" },
+				},
+			],
+			label: "ParticleMeshifyPipeline camera",
+		}),
+		readWriteStorage: device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.COMPUTE,
+					buffer: { type: "storage" },
+				},
+			],
+			label: "ParticleMeshifyPipeline read-write storage",
+		}),
+		readOnlyStorage: device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+					buffer: { type: "read-only-storage" },
+				},
+			],
+			label: "ParticleMeshifyPipeline read-only storage",
+		}),
+	};
 
 	const shaderModule = device.createShaderModule({
 		code: ParticleMeshifyPak,
@@ -427,7 +466,11 @@ const buildParticleMeshifyPipeline = (
 		},
 		primitive: { cullMode: "none" },
 		layout: device.createPipelineLayout({
-			bindGroupLayouts: [group0Layout, group1LayoutRender],
+			bindGroupLayouts: [
+				layouts.camera,
+				layouts.readOnlyStorage,
+				layouts.readOnlyStorage,
+			],
 			label: "ParticleMeshifyPipeline render",
 		}),
 		label: "ParticleMeshifyPipeline render",
@@ -438,10 +481,14 @@ const buildParticleMeshifyPipeline = (
 			entryPoint: "projectParticlesToGrid",
 		},
 		layout: device.createPipelineLayout({
-			bindGroupLayouts: [group0Layout, group1LayoutCompute],
-			label: "ParticleMeshifyPipeline compute",
+			bindGroupLayouts: [
+				layouts.camera,
+				layouts.readOnlyStorage,
+				layouts.readWriteStorage,
+			],
+			label: "ParticleMeshifyPipeline projectParticlesToGrid",
 		}),
-		label: "ParticleMeshifyPipeline compute",
+		label: "ParticleMeshifyPipeline projectParticlesToGrid",
 	});
 	const pipeline_initGrid = device.createComputePipeline({
 		compute: {
@@ -449,30 +496,58 @@ const buildParticleMeshifyPipeline = (
 			entryPoint: "initGrid",
 		},
 		layout: device.createPipelineLayout({
-			bindGroupLayouts: [group0Layout, group1LayoutCompute],
+			bindGroupLayouts: [
+				layouts.camera,
+				layouts.readOnlyStorage,
+				layouts.readWriteStorage,
+			],
 			label: "ParticleMeshifyPipeline initGrid",
 		}),
 		label: "ParticleMeshifyPipeline initGrid",
 	});
+	const pipeline_identifySurfaceParticles = device.createComputePipeline({
+		compute: {
+			module: shaderModule,
+			entryPoint: "identifySurfaceParticles",
+		},
+		layout: device.createPipelineLayout({
+			bindGroupLayouts: [
+				layouts.camera,
+				layouts.readWriteStorage,
+				layouts.readOnlyStorage,
+			],
+			label: "ParticleMeshifyPipeline identifySurfaceParticles",
+		}),
+		label: "ParticleMeshifyPipeline identifySurfaceParticles",
+	});
 
-	const group0 = device.createBindGroup({
-		entries: [
-			{ binding: 0, resource: particles.centers },
-			{ binding: 1, resource: cameraUBO.buffer },
-		],
-		layout: pipeline_render.getBindGroupLayout(0),
-		label: "ParticleDebugPipeline 0",
-	});
-	const group1Render = device.createBindGroup({
-		entries: [{ binding: 0, resource: particles.vertices }],
-		layout: pipeline_render.getBindGroupLayout(1),
-		label: "ParticleDebugPipeline render 1",
-	});
-	const group1Compute = device.createBindGroup({
-		entries: [{ binding: 0, resource: particles.vertices }],
-		layout: pipeline_projectParticlesToGrid.getBindGroupLayout(1),
-		label: "ParticleDebugPipeline compute 1",
-	});
+	const groups = {
+		camera: device.createBindGroup({
+			entries: [{ binding: 0, resource: cameraUBO.buffer }],
+			layout: layouts.camera,
+			label: "ParticleMeshifyPipeline camera",
+		}),
+		particlesRead: device.createBindGroup({
+			entries: [{ binding: 0, resource: particles.particles }],
+			layout: layouts.readOnlyStorage,
+			label: "ParticleMeshifyPipeline particles read",
+		}),
+		particlesReadWrite: device.createBindGroup({
+			entries: [{ binding: 0, resource: particles.particles }],
+			layout: layouts.readWriteStorage,
+			label: "ParticleMeshifyPipeline particles read-write",
+		}),
+		projectedGridRead: device.createBindGroup({
+			entries: [{ binding: 0, resource: particles.projectedGrid }],
+			layout: layouts.readOnlyStorage,
+			label: "ParticleMeshifyPipeline projected_grid read",
+		}),
+		projectedGridReadWrite: device.createBindGroup({
+			entries: [{ binding: 0, resource: particles.projectedGrid }],
+			layout: layouts.readWriteStorage,
+			label: "ParticleMeshifyPipeline projected_grid read-write",
+		}),
+	};
 
 	const gridPointQuadIndices = new Uint32Array([0, 1, 2, 0, 2, 3]);
 	const gridPointQuadIndexBuffer = device.createBuffer({
@@ -485,29 +560,26 @@ const buildParticleMeshifyPipeline = (
 		pipeline_render,
 		pipeline_projectParticlesToGrid,
 		pipeline_initGrid,
-		group0,
-		group1Render,
-		group1Compute,
+		pipeline_identifySurfaceParticles,
+		groups,
 		gridPointQuadIndexBuffer,
 	};
 };
-const drawParticleMeshifyPipeline = ({
+const computeParticleMesh = ({
 	commandEncoder,
-	color,
-	depth,
 	pipeline,
 }: {
 	commandEncoder: GPUCommandEncoder;
-	color: RenderOutputTexture;
-	depth: RenderOutputTexture;
 	pipeline: ParticleMeshifyPipeline;
 }): void => {
 	const compute = commandEncoder.beginComputePass({
 		label: "Sandstone populateVertexBuffer",
 	});
-	compute.setBindGroup(0, pipeline.group0);
-	compute.setBindGroup(1, pipeline.group1Compute);
 
+	compute.setBindGroup(0, pipeline.groups.camera);
+
+	compute.setBindGroup(1, pipeline.groups.particlesRead);
+	compute.setBindGroup(2, pipeline.groups.projectedGridReadWrite);
 	compute.setPipeline(pipeline.pipeline_initGrid);
 	compute.dispatchWorkgroups(
 		GRID_DIMENSION / 8,
@@ -518,8 +590,24 @@ const drawParticleMeshifyPipeline = ({
 	compute.setPipeline(pipeline.pipeline_projectParticlesToGrid);
 	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
 
-	compute.end();
+	compute.setBindGroup(1, pipeline.groups.particlesReadWrite);
+	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
+	compute.setPipeline(pipeline.pipeline_identifySurfaceParticles);
+	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
 
+	compute.end();
+};
+const drawParticleMeshifyProjectedGrid = ({
+	commandEncoder,
+	color,
+	depth,
+	pipeline,
+}: {
+	commandEncoder: GPUCommandEncoder;
+	color: RenderOutputTexture;
+	depth: RenderOutputTexture;
+	pipeline: ParticleMeshifyPipeline;
+}): void => {
 	const pass = commandEncoder.beginRenderPass({
 		label: "Sandstone Render Pass",
 		colorAttachments: [
@@ -540,8 +628,9 @@ const drawParticleMeshifyPipeline = ({
 
 	pass.setPipeline(pipeline.pipeline_render);
 	pass.setIndexBuffer(pipeline.gridPointQuadIndexBuffer, "uint32");
-	pass.setBindGroup(0, pipeline.group0);
-	pass.setBindGroup(1, pipeline.group1Render);
+	pass.setBindGroup(0, pipeline.groups.camera);
+	pass.setBindGroup(1, pipeline.groups.particlesRead);
+	pass.setBindGroup(2, pipeline.groups.projectedGridRead);
 	pass.drawIndexed(6, GRID_DIMENSION * GRID_DIMENSION * GRID_DIMENSION);
 
 	pass.end();
@@ -563,11 +652,13 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 	const cameraUBO = new CameraUBO(device);
 	cameraUBO.writeToGPU(device.queue);
+	const particlesDebugConfigUBO = new ParticlesDebugConfigUBO(device);
+	particlesDebugConfigUBO.writeToGPU(device.queue);
 
 	const pipelineParameters: {
 		output: RenderOutputCategory;
 	} = {
-		output: "Meshify Particles",
+		output: "Debug Particles",
 	};
 
 	const particles = buildParticles(device);
@@ -575,7 +666,8 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	const particleDebugPipeline = buildParticleDebugPipeline(
 		device,
 		particles,
-		cameraUBO
+		cameraUBO,
+		particlesDebugConfigUBO
 	);
 	const particleMeshifyPipeline = buildParticleMeshifyPipeline(
 		device,
@@ -665,15 +757,24 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.add(pipelineParameters, "output")
 			.options(["Debug Particles", "Meshify Particles"])
 			.name("Debug Particles");
+		pipeline
+			.add(particlesDebugConfigUBO.data, "hideNonSurface")
+			.name("Hide Sub-surface Particles");
 	};
 
 	const draw = (presentTexture: GPUTexture): void => {
 		cameraUBO.data.aspectRatio =
 			presentTexture.width / presentTexture.height;
 		cameraUBO.writeToGPU(device.queue);
+		particlesDebugConfigUBO.writeToGPU(device.queue);
 
 		const main = device.createCommandEncoder({
 			label: "Sandstone Main",
+		});
+
+		computeParticleMesh({
+			commandEncoder: main,
+			pipeline: permanentResources.particleMeshifyPipeline,
 		});
 
 		switch (pipelineParameters.output) {
@@ -687,7 +788,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				break;
 			}
 			case "Meshify Particles": {
-				drawParticleMeshifyPipeline({
+				drawParticleMeshifyProjectedGrid({
 					commandEncoder: main,
 					color: transientResources.outputColor.color,
 					depth: transientResources.outputColor.depth,

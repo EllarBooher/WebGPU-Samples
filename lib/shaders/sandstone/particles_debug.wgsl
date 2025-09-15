@@ -1,11 +1,14 @@
 #include raycast.inc.wgsl
 #include types.inc.wgsl
 
-// Render a buffer of particle positions, as many tiny spheres.
+// Render a buffer of particle positions, as many tiny spheres with their
+// properties optionally layered on top. These properties are populated in
+// various other pipelines and stages.
 //
 // The vertex stage converts them into tight quads.
 //
-// Then the fragment stage draws only the fragments that pass a ray-sphere intersection.
+// Then the fragment stage draws only the fragments that pass a ray-sphere
+// intersection.
 
 override PARTICLE_RADIUS_SQUARED: f32;
 const VERTEX_TWIDDLES: array<vec2<f32>,4> = array(
@@ -15,25 +18,16 @@ const VERTEX_TWIDDLES: array<vec2<f32>,4> = array(
 	vec2<f32>(-1.0, 1.0)
 );
 
-@group(0) @binding(0) var<storage, read> particles: array<vec3<f32>>;
+struct ParticlesDebugConfig {
+	hide_non_surface : u32,
+}
+
+@group(0) @binding(0) var<storage, read> particles: array<Particle>;
 @group(0) @binding(1) var<uniform> u_camera: CameraUBO;
+@group(0) @binding(2) var<uniform> u_config: ParticlesDebugConfig;
 
 @group(1) @binding(0) var<storage, read_write> vertices_out: array<vec4<f32>>;
 @group(1) @binding(0) var<storage, read> vertices_in: array<vec4<f32>>;
-
-struct VertexOut {
-    @builtin(position) position : vec4<f32>,
-	// camera space position of the particle's center
-    @location(0) particle_center_camera : vec3<f32>,
-	// camera space position of this fragment
-	@location(1) position_camera : vec3<f32>,
-	@location(2) @interpolate(flat) particle_idx : u32,
-}
-
-struct FragmentOut {
-	@builtin(frag_depth) depth: f32,
-	@location(0) color: vec4<f32>
-}
 
 @compute @workgroup_size(256, 1, 1)
 fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
@@ -44,7 +38,7 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 	// manual ray-plane intersection with the view plane.
 
 	// Remember, particle center is not the generally the center of the ellipse.
-	let particle_center = (u_camera.view * vec4<f32>(particles[particle_idx.x].xyz,1.0)).xyz;
+	let particle_center = (u_camera.view * vec4<f32>(particles[particle_idx.x].position_world.xyz,1.0)).xyz;
 
 	let depth = particle_center.z - sqrt(PARTICLE_RADIUS_SQUARED);
 
@@ -92,13 +86,25 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 	}
 }
 
+struct VertexOut {
+    @builtin(position) position : vec4<f32>,
+	// camera space position of the particle's center
+    @location(0) particle_center_camera : vec3<f32>,
+	// camera space position of this fragment
+	@location(1) position_camera : vec3<f32>,
+	@location(2) @interpolate(flat) particle_idx : u32,
+	@location(3) @interpolate(flat) visible : u32,
+}
+
 @vertex
 fn vertexMain(
 	@builtin(vertex_index) vertex_idx : u32,
 	@builtin(instance_index) particle_idx : u32
 ) -> VertexOut
 {
-	let particle_center = (u_camera.view * vec4<f32>(particles[particle_idx].xyz,1.0)).xyz;
+	let particle = particles[particle_idx];
+
+	let particle_center = (u_camera.view * vec4<f32>(particle.position_world.xyz,1.0)).xyz;
 
 	var out: VertexOut;
 
@@ -110,7 +116,17 @@ fn vertexMain(
 	out.position = u_camera.proj * vec4<f32>(out.position_camera, 1.0);
 	out.particle_idx = particle_idx;
 
+	out.visible = 1;
+	if(u_config.hide_non_surface > 0) {
+		out.visible = particle.is_surface;
+	}
+
 	return out;
+}
+
+struct FragmentOut {
+	@builtin(frag_depth) depth: f32,
+	@location(0) color: vec4<f32>
 }
 
 @fragment
@@ -118,6 +134,10 @@ fn fragmentMain(
 	frag_interpolated: VertexOut
 ) -> FragmentOut
 {
+	if(frag_interpolated.visible < 1) {
+		discard;
+	}
+
 	let ray_origin = -frag_interpolated.particle_center_camera;
 	let ray_direction_normalized = normalize(frag_interpolated.position_camera);
 	let radius = sqrt(PARTICLE_RADIUS_SQUARED);

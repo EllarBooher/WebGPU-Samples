@@ -22,3 +22,9 @@ struct CameraUBO
 	// camera -> world
 	model: mat4x4<f32>,
 }
+
+struct Particle {
+	position_world : vec3<f32>,
+	is_surface     :      u32 ,
+	normal_world   : vec4<f32>,
+}
