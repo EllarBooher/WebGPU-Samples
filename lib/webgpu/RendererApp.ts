@@ -14,6 +14,12 @@ export interface RendererApp {
 	 * is an unexpected size, cutting this handleResize method.
 	 */
 	handleResize?: (newWidth: number, newHeight: number) => void;
+	handleWheel?: (args: {
+		delta: number;
+		shift: boolean;
+		ctrl: boolean;
+		alt: boolean;
+	}) => void;
 	draw: (
 		presentTexture: GPUTexture,
 		aspectRatio: number,

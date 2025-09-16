@@ -25,6 +25,15 @@ const PARTICLE_RADIUS = 0.1;
 const PARTICLE_GAP = 0.2;
 const PARTICLE_COUNT = 64 * 64 * 64;
 const GRID_DIMENSION = 64;
+const EULER_ANGLES_X_SAFETY_MARGIN = 0.01;
+const CAMERA_PARAMETER_BOUNDS = {
+	distanceFromOrigin: [0.0, 100.0],
+	eulerAnglesX: [
+		-Math.PI / 2.0 + EULER_ANGLES_X_SAFETY_MARGIN,
+		Math.PI / 2.0 - EULER_ANGLES_X_SAFETY_MARGIN,
+	],
+	eulerAnglesY: [-Math.PI, Math.PI],
+};
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const buildSizeOf = () => {
@@ -78,14 +87,11 @@ const buildOutputColorResources = (
 };
 
 interface CameraParameters {
-	translationX: number;
-	translationY: number;
-	translationZ: number;
-	// Applied in order Y * X * Z
-	// Z first, X second, Y third
+	// Applied in order Y * X
+	// X first, Y second
 	eulerAnglesX: number;
 	eulerAnglesY: number;
-	eulerAnglesZ: number;
+	distanceFromOrigin: number;
 	// Needs to be updated each frame
 	aspectRatio: number;
 }
@@ -95,12 +101,9 @@ class CameraUBO extends UBO {
 	 * {@link packed}, to be written to the GPU.
 	 */
 	public readonly data: CameraParameters = {
-		translationX: 6.4,
-		translationY: 6.4,
-		translationZ: 20,
 		eulerAnglesX: 0,
 		eulerAnglesY: 0,
-		eulerAnglesZ: 0,
+		distanceFromOrigin: 30.0,
 		aspectRatio: 1,
 	};
 
@@ -114,19 +117,21 @@ class CameraUBO extends UBO {
 		const vec2_zeroed = new Float32Array(2).fill(0.0);
 		const mat2x4_zeroed = new Float32Array(4 * 2).fill(0.0);
 
-		const position = [
-			this.data.translationX,
-			this.data.translationY,
-			this.data.translationZ,
-			1,
-		];
 		const rotationX = mat4.rotationX(this.data.eulerAnglesX);
 		const rotationY = mat4.rotationY(this.data.eulerAnglesY);
-		const rotationZ = mat4.rotationZ(this.data.eulerAnglesZ);
+		const rotation = mat4.mul(rotationY, rotationX);
+
+		const position = vec4.add(
+			vec4.transformMat4(
+				vec4.create(0.0, 0.0, this.data.distanceFromOrigin, 1.0),
+				rotation
+			),
+			vec4.create(6.4, 6.4, 6.4, 0.0)
+		);
 
 		const transform = mat4.mul(
 			mat4.translation(vec4.create(...position)),
-			mat4.mul(rotationY, mat4.mul(rotationX, rotationZ))
+			mat4.mul(rotationY, rotationX)
 		);
 		const view = mat4.inverse(transform);
 		const fov = (60 * Math.PI) / 180;
@@ -807,35 +812,44 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	};
 
 	let done = false;
-	const setupUI = (gui: LilGUI): void => {
-		const cameraParameters = gui.addFolder("Camera").open();
-		cameraParameters
-			.add(cameraUBO.data, "translationX")
-			.name("Camera X")
-			.min(-20.0)
-			.max(20.0);
-		cameraParameters
-			.add(cameraUBO.data, "translationY")
-			.name("Camera Y")
-			.min(0.0)
-			.max(10.0);
-		cameraParameters
-			.add(cameraUBO.data, "translationZ")
-			.name("Camera Z")
-			.min(-20.0)
-			.max(20.0);
 
-		const EULER_ANGLES_X_SAFETY_MARGIN = 0.01;
+	const uiFunctions = {
+		resetCamera: (): void => {
+			cameraUBO.data.eulerAnglesX = -0.5;
+			cameraUBO.data.eulerAnglesY = 0.5;
+			cameraUBO.data.distanceFromOrigin = 25.0;
+		},
+	};
+	uiFunctions.resetCamera();
+
+	const setupUI = (gui: LilGUI): void => {
+		const label = document.createElement("p");
+		label.innerHTML =
+			"Mouse Scroll wheel controls camera zoom. Keyboard keys augment this when held: <br/><br/> Control : Controls camera yaw <br/> Shift : Controls camera pitch <br/> Alt : Decreases scroll sensitivity";
+		label.style = "margin: 8px";
+		const cameraParameters = gui.addFolder("Camera").open();
+		cameraParameters.domElement.appendChild(label);
+		cameraParameters
+			.add(cameraUBO.data, "distanceFromOrigin")
+			.name("Camera Radius")
+			.min(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[0])
+			.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
+			.listen();
+
 		cameraParameters
 			.add(cameraUBO.data, "eulerAnglesX")
 			.name("Camera Pitch")
-			.min(-Math.PI / 2.0 + EULER_ANGLES_X_SAFETY_MARGIN)
-			.max(Math.PI / 2.0 - EULER_ANGLES_X_SAFETY_MARGIN);
+			.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[0])
+			.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[1])
+			.listen();
 		cameraParameters
 			.add(cameraUBO.data, "eulerAnglesY")
 			.name("Camera Yaw")
-			.min(-Math.PI)
-			.max(Math.PI);
+			.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[0])
+			.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[1])
+			.listen();
+
+		cameraParameters.add(uiFunctions, "resetCamera").name("Reset Camera");
 
 		const pipeline = gui.addFolder("Pipeline").open();
 		pipeline
@@ -1004,6 +1018,46 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		quit: false,
 		presentationInterface: () => ({ device, format: COLOR_FORMAT }),
 		draw,
+		handleWheel: ({ delta, shift, ctrl, alt }): void => {
+			const sensAlt = alt ? 0.2 : 1;
+			const sensDistance = 1 / 10;
+			const sensEulerX = 1 / 500;
+			const sensEulerY = 1 / 400;
+
+			if (shift === ctrl) {
+				const [min, max] = CAMERA_PARAMETER_BOUNDS.distanceFromOrigin;
+				cameraUBO.data.distanceFromOrigin +=
+					sensAlt * sensDistance * delta;
+				cameraUBO.data.distanceFromOrigin = Math.max(
+					Math.min(max, cameraUBO.data.distanceFromOrigin),
+					min
+				);
+			} else if (shift) {
+				const [min, max] = CAMERA_PARAMETER_BOUNDS.eulerAnglesX;
+				const value =
+					cameraUBO.data.eulerAnglesX + sensAlt * sensEulerX * delta;
+				cameraUBO.data.eulerAnglesX = Math.max(
+					Math.min(value, max),
+					min
+				);
+			} else if (ctrl) {
+				const [min, max] = CAMERA_PARAMETER_BOUNDS.eulerAnglesY;
+				let value =
+					cameraUBO.data.eulerAnglesY + sensAlt * sensEulerY * delta;
+
+				if (value > max) {
+					value -= Math.ceil(value / (max - min)) * (max - min);
+				} else if (value < min) {
+					value +=
+						Math.ceil(Math.abs(value / (max - min))) * (max - min);
+				}
+
+				cameraUBO.data.eulerAnglesY = Math.max(
+					Math.min(max, value),
+					min
+				);
+			}
+		},
 		setupUI,
 		destroy,
 		handleResize,

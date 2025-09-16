@@ -205,6 +205,29 @@ const RenderingCanvas = function RenderingCanvas({
 		resizeCanvas();
 	}, [resizeCanvas, guiDocked]);
 
+	const handleWheel = useCallback(
+		(e: WheelEvent) => {
+			e.preventDefault();
+			app.handleWheel?.({
+				delta: e.deltaY,
+				shift: e.shiftKey,
+				ctrl: e.ctrlKey,
+				alt: e.altKey,
+			});
+		},
+		[app]
+	);
+
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		canvas.addEventListener("wheel", handleWheel, { passive: false });
+		return (): void => {
+			canvas.removeEventListener("wheel", handleWheel);
+		};
+	}, [handleWheel]);
+
 	/*
 	 * The precise hierarchy of these elements is important for the desired
 	 * effect. See `WebGPUSamplePage.css` for the specifics.
