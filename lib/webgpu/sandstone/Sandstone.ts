@@ -157,21 +157,26 @@ class CameraUBO extends UBO {
 }
 
 interface ParticlesDebugConfig {
-	hideNonSurface: boolean;
+	drawSurfaceOnly: boolean;
+	drawNormals: boolean;
 }
 class ParticlesDebugConfigUBO extends UBO {
 	public readonly data: ParticlesDebugConfig = {
-		hideNonSurface: false,
+		drawSurfaceOnly: true,
+		drawNormals: false,
 	};
 
 	constructor(device: GPUDevice) {
-		const SIZEOF = 4;
+		const SIZEOF = 8;
 		const BYTES_PER_FLOAT32 = 4;
 		super(device, SIZEOF / BYTES_PER_FLOAT32, "Camera UBO");
 	}
 
 	protected override packed(): Uint32Array {
-		return new Uint32Array([this.data.hideNonSurface ? 1 : 0]);
+		return new Uint32Array([
+			this.data.drawSurfaceOnly ? 1 : 0,
+			this.data.drawNormals ? 1 : 0,
+		]);
 	}
 }
 
@@ -272,7 +277,7 @@ const buildParticleDebugPipeline = (
 			},
 			{
 				binding: 2,
-				visibility: GPUShaderStage.VERTEX,
+				visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
 				buffer: { type: "uniform" },
 			},
 		],
@@ -409,11 +414,13 @@ const drawParticleDebugPipeline = ({
 	color,
 	depth,
 	pipeline,
+	drawNormals,
 }: {
 	commandEncoder: GPUCommandEncoder;
 	color: RenderOutputTexture;
 	depth: RenderOutputTexture;
 	pipeline: ParticleDebugPipeline;
+	drawNormals: boolean;
 }): void => {
 	const compute = commandEncoder.beginComputePass({
 		label: "Sandstone populateVertexBuffer",
@@ -451,9 +458,11 @@ const drawParticleDebugPipeline = ({
 	pass.setPipeline(pipeline.pipeline_renderParticles);
 	pass.drawIndexed(6, PARTICLE_COUNT);
 
-	pass.setIndexBuffer(pipeline.lineIndexBuffer, "uint32");
-	pass.setPipeline(pipeline.pipeline_renderNormals);
-	pass.drawIndexed(2, PARTICLE_COUNT);
+	if (drawNormals) {
+		pass.setIndexBuffer(pipeline.lineIndexBuffer, "uint32");
+		pass.setPipeline(pipeline.pipeline_renderNormals);
+		pass.drawIndexed(2, PARTICLE_COUNT);
+	}
 
 	pass.end();
 };
@@ -857,8 +866,11 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.options(["Debug Particles", "Meshify Particles"])
 			.name("Debug Particles");
 		pipeline
-			.add(particlesDebugConfigUBO.data, "hideNonSurface")
-			.name("Hide Sub-surface Particles");
+			.add(particlesDebugConfigUBO.data, "drawSurfaceOnly")
+			.name("Draw Surface Only");
+		pipeline
+			.add(particlesDebugConfigUBO.data, "drawNormals")
+			.name("Draw Normals");
 	};
 
 	const draw = (presentTexture: GPUTexture): void => {
@@ -896,6 +908,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 					color: transientResources.outputColor.color,
 					depth: transientResources.outputColor.depth,
 					pipeline: permanentResources.particleDebugPipeline,
+					drawNormals: particlesDebugConfigUBO.data.drawNormals,
 				});
 				break;
 			}

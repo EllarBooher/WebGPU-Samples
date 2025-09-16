@@ -20,7 +20,8 @@ const VERTEX_TWIDDLES: array<vec2<f32>,4> = array(
 const NORMAL_LENGTH = 0.4;
 
 struct ParticlesDebugConfig {
-	hide_non_surface : u32,
+	draw_surface_only : u32,
+	draw_normals : u32,
 }
 
 @group(0) @binding(0) var<storage, read> particles: array<Particle>;
@@ -123,7 +124,7 @@ fn drawParticlesVertex(
 	out.particle_idx = particle_idx;
 
 	out.visible = 1;
-	if(u_config.hide_non_surface > 0) {
+	if(u_config.draw_surface_only > 0) {
 		out.visible = particle.is_surface;
 	}
 
@@ -151,14 +152,16 @@ fn drawParticlesFragment(
 	}
 
 	let hit_position = hit.t0 * ray_direction_normalized + ray_origin;
-	let normal_world = normalize((u_camera.model * vec4<f32>(hit_position, 0.0)).xyz);
 
 	var out: ParticleFragmentOut;
 
-	// let normal = normal_world;
-	let normal = frag.normal;
-
-	out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
+	if(u_config.draw_normals > 0) {
+		let normal = frag.normal;
+		out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
+	} else {
+		let normal = normalize((u_camera.model * vec4<f32>(hit_position, 0.0)).xyz);
+		out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
+	}
 
 	let projected = u_camera.proj * vec4<f32>(hit_position + frag.particle_center_camera, 1.0);
 	out.depth = projected.z / projected.w;
@@ -195,7 +198,7 @@ fn drawNormalsVertex(
 	out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
 
 	out.visible = 1;
-	if(u_config.hide_non_surface > 0) {
+	if(u_config.draw_surface_only > 0) {
 		out.visible = particle.is_surface;
 	}
 
