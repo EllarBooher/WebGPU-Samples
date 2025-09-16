@@ -17,6 +17,7 @@ const VERTEX_TWIDDLES: array<vec2<f32>,4> = array(
 	vec2<f32>(-1.0, -1.0),
 	vec2<f32>(-1.0, 1.0)
 );
+const NORMAL_LENGTH = 0.4;
 
 struct ParticlesDebugConfig {
 	hide_non_surface : u32,
@@ -86,7 +87,7 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 	}
 }
 
-struct VertexOut {
+struct ParticleVertexOut {
     @builtin(position) position : vec4<f32>,
 	// camera space position of the particle's center
     @location(0) particle_center_camera : vec3<f32>,
@@ -96,18 +97,22 @@ struct VertexOut {
 	@location(3) @interpolate(flat) visible : u32,
 	@location(4) normal : vec3<f32>,
 }
+struct ParticleFragmentOut {
+	@builtin(frag_depth) depth: f32,
+	@location(0) color: vec4<f32>
+}
 
 @vertex
-fn vertexMain(
+fn drawParticlesVertex(
 	@builtin(vertex_index) vertex_idx : u32,
 	@builtin(instance_index) particle_idx : u32
-) -> VertexOut
+) -> ParticleVertexOut
 {
 	let particle = particles[particle_idx];
 
 	let particle_center = (u_camera.view * vec4<f32>(particle.position_world.xyz,1.0)).xyz;
 
-	var out: VertexOut;
+	var out: ParticleVertexOut;
 
 	// For our ray-sphere intersection
 	out.particle_center_camera = particle_center;
@@ -127,22 +132,17 @@ fn vertexMain(
 	return out;
 }
 
-struct FragmentOut {
-	@builtin(frag_depth) depth: f32,
-	@location(0) color: vec4<f32>
-}
-
 @fragment
-fn fragmentMain(
-	frag_interpolated: VertexOut
-) -> FragmentOut
+fn drawParticlesFragment(
+	frag: ParticleVertexOut
+) -> ParticleFragmentOut
 {
-	if(frag_interpolated.visible < 1) {
+	if(frag.visible < 1) {
 		discard;
 	}
 
-	let ray_origin = -frag_interpolated.particle_center_camera;
-	let ray_direction_normalized = normalize(frag_interpolated.position_camera);
+	let ray_origin = -frag.particle_center_camera;
+	let ray_direction_normalized = normalize(frag.position_camera);
 	let radius = sqrt(PARTICLE_RADIUS_SQUARED);
 	let hit = raySphereIntersection(ray_origin, ray_direction_normalized, radius);
 
@@ -151,15 +151,68 @@ fn fragmentMain(
 	}
 
 	let hit_position = hit.t0 * ray_direction_normalized + ray_origin;
-	let normal_world = normalize((u_camera.model * vec4<f32>(normalize(hit_position), 0.0)).xyz);
+	let normal_world = normalize((u_camera.model * vec4<f32>(hit_position, 0.0)).xyz);
 
-	var out: FragmentOut;
+	var out: ParticleFragmentOut;
 
 	// let normal = normal_world;
-	let normal = frag_interpolated.normal;
+	let normal = frag.normal;
 
 	out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
-	out.depth = (u_camera.proj * vec4<f32>(hit_position + frag_interpolated.particle_center_camera, 1.0)).z;
+
+	let projected = u_camera.proj * vec4<f32>(hit_position + frag.particle_center_camera, 1.0);
+	out.depth = projected.z / projected.w;
+
+	return out;
+}
+
+struct NormalVertexOut {
+	@builtin(position) position : vec4<f32>,
+	@location(0) color : vec4<f32>,
+	@location(1) @interpolate(flat) visible : u32,
+}
+struct NormalFragmentOut {
+	@location(0) color : vec4<f32>,
+}
+
+@vertex
+fn drawNormalsVertex(
+	@builtin(vertex_index) vertex_idx : u32,
+	@builtin(instance_index) particle_idx : u32
+) -> NormalVertexOut {
+	let particle = particles[particle_idx];
+
+	// index should be 0 (for startpoint) and 1 (for endpoint)
+	let length = NORMAL_LENGTH * f32(vertex_idx) * f32(particle.is_surface);
+	let particle_center = (u_camera.view * vec4<f32>(particle.position_world.xyz,1.0)).xyz;
+
+	var out : NormalVertexOut;
+
+	let position = particle.position_world.xyz + length * particle.normal_world.xyz;
+	out.position = u_camera.proj_view * vec4<f32>(position, 1.0);
+
+	let normal = particle.normal_world.xyz;
+	out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
+
+	out.visible = 1;
+	if(u_config.hide_non_surface > 0) {
+		out.visible = particle.is_surface;
+	}
+
+	return out;
+}
+
+@fragment
+fn drawNormalsFragment(
+	frag : NormalVertexOut
+) -> NormalFragmentOut {
+	if(frag.visible < 1) {
+		discard;
+	}
+
+	var out : NormalFragmentOut;
+
+	out.color = frag.color;
 
 	return out;
 }

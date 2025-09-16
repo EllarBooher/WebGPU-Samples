@@ -236,11 +236,13 @@ const buildParticles = (device: GPUDevice): ParticlesBuffers => {
 // Capable of drawing particles as spheres
 interface ParticleDebugPipeline {
 	pipeline_populateVertexBuffer: GPUComputePipeline;
-	pipeline_render: GPURenderPipeline;
+	pipeline_renderParticles: GPURenderPipeline;
+	pipeline_renderNormals: GPURenderPipeline;
 	group0: GPUBindGroup;
 	group1Render: GPUBindGroup;
 	group1Compute: GPUBindGroup;
-	particleQuadIndexBuffer: GPUBuffer;
+	quadIndexBuffer: GPUBuffer;
+	lineIndexBuffer: GPUBuffer;
 }
 const buildParticleDebugPipeline = (
 	device: GPUDevice,
@@ -294,27 +296,26 @@ const buildParticleDebugPipeline = (
 		code: ParticlesDebugPak,
 		label: "ParticleDebugPipeline ParticlesDebugPak",
 	});
-	const pipeline_render = device.createRenderPipeline({
-		vertex: { module: shaderModule, entryPoint: "vertexMain" },
+	const pipeline_renderParticles = device.createRenderPipeline({
+		vertex: { module: shaderModule, entryPoint: "drawParticlesVertex" },
 		fragment: {
 			targets: [{ format: COLOR_FORMAT }],
 			module: shaderModule,
 			constants: {
 				PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
 			},
-			entryPoint: "fragmentMain",
+			entryPoint: "drawParticlesFragment",
 		},
 		depthStencil: {
 			format: DEPTH_FORMAT,
 			depthWriteEnabled: true,
 			depthCompare: "greater",
 		},
-		primitive: { cullMode: "none" },
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [group0Layout, group1LayoutRender],
-			label: "ParticleDebugPipeline render",
+			label: "ParticleDebugPipeline pipeline_render",
 		}),
-		label: "ParticleDebugPipeline render",
+		label: "ParticleDebugPipeline pipeline_render",
 	});
 	const pipeline_populateVertexBuffer = device.createComputePipeline({
 		compute: {
@@ -330,6 +331,28 @@ const buildParticleDebugPipeline = (
 		}),
 		label: "ParticleDebugPipeline compute",
 	});
+	const pipeline_renderNormals = device.createRenderPipeline({
+		fragment: {
+			module: shaderModule,
+			entryPoint: "drawNormalsFragment",
+			targets: [{ format: COLOR_FORMAT }],
+		},
+		vertex: {
+			module: shaderModule,
+			entryPoint: "drawNormalsVertex",
+		},
+		depthStencil: {
+			format: DEPTH_FORMAT,
+			depthWriteEnabled: true,
+			depthCompare: "greater",
+		},
+		primitive: { topology: "line-list" },
+		layout: device.createPipelineLayout({
+			bindGroupLayouts: [group0Layout, group1LayoutRender],
+			label: "ParticleDebugPipeline pipeline_renderNormals",
+		}),
+		label: "ParticleDebugPipeline pipeline_renderNormals",
+	});
 
 	const group0 = device.createBindGroup({
 		entries: [
@@ -337,12 +360,12 @@ const buildParticleDebugPipeline = (
 			{ binding: 1, resource: cameraUBO.buffer },
 			{ binding: 2, resource: particlesDebugConfigUBO.buffer },
 		],
-		layout: pipeline_render.getBindGroupLayout(0),
+		layout: pipeline_renderParticles.getBindGroupLayout(0),
 		label: "ParticleDebugPipeline 0",
 	});
 	const group1Render = device.createBindGroup({
 		entries: [{ binding: 0, resource: particles.vertices }],
-		layout: pipeline_render.getBindGroupLayout(1),
+		layout: pipeline_renderParticles.getBindGroupLayout(1),
 		label: "ParticleDebugPipeline render 1",
 	});
 	const group1Compute = device.createBindGroup({
@@ -351,20 +374,29 @@ const buildParticleDebugPipeline = (
 		label: "ParticleDebugPipeline compute 1",
 	});
 
-	const particleQuadIndices = new Uint32Array([0, 1, 2, 0, 2, 3]);
-	const particleQuadIndexBuffer = device.createBuffer({
-		size: particleQuadIndices.byteLength,
+	const quadIndices = new Uint32Array([0, 1, 2, 0, 2, 3]);
+	const quadIndexBuffer = device.createBuffer({
+		size: quadIndices.byteLength,
 		usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
 	});
-	device.queue.writeBuffer(particleQuadIndexBuffer, 0, particleQuadIndices);
+	device.queue.writeBuffer(quadIndexBuffer, 0, quadIndices);
+
+	const lineIndices = new Uint32Array([0, 1]);
+	const lineIndexBuffer = device.createBuffer({
+		size: lineIndices.byteLength,
+		usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+	});
+	device.queue.writeBuffer(lineIndexBuffer, 0, lineIndices);
 
 	return {
-		pipeline_render,
+		pipeline_renderParticles,
+		pipeline_renderNormals,
 		pipeline_populateVertexBuffer,
 		group0,
 		group1Render,
 		group1Compute,
-		particleQuadIndexBuffer,
+		quadIndexBuffer,
+		lineIndexBuffer,
 	};
 };
 const drawParticleDebugPipeline = ({
@@ -407,11 +439,16 @@ const drawParticleDebugPipeline = ({
 		},
 	});
 
-	pass.setPipeline(pipeline.pipeline_render);
-	pass.setIndexBuffer(pipeline.particleQuadIndexBuffer, "uint32");
 	pass.setBindGroup(0, pipeline.group0);
 	pass.setBindGroup(1, pipeline.group1Render);
+
+	pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
+	pass.setPipeline(pipeline.pipeline_renderParticles);
 	pass.drawIndexed(6, PARTICLE_COUNT);
+
+	pass.setIndexBuffer(pipeline.lineIndexBuffer, "uint32");
+	pass.setPipeline(pipeline.pipeline_renderNormals);
+	pass.drawIndexed(2, PARTICLE_COUNT);
 
 	pass.end();
 };
