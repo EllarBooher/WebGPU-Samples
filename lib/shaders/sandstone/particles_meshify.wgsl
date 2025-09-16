@@ -121,7 +121,7 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 
 	let particle = out_particles[particle_idx.x];
 	if(particle.is_surface < 1) {
-		out_particles[particle_idx.x].normal_world = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+		out_particles[particle_idx.x].normal_world = vec3<f32>(0.0);
 		return;
 	}
 
@@ -195,7 +195,7 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 		eigenvector = normalize(cv_inverse * eigenvector);
 	}
 
-	out_particles[particle_idx.x].normal_world = vec4<f32>(eigenvector, 0.0);
+	out_particles[particle_idx.x].normal_world = eigenvector;
 }
 
 struct VertexOut {

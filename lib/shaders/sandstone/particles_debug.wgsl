@@ -97,6 +97,7 @@ struct ParticleVertexOut {
 	@location(2) @interpolate(flat) particle_idx : u32,
 	@location(3) @interpolate(flat) visible : u32,
 	@location(4) normal : vec3<f32>,
+	@location(5) color : vec3<f32>,
 }
 struct ParticleFragmentOut {
 	@builtin(frag_depth) depth: f32,
@@ -129,6 +130,7 @@ fn drawParticlesVertex(
 	}
 
 	out.normal = particle.normal_world.xyz;
+	out.color = particle.color;
 
 	return out;
 }
@@ -160,7 +162,7 @@ fn drawParticlesFragment(
 		out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
 	} else {
 		let normal = normalize((u_camera.model * vec4<f32>(hit_position, 0.0)).xyz);
-		out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
+		out.color = vec4<f32>(frag.color, 1.0);
 	}
 
 	let projected = u_camera.proj * vec4<f32>(hit_position + frag.particle_center_camera, 1.0);

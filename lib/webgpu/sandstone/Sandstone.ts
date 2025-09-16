@@ -40,7 +40,7 @@ const buildSizeOf = () => {
 	const f32 = 4;
 	const vec4_f32 = 16;
 	const mat3x3_f32 = 48;
-	const particle = 2 * vec4_f32;
+	const particle = 3 * vec4_f32;
 	const grid_point = vec4_f32;
 
 	return {
@@ -206,6 +206,49 @@ const buildParticles = (device: GPUDevice): ParticlesBuffers => {
 		usage: GPUBufferUsage.STORAGE,
 	});
 
+	interface Layer {
+		start: number;
+		end: number;
+		color: [number, number, number];
+	}
+	const layers: Layer[] = [];
+	let totalHeight = 0;
+	const minColor = [0.78, 0.658, 0.494];
+	const maxColor = [0.31, 0.173, 0.0745];
+	const lerp = (min: number, max: number, t: number): number =>
+		min * (1 - t) + max * t;
+
+	while (totalHeight < 12.8) {
+		let height = Math.random();
+		if (layers.length === 0) {
+			height = Math.max(height, 1.0);
+		}
+		if (totalHeight >= 12.8 - 1.0) {
+			height = 1.5;
+		}
+		const t = Math.pow(Math.random(), 1 / 2);
+		layers.push({
+			start: totalHeight,
+			end: totalHeight + height,
+			color: [
+				lerp(minColor[0], maxColor[0], t),
+				lerp(minColor[1], maxColor[1], t),
+				lerp(minColor[2], maxColor[2], t),
+			],
+		});
+		totalHeight += height;
+	}
+	const sampleColor = (height: number): [number, number, number] => {
+		let layer = 0;
+		while (layer < layers.length && (layers.at(layer)?.end ?? 0) < height) {
+			layer += 1;
+		}
+		if (layer >= layers.length) {
+			return [0.0, 0.0, 0.0];
+		}
+		return layers[layer].color;
+	};
+
 	const f32PerParticle = SIZEOF.particle / SIZEOF.f32;
 	const particles = new Float32Array(PARTICLE_COUNT * f32PerParticle).fill(
 		0.0
@@ -214,14 +257,23 @@ const buildParticles = (device: GPUDevice): ParticlesBuffers => {
 		for (let y = 0; y < 64; y++) {
 			for (let z = 0; z < 64; z++) {
 				const particleIdx = x * 64 * 64 + y * 64 + z;
+				const offset = particleIdx * f32PerParticle;
 
-				particles[f32PerParticle * particleIdx] =
-					PARTICLE_GAP * (x + (Math.random() - 0.5));
-				particles[f32PerParticle * particleIdx + 1] =
-					PARTICLE_GAP * (y + (Math.random() - 0.5));
-				particles[f32PerParticle * particleIdx + 2] =
-					PARTICLE_GAP * (z + (Math.random() - 0.5));
-				particles[f32PerParticle * particleIdx + 3] = 1.0;
+				const position = {
+					x: PARTICLE_GAP * (x + (Math.random() - 0.5)),
+					y: PARTICLE_GAP * (y + (Math.random() - 0.5)),
+					z: PARTICLE_GAP * (z + (Math.random() - 0.5)),
+				};
+
+				particles[offset] = position.x;
+				particles[offset + 1] = position.y;
+				particles[offset + 2] = position.z;
+				particles[offset + 3] = 1.0;
+
+				const [r, g, b] = sampleColor(position.y);
+				particles[offset + 8] = r;
+				particles[offset + 9] = g;
+				particles[offset + 10] = b;
 			}
 		}
 	}
@@ -440,7 +492,7 @@ const drawParticleDebugPipeline = ({
 				loadOp: "clear",
 				storeOp: "store",
 				view: color.view,
-				clearValue: { r: 0.0, g: 0.0, b: 0.2, a: 1.0 },
+				clearValue: { r: 0.4, g: 0.6, b: 1.0, a: 1.0 },
 			},
 		],
 		depthStencilAttachment: {

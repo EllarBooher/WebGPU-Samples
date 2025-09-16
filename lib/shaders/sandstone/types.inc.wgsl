@@ -26,5 +26,8 @@ struct CameraUBO
 struct Particle {
 	position_world : vec3<f32>,
 	is_surface     :      u32 ,
-	normal_world   : vec4<f32>,
+	normal_world   : vec3<f32>,
+	padding0       :      f32 ,
+	color          : vec3<f32>,
+	padding1       :      f32 ,
 }
