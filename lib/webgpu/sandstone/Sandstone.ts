@@ -1,5 +1,5 @@
 import { RendererApp, RendererAppConstructor } from "../RendererApp";
-import { GUI as LilGUI } from "lil-gui";
+import * as LilGUI from "lil-gui";
 import ParticlesDebugPak from "../../shaders/sandstone/particles_debug.wgsl";
 import ParticleMeshifyPak from "../../shaders/sandstone/particles_meshify.wgsl";
 import { FullscreenQuadPassResources } from "../sky-sea/FullscreenQuad";
@@ -42,8 +42,8 @@ const buildSizeOf = () => {
 	const vec4_f32 = 16;
 	const mat3x3_f32 = 48;
 	const particle = 3 * vec4_f32;
-	const grid_point = vec4_f32;
-	const point_neighborhood = vec4_f32 + u32 * 20;
+	const gridPoint = vec4_f32;
+	const pointNeighborhood = vec4_f32 + u32 * 20;
 
 	return {
 		f32,
@@ -51,8 +51,8 @@ const buildSizeOf = () => {
 		vec4_f32,
 		mat3x3_f32,
 		particle,
-		grid_point,
-		point_neighborhood,
+		gridPoint,
+		pointNeighborhood,
 	};
 };
 
@@ -184,9 +184,12 @@ class ParticlesDebugConfigUBO extends UBO {
 	}
 }
 
-interface ParticlesBuffers {
-	// Array of particle structs
-	particles: GPUBuffer;
+interface Particles {
+	/* ParticleBuffer in types.inc.wgsl */
+	particleBuffer: GPUBuffer;
+	/* A buffer to copy the particles header into, for querying particle stats such as surface particle count */
+	particleHeaderHostBuffer: GPUBuffer;
+	countSurface?: number;
 	// Each particle has 4 vertices, for the quad when rendering a debug view
 	vertices: GPUBuffer;
 	// The small grid we project to when converting to a mesh
@@ -195,7 +198,7 @@ interface ParticlesBuffers {
 	meshDirty: boolean;
 }
 
-const buildParticles = (device: GPUDevice): ParticlesBuffers => {
+const buildParticles = (device: GPUDevice): Particles => {
 	const verticesBuffer = device.createBuffer({
 		size: PARTICLE_COUNT * 4 * SIZEOF.vec4_f32,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
@@ -203,10 +206,7 @@ const buildParticles = (device: GPUDevice): ParticlesBuffers => {
 
 	const projectedGridBuffer = device.createBuffer({
 		size:
-			SIZEOF.grid_point *
-			GRID_DIMENSION *
-			GRID_DIMENSION *
-			GRID_DIMENSION,
+			SIZEOF.gridPoint * GRID_DIMENSION * GRID_DIMENSION * GRID_DIMENSION,
 		usage: GPUBufferUsage.STORAGE,
 	});
 
@@ -282,17 +282,32 @@ const buildParticles = (device: GPUDevice): ParticlesBuffers => {
 		}
 	}
 
-	const particlesBuffer = device.createBuffer({
-		size: PARTICLE_COUNT * SIZEOF.particle,
+	const particleBufferHeaderSize = SIZEOF.vec4_f32;
+	const particleHeaderHostBuffer = device.createBuffer({
+		size: particleBufferHeaderSize,
+		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+	});
+	const particleBuffer = device.createBuffer({
+		size: particleBufferHeaderSize + PARTICLE_COUNT * SIZEOF.particle,
 		usage:
 			GPUBufferUsage.COPY_DST |
 			GPUBufferUsage.STORAGE |
 			GPUBufferUsage.COPY_SRC,
 	});
-	device.queue.writeBuffer(particlesBuffer, 0, particles);
+	device.queue.writeBuffer(
+		particleBuffer,
+		0,
+		new Uint32Array([0, 0, 0, PARTICLE_COUNT])
+	);
+	device.queue.writeBuffer(
+		particleBuffer,
+		particleBufferHeaderSize,
+		particles
+	);
 
 	return {
-		particles: particlesBuffer,
+		particleBuffer,
+		particleHeaderHostBuffer,
 		vertices: verticesBuffer,
 		projectedGrid: projectedGridBuffer,
 		meshDirty: true,
@@ -309,7 +324,7 @@ const PointNeighborhoodBuffer = {
 				GPUBufferUsage.COPY_DST |
 				GPUBufferUsage.STORAGE |
 				GPUBufferUsage.UNIFORM,
-			size: SIZEOF.point_neighborhood,
+			size: SIZEOF.pointNeighborhood,
 			label: "Point Neighborhood",
 		});
 		return { buffer };
@@ -348,7 +363,7 @@ interface ParticleDebugPipeline {
 }
 const buildParticleDebugPipeline = (
 	device: GPUDevice,
-	particles: ParticlesBuffers,
+	particles: Particles,
 	cameraUBO: CameraUBO,
 	particlesDebugConfigUBO: ParticlesDebugConfigUBO,
 	debugNeighborhoodBuffer: PointNeighborhoodBuffer
@@ -464,7 +479,7 @@ const buildParticleDebugPipeline = (
 
 	const group0 = device.createBindGroup({
 		entries: [
-			{ binding: 0, resource: particles.particles },
+			{ binding: 0, resource: particles.particleBuffer },
 			{ binding: 1, resource: cameraUBO.buffer },
 			{ binding: 2, resource: particlesDebugConfigUBO.buffer },
 			{ binding: 3, resource: debugNeighborhoodBuffer.buffer },
@@ -571,6 +586,7 @@ interface ParticleMeshifyPipeline {
 	pipeline_projectParticlesToGrid: GPUComputePipeline;
 	pipeline_initGrid: GPUComputePipeline;
 	pipeline_identifySurfaceParticles: GPUComputePipeline;
+	pipeline_compactSurfaceParticles: GPUComputePipeline;
 	pipeline_computeGridNormals: GPUComputePipeline;
 	pipeline_render: GPURenderPipeline;
 	groups: {
@@ -584,7 +600,7 @@ interface ParticleMeshifyPipeline {
 }
 const buildParticleMeshifyPipeline = (
 	device: GPUDevice,
-	particles: ParticlesBuffers,
+	particles: Particles,
 	cameraUBO: CameraUBO,
 	debugNeighborhoodBuffer: PointNeighborhoodBuffer
 ): ParticleMeshifyPipeline => {
@@ -698,6 +714,21 @@ const buildParticleMeshifyPipeline = (
 		}),
 		label: "ParticleMeshifyPipeline identifySurfaceParticles",
 	});
+	const pipeline_compactSurfaceParticles = device.createComputePipeline({
+		compute: {
+			module: shaderModule,
+			entryPoint: "compactSurfaceParticles",
+		},
+		layout: device.createPipelineLayout({
+			bindGroupLayouts: [
+				layouts.camera,
+				layouts.readWriteStorage,
+				layouts.readOnlyStorage,
+			],
+			label: "ParticleMeshifyPipeline compactSurfaceParticles",
+		}),
+		label: "ParticleMeshifyPipeline compactSurfaceParticles",
+	});
 	const pipeline_computeGridNormals = device.createComputePipeline({
 		compute: {
 			module: shaderModule,
@@ -727,12 +758,12 @@ const buildParticleMeshifyPipeline = (
 			label: "ParticleMeshifyPipeline camera",
 		}),
 		particlesRead: device.createBindGroup({
-			entries: [{ binding: 0, resource: particles.particles }],
+			entries: [{ binding: 0, resource: particles.particleBuffer }],
 			layout: layouts.readOnlyStorage,
 			label: "ParticleMeshifyPipeline particles read",
 		}),
 		particlesReadWrite: device.createBindGroup({
-			entries: [{ binding: 0, resource: particles.particles }],
+			entries: [{ binding: 0, resource: particles.particleBuffer }],
 			layout: layouts.readWriteStorage,
 			label: "ParticleMeshifyPipeline particles read-write",
 		}),
@@ -760,6 +791,7 @@ const buildParticleMeshifyPipeline = (
 		pipeline_projectParticlesToGrid,
 		pipeline_initGrid,
 		pipeline_computeGridNormals,
+		pipeline_compactSurfaceParticles,
 		pipeline_identifySurfaceParticles,
 		groups,
 		gridPointQuadIndexBuffer,
@@ -796,8 +828,12 @@ const computeParticleMesh = ({
 
 	compute.setBindGroup(1, pipeline.groups.particlesReadWrite);
 	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
+
 	compute.setPipeline(pipeline.pipeline_identifySurfaceParticles);
 	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
+
+	compute.setPipeline(pipeline.pipeline_compactSurfaceParticles);
+	compute.dispatchWorkgroups(1, 1, 1);
 
 	compute.setPipeline(pipeline.pipeline_computeGridNormals);
 	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
@@ -894,7 +930,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	);
 
 	const debugBufferDst = device.createBuffer({
-		size: particles.particles.size,
+		size: particles.particleBuffer.size,
 		usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
 	});
 
@@ -950,7 +986,9 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	};
 	uiFunctions.resetCamera();
 
-	const setupUI = (gui: LilGUI): void => {
+	let debugParticleController: LilGUI.Controller | undefined = undefined;
+
+	const setupUI = (gui: LilGUI.GUI): void => {
 		const label = document.createElement("p");
 		label.innerHTML =
 			"Mouse Scroll wheel controls camera zoom. Keyboard keys augment this when held: <br/><br/> Control : Controls camera yaw <br/> Shift : Controls camera pitch <br/> Alt : Decreases scroll sensitivity";
@@ -990,16 +1028,22 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		pipeline
 			.add(particlesDebugConfigUBO.data, "drawNormals")
 			.name("Draw Normals");
-		pipeline
+		debugParticleController = pipeline
 			.add(pipelineParameters, "debugParticleIdx")
 			.name("Debug Particle Index")
 			.min(0)
-			.step(1)
 			.max(PARTICLE_COUNT)
+			.step(1)
+			.listen()
 			.onFinishChange(() => {
 				permanentResources.particles.meshDirty = true;
 			});
 	};
+
+	let particleHeaderReadState:
+		| "ready-to-copy"
+		| "ready-to-map"
+		| "up-to-date" = "up-to-date";
 
 	const draw = (presentTexture: GPUTexture): void => {
 		cameraUBO.data.aspectRatio =
@@ -1012,7 +1056,6 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		});
 
 		let copying = false;
-
 		if (permanentResources.particles.meshDirty) {
 			PointNeighborhoodBuffer.writeToGPU({
 				device,
@@ -1029,10 +1072,29 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			if (permanentResources.debugBufferDst.mapState === "unmapped") {
 				copying = true;
 				main.copyBufferToBuffer(
-					permanentResources.particles.particles,
+					permanentResources.particles.particleBuffer,
 					permanentResources.debugBufferDst
 				);
 			}
+
+			particleHeaderReadState = "ready-to-copy";
+			permanentResources.particles.countSurface = undefined;
+			debugParticleController?.disable();
+			debugParticleController?.min(0);
+			debugParticleController?.max(0);
+		}
+
+		if (
+			particleHeaderReadState === "ready-to-copy" &&
+			permanentResources.particles.particleHeaderHostBuffer.mapState ===
+				"unmapped"
+		) {
+			particleHeaderReadState = "ready-to-map";
+			main.copyBufferToBuffer(
+				permanentResources.particles.particleBuffer,
+				permanentResources.particles.particleHeaderHostBuffer,
+				permanentResources.particles.particleHeaderHostBuffer.size
+			);
 		}
 
 		switch (pipelineParameters.output) {
@@ -1101,8 +1163,11 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				permanentResources.debugBufferDst
 					.mapAsync(GPUMapMode.READ)
 					.then(() => {
+						// offset past header
 						const mappedRange =
-							permanentResources.debugBufferDst.getMappedRange();
+							permanentResources.debugBufferDst.getMappedRange(
+								SIZEOF.vec4_f32
+							);
 						const floats = new Float32Array(mappedRange);
 						const u32s = new Uint32Array(mappedRange);
 						const logVec4F32 = (first: number): string => {
@@ -1135,6 +1200,48 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 					})
 					.catch((reason) => {
 						console.error(reason);
+					});
+			})
+			.then(() => {
+				if (
+					particleHeaderReadState !== "ready-to-map" ||
+					permanentResources.particles.particleHeaderHostBuffer
+						.mapState !== "unmapped"
+				) {
+					return;
+				}
+				permanentResources.particles.particleHeaderHostBuffer
+					.mapAsync(GPUMapMode.READ)
+					.then(() => {
+						const mappedRange =
+							permanentResources.particles.particleHeaderHostBuffer.getMappedRange();
+						const u32s = new Uint32Array(mappedRange);
+
+						permanentResources.particles.countSurface = u32s[2];
+						const [min, max] = [
+							0,
+							permanentResources.particles.countSurface,
+						];
+						debugParticleController?.disable(false);
+						debugParticleController?.min(min);
+						debugParticleController?.max(max - 1);
+						debugParticleController?.setValue(
+							Math.max(
+								Math.min(
+									pipelineParameters.debugParticleIdx,
+									max
+								),
+								min
+							)
+						);
+
+						permanentResources.particles.particleHeaderHostBuffer.unmap();
+					})
+					.catch((reason) => {
+						console.error(reason);
+					})
+					.finally(() => {
+						particleHeaderReadState = "up-to-date";
 					});
 			})
 			.then(() => {

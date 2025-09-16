@@ -24,7 +24,7 @@ struct ParticlesDebugConfig {
 	draw_normals : u32,
 }
 
-@group(0) @binding(0) var<storage, read> particles: array<Particle>;
+@group(0) @binding(0) var<storage, read> particles: ParticleBuffer;
 @group(0) @binding(1) var<uniform> u_camera: CameraUBO;
 @group(0) @binding(2) var<uniform> u_config: ParticlesDebugConfig;
 @group(0) @binding(3) var<uniform> u_debug_neighborhood: PointNeighborhood;
@@ -41,7 +41,7 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 	// manual ray-plane intersection with the view plane.
 
 	// Remember, particle center is not the generally the center of the ellipse.
-	let particle_center = (u_camera.view * vec4<f32>(particles[particle_idx.x].position_world.xyz,1.0)).xyz;
+	let particle_center = (u_camera.view * vec4<f32>(particles.particles[particle_idx.x].position_world.xyz,1.0)).xyz;
 
 	let depth = particle_center.z - sqrt(PARTICLE_RADIUS_SQUARED);
 
@@ -111,7 +111,7 @@ fn drawParticlesVertex(
 	@builtin(instance_index) particle_idx : u32
 ) -> ParticleVertexOut
 {
-	let particle = particles[particle_idx];
+	let particle = particles.particles[particle_idx];
 
 	let particle_center = (u_camera.view * vec4<f32>(particle.position_world.xyz,1.0)).xyz;
 
@@ -133,7 +133,7 @@ fn drawParticlesVertex(
 	out.normal = particle.normal_world.xyz;
 	out.color = particle.color;
 
-	if(particles[u_debug_neighborhood.particle_idx].is_surface > 0) {
+	if(particles.particles[u_debug_neighborhood.particle_idx].is_surface > 0) {
 		for(var neighborhood_idx = 0; neighborhood_idx < NEIGHBORHOOD_SIZE; neighborhood_idx++) {
 			if(u_debug_neighborhood.neighborhood[neighborhood_idx / 4][neighborhood_idx % 4] == particle_idx) {
 				out.color = vec3<f32>(1.0,0.0,0.0);
@@ -198,7 +198,7 @@ fn drawNormalsVertex(
 	@builtin(vertex_index) vertex_idx : u32,
 	@builtin(instance_index) particle_idx : u32
 ) -> NormalVertexOut {
-	let particle = particles[particle_idx];
+	let particle = particles.particles[particle_idx];
 
 	// index should be 0 (for startpoint) and 1 (for endpoint)
 	let length = NORMAL_LENGTH * f32(vertex_idx) * f32(particle.is_surface);

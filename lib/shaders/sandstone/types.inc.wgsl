@@ -23,6 +23,7 @@ struct CameraUBO
 	model: mat4x4<f32>,
 }
 
+
 struct Particle {
 	position_world : vec3<f32>,
 	is_surface     :      u32 ,
@@ -30,6 +31,15 @@ struct Particle {
 	padding0       :      f32 ,
 	color          : vec3<f32>,
 	padding1       :      f32 ,
+}
+
+struct ParticleBuffer {
+	padding0      : vec2<f32>,
+	/* Total number of surface particles in the buffer. If 0, surface particles have not been identified and compacted. */
+	count_surface : u32,
+	/* Total number of valid particles in the array */
+	count_total   : u32,
+	particles     : array<Particle>,
 }
 
 const NEIGHBORHOOD_SIZE = 20;

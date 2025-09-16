@@ -8,8 +8,8 @@ struct GridPoint {
 @group(0) @binding(0) var<uniform> 				u_camera			: CameraUBO;
 @group(0) @binding(1) var<storage, read_write>  debug_neighborhood  : PointNeighborhood;
 
-@group(1) @binding(0) var<storage, read> 		particles			: array<Particle>;
-@group(1) @binding(0) var<storage, read_write> 	out_particles		: array<Particle>;
+@group(1) @binding(0) var<storage, read> 		particles			: ParticleBuffer;
+@group(1) @binding(0) var<storage, read_write> 	out_particles		: ParticleBuffer;
 
 @group(2) @binding(0) var<storage, read> 		projected_grid		: array<GridPoint>;
 @group(2) @binding(0) var<storage, read_write> 	out_projected_grid	: array<GridPoint>;
@@ -41,7 +41,7 @@ fn initGrid(@builtin(global_invocation_id) grid_position : vec3<u32>) {
 
 @compute @workgroup_size(256, 1, 1)
 fn projectParticlesToGrid(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
-	let particle_position = particles[particle_idx.x].position_world.xyz;
+	let particle_position = particles.particles[particle_idx.x].position_world.xyz;
 
 	let grid_position = vec3<u32>(round(particle_position / GRID_GAP));
 
@@ -56,7 +56,7 @@ fn projectParticlesToGrid(@builtin(global_invocation_id) particle_idx : vec3<u32
 
 @compute @workgroup_size(256, 1, 1)
 fn identifySurfaceParticles(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
-	let particle_position = out_particles[particle_idx.x].position_world.xyz;
+	let particle_position = out_particles.particles[particle_idx.x].position_world.xyz;
 
 	let grid_position = vec3<u32>(round(particle_position / GRID_GAP));
 
@@ -75,7 +75,34 @@ fn identifySurfaceParticles(@builtin(global_invocation_id) particle_idx : vec3<u
 	surface |= (grid_position.z <= 0 			    || projected_grid[grid_idx - GRID_STRIDE.z].filled == 0);
 	surface |= (grid_position.z >= GRID_DIMENSION-1 || projected_grid[grid_idx + GRID_STRIDE.z].filled == 0);
 
-	out_particles[particle_idx.x].is_surface = u32(surface);
+	out_particles.particles[particle_idx.x].is_surface = u32(surface);
+}
+
+/*
+ * Call with one invocation. Shifts all the surface particles to the left,
+ * to produce a more compact and efficient buffer. Does not overwrite the non-surface particles.
+ * Also sets the count_surface counter.
+ */
+@compute @workgroup_size(1, 1, 1)
+fn compactSurfaceParticles() {
+	var seek_idx : u32 = 0;
+	var count_surface : u32 = 0;
+
+	while(seek_idx < out_particles.count_total) {
+		let particle = out_particles.particles[seek_idx];
+		if(particle.is_surface < 1) {
+			seek_idx += 1;
+			continue;
+		}
+
+		out_particles.particles[seek_idx] = out_particles.particles[count_surface];
+		out_particles.particles[count_surface] = particle;
+
+		seek_idx += 1;
+		count_surface += 1;
+	}
+
+	out_particles.count_surface = count_surface;
 }
 
 struct ClosestPoint {
@@ -119,16 +146,16 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 	var points : array<ClosestPoint,20>;
 	var count = 0;
 
-	let particle = out_particles[particle_idx.x];
+	let particle = out_particles.particles[particle_idx.x];
 	if(particle.is_surface < 1) {
-		out_particles[particle_idx.x].normal_world = vec3<f32>(0.0);
+		out_particles.particles[particle_idx.x].normal_world = vec3<f32>(0.0);
 		return;
 	}
 
 	let particle_position = particle.position_world;
 
 	for(var candidate_idx : u32 = 0; candidate_idx < PARTICLE_COUNT; candidate_idx++) {
-		let candidate_position = out_particles[candidate_idx].position_world;
+		let candidate_position = out_particles.particles[candidate_idx].position_world;
 		let distance = distance(particle_position.xyz, candidate_position.xyz);
 		if(distance < 0.00001) {
 			continue;
@@ -203,7 +230,7 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 		eigenvector = normalize(cv_inverse * eigenvector);
 	}
 
-	out_particles[particle_idx.x].normal_world = eigenvector;
+	out_particles.particles[particle_idx.x].normal_world = eigenvector;
 }
 
 struct VertexOut {
