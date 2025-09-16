@@ -6,6 +6,7 @@ struct GridPoint {
 }
 
 @group(0) @binding(0) var<uniform> 				u_camera			: CameraUBO;
+@group(0) @binding(1) var<storage, read_write>  debug_neighborhood  : PointNeighborhood;
 
 @group(1) @binding(0) var<storage, read> 		particles			: array<Particle>;
 @group(1) @binding(0) var<storage, read_write> 	out_particles		: array<Particle>;
@@ -80,6 +81,7 @@ fn identifySurfaceParticles(@builtin(global_invocation_id) particle_idx : vec3<u
 struct ClosestPoint {
 	position : vec3<f32>,
 	distance : f32,
+	particle_idx: u32,
 }
 
 // Returns the inverse of the given matrix. Result is undefined if the determinant is zero.
@@ -116,8 +118,6 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 	// Brute fore the neighborhood
 	var points : array<ClosestPoint,20>;
 	var count = 0;
-	// upper bound on closest point, to quickly throw away candidates that are further than all already found points
-	var distance_max = 100000000.0;
 
 	let particle = out_particles[particle_idx.x];
 	if(particle.is_surface < 1) {
@@ -135,7 +135,8 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 		}
 
 		// TODO: This is a spot where randomizing the order of the particles changes the output.
-		if(count >= 20 && distance >= distance_max) {
+		let further_than_furthest_possible = count >= 20 && distance >= points[count - 1].distance;
+		if(further_than_furthest_possible) {
 			continue;
 		}
 
@@ -154,9 +155,16 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 		var point : ClosestPoint;
 		point.position = candidate_position;
 		point.distance = distance;
+		point.particle_idx = candidate_idx;
 
 		points[j] = point;
-		distance_max = min(distance_max, points[count - 1].distance);
+	}
+
+	if(particle_idx.x == debug_neighborhood.particle_idx) {
+		for(var i = 0; i < min(count, NEIGHBORHOOD_SIZE); i++) {
+			debug_neighborhood.neighborhood[i / 4][i % 4] = points[i].particle_idx;
+		}
+		debug_neighborhood.count = u32(min(count, NEIGHBORHOOD_SIZE));
 	}
 
 	// Compute the centroid

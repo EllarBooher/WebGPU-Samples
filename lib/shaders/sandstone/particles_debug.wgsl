@@ -27,6 +27,7 @@ struct ParticlesDebugConfig {
 @group(0) @binding(0) var<storage, read> particles: array<Particle>;
 @group(0) @binding(1) var<uniform> u_camera: CameraUBO;
 @group(0) @binding(2) var<uniform> u_config: ParticlesDebugConfig;
+@group(0) @binding(3) var<uniform> u_debug_neighborhood: PointNeighborhood;
 
 @group(1) @binding(0) var<storage, read_write> vertices_out: array<vec4<f32>>;
 @group(1) @binding(0) var<storage, read> vertices_in: array<vec4<f32>>;
@@ -131,6 +132,18 @@ fn drawParticlesVertex(
 
 	out.normal = particle.normal_world.xyz;
 	out.color = particle.color;
+
+	if(particles[u_debug_neighborhood.particle_idx].is_surface > 0) {
+		for(var neighborhood_idx = 0; neighborhood_idx < NEIGHBORHOOD_SIZE; neighborhood_idx++) {
+			if(u_debug_neighborhood.neighborhood[neighborhood_idx / 4][neighborhood_idx % 4] == particle_idx) {
+				out.color = vec3<f32>(1.0,0.0,0.0);
+			}
+		}
+
+	}
+	if(u_debug_neighborhood.particle_idx == particle_idx) {
+		out.color = vec3<f32>(0.0, 0.0, 1.0);
+	}
 
 	return out;
 }

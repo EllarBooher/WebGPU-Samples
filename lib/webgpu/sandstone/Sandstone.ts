@@ -38,17 +38,21 @@ const CAMERA_PARAMETER_BOUNDS = {
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const buildSizeOf = () => {
 	const f32 = 4;
+	const u32 = 4;
 	const vec4_f32 = 16;
 	const mat3x3_f32 = 48;
 	const particle = 3 * vec4_f32;
 	const grid_point = vec4_f32;
+	const point_neighborhood = vec4_f32 + u32 * 20;
 
 	return {
 		f32,
+		u32,
 		vec4_f32,
 		mat3x3_f32,
 		particle,
 		grid_point,
+		point_neighborhood,
 	};
 };
 
@@ -295,6 +299,42 @@ const buildParticles = (device: GPUDevice): ParticlesBuffers => {
 	};
 };
 
+interface PointNeighborhoodBuffer {
+	buffer: GPUBuffer;
+}
+const PointNeighborhoodBuffer = {
+	build: (device: GPUDevice): PointNeighborhoodBuffer => {
+		const buffer = device.createBuffer({
+			usage:
+				GPUBufferUsage.COPY_DST |
+				GPUBufferUsage.STORAGE |
+				GPUBufferUsage.UNIFORM,
+			size: SIZEOF.point_neighborhood,
+			label: "Point Neighborhood",
+		});
+		return { buffer };
+	},
+	writeToGPU: ({
+		device,
+		neighborhood,
+		particleIndex,
+	}: {
+		device: GPUDevice;
+		neighborhood: PointNeighborhoodBuffer;
+		particleIndex: number;
+	}): void => {
+		const bytes = new ArrayBuffer(neighborhood.buffer.size / SIZEOF.f32);
+
+		const floats = new Float32Array(bytes);
+		floats.fill(0.0);
+
+		const uints = new Uint32Array(bytes);
+		uints[3] = particleIndex;
+
+		device.queue.writeBuffer(neighborhood.buffer, 0, bytes);
+	},
+};
+
 // Capable of drawing particles as spheres
 interface ParticleDebugPipeline {
 	pipeline_populateVertexBuffer: GPUComputePipeline;
@@ -310,7 +350,8 @@ const buildParticleDebugPipeline = (
 	device: GPUDevice,
 	particles: ParticlesBuffers,
 	cameraUBO: CameraUBO,
-	particlesDebugConfigUBO: ParticlesDebugConfigUBO
+	particlesDebugConfigUBO: ParticlesDebugConfigUBO,
+	debugNeighborhoodBuffer: PointNeighborhoodBuffer
 ): ParticleDebugPipeline => {
 	const group0Layout = device.createBindGroupLayout({
 		entries: [
@@ -329,6 +370,11 @@ const buildParticleDebugPipeline = (
 			},
 			{
 				binding: 2,
+				visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+				buffer: { type: "uniform" },
+			},
+			{
+				binding: 3,
 				visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
 				buffer: { type: "uniform" },
 			},
@@ -421,6 +467,7 @@ const buildParticleDebugPipeline = (
 			{ binding: 0, resource: particles.particles },
 			{ binding: 1, resource: cameraUBO.buffer },
 			{ binding: 2, resource: particlesDebugConfigUBO.buffer },
+			{ binding: 3, resource: debugNeighborhoodBuffer.buffer },
 		],
 		layout: pipeline_renderParticles.getBindGroupLayout(0),
 		label: "ParticleDebugPipeline 0",
@@ -538,7 +585,8 @@ interface ParticleMeshifyPipeline {
 const buildParticleMeshifyPipeline = (
 	device: GPUDevice,
 	particles: ParticlesBuffers,
-	cameraUBO: CameraUBO
+	cameraUBO: CameraUBO,
+	debugNeighborhoodBuffer: PointNeighborhoodBuffer
 ): ParticleMeshifyPipeline => {
 	const layouts = {
 		camera: device.createBindGroupLayout({
@@ -547,6 +595,11 @@ const buildParticleMeshifyPipeline = (
 					binding: 0,
 					visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX,
 					buffer: { type: "uniform" },
+				},
+				{
+					binding: 1,
+					visibility: GPUShaderStage.COMPUTE,
+					buffer: { type: "storage" },
 				},
 			],
 			label: "ParticleMeshifyPipeline camera",
@@ -666,7 +719,10 @@ const buildParticleMeshifyPipeline = (
 
 	const groups = {
 		camera: device.createBindGroup({
-			entries: [{ binding: 0, resource: cameraUBO.buffer }],
+			entries: [
+				{ binding: 0, resource: cameraUBO.buffer },
+				{ binding: 1, resource: debugNeighborhoodBuffer.buffer },
+			],
 			layout: layouts.camera,
 			label: "ParticleMeshifyPipeline camera",
 		}),
@@ -806,10 +862,19 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	const particlesDebugConfigUBO = new ParticlesDebugConfigUBO(device);
 	particlesDebugConfigUBO.writeToGPU(device.queue);
 
+	const debugNeighborhood = PointNeighborhoodBuffer.build(device);
+	PointNeighborhoodBuffer.writeToGPU({
+		device,
+		neighborhood: debugNeighborhood,
+		particleIndex: 0,
+	});
+
 	const pipelineParameters: {
 		output: RenderOutputCategory;
+		debugParticleIdx: number;
 	} = {
 		output: "Debug Particles",
+		debugParticleIdx: 0,
 	};
 
 	const particles = buildParticles(device);
@@ -818,12 +883,14 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		device,
 		particles,
 		cameraUBO,
-		particlesDebugConfigUBO
+		particlesDebugConfigUBO,
+		debugNeighborhood
 	);
 	const particleMeshifyPipeline = buildParticleMeshifyPipeline(
 		device,
 		particles,
-		cameraUBO
+		cameraUBO,
+		debugNeighborhood
 	);
 
 	const debugBufferDst = device.createBuffer({
@@ -923,6 +990,15 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		pipeline
 			.add(particlesDebugConfigUBO.data, "drawNormals")
 			.name("Draw Normals");
+		pipeline
+			.add(pipelineParameters, "debugParticleIdx")
+			.name("Debug Particle Index")
+			.min(0)
+			.step(1)
+			.max(PARTICLE_COUNT)
+			.onFinishChange(() => {
+				permanentResources.particles.meshDirty = true;
+			});
 	};
 
 	const draw = (presentTexture: GPUTexture): void => {
@@ -938,6 +1014,12 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		let copying = false;
 
 		if (permanentResources.particles.meshDirty) {
+			PointNeighborhoodBuffer.writeToGPU({
+				device,
+				neighborhood: debugNeighborhood,
+				particleIndex: pipelineParameters.debugParticleIdx,
+			});
+
 			computeParticleMesh({
 				commandEncoder: main,
 				pipeline: permanentResources.particleMeshifyPipeline,

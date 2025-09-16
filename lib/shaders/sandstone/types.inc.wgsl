@@ -31,3 +31,11 @@ struct Particle {
 	color          : vec3<f32>,
 	padding1       :      f32 ,
 }
+
+const NEIGHBORHOOD_SIZE = 20;
+struct PointNeighborhood {
+	padding0       : vec2<f32> ,
+	count          : u32,
+	particle_idx   :            u32 ,
+	neighborhood   : array<vec4<u32>,5>, // uniform elements must be aligned to 16 bytes
+}
