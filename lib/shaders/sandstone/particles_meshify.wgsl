@@ -28,6 +28,8 @@ const GRID_STRIDE = vec3<u32>(
 	GRID_DIMENSION * GRID_DIMENSION
 );
 
+override PARTICLE_COUNT : u32;
+
 @compute @workgroup_size(8, 8, 4)
 fn initGrid(@builtin(global_invocation_id) grid_position : vec3<u32>) {
 	let grid_idx = dot(GRID_STRIDE, grid_position);
@@ -73,6 +75,127 @@ fn identifySurfaceParticles(@builtin(global_invocation_id) particle_idx : vec3<u
 	surface |= (grid_position.z >= GRID_DIMENSION-1 || projected_grid[grid_idx + GRID_STRIDE.z].filled == 0);
 
 	out_particles[particle_idx.x].is_surface = u32(surface);
+}
+
+struct ClosestPoint {
+	position : vec3<f32>,
+	distance : f32,
+}
+
+// Returns the inverse of the given matrix. Result is undefined if the determinant is zero.
+fn matrixInverse(
+	m: mat3x3<f32>
+) -> mat3x3<f32> {
+    var adjoint: mat3x3<f32>;
+
+    adjoint[0][0] =   (m[1][1] * m[2][2] - m[2][1] * m[1][2]);
+    adjoint[1][0] = - (m[1][0] * m[2][2] - m[2][0] * m[1][2]);
+    adjoint[2][0] =   (m[1][0] * m[2][1] - m[2][0] * m[1][1]);
+    adjoint[0][1] = - (m[0][1] * m[2][2] - m[2][1] * m[0][2]);
+    adjoint[1][1] =   (m[0][0] * m[2][2] - m[2][0] * m[0][2]);
+    adjoint[2][1] = - (m[0][0] * m[2][1] - m[2][0] * m[0][1]);
+    adjoint[0][2] =   (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
+    adjoint[1][2] = - (m[0][0] * m[1][2] - m[1][0] * m[0][2]);
+    adjoint[2][2] =   (m[0][0] * m[1][1] - m[1][0] * m[0][1]);
+
+	return (1.0 / determinant(m)) * adjoint;
+}
+
+@compute @workgroup_size(256, 1, 1)
+fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
+	// We estimate the normal as follows:
+	//
+	//      1) Get the k-neighborhood of closest points (k = 20) in our case
+	//      2) Compute the centroid
+	//      3) Compute the positive-definite covariance matrix obtained by summing (y-centroid) x (y-centroid)^T 3x3 matrices for y in the neighborhood
+	//      4) Compute the eigenvector of smallest eigenvalue, and use that as the normal.
+	//
+	// The result will need to be refined in later steps by possibly flipping
+	// it.
+
+	// Brute fore the neighborhood
+	var points : array<ClosestPoint,20>;
+	var count = 0;
+	// upper bound on closest point, to quickly throw away candidates that are further than all already found points
+	var distance_max = 100000000.0;
+
+	let particle = out_particles[particle_idx.x];
+	if(particle.is_surface < 1) {
+		out_particles[particle_idx.x].normal_world = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+		return;
+	}
+
+	let particle_position = particle.position_world;
+
+	for(var candidate_idx : u32 = 0; candidate_idx < PARTICLE_COUNT; candidate_idx++) {
+		let candidate_position = out_particles[candidate_idx].position_world;
+		let distance = distance(particle_position.xyz, candidate_position.xyz);
+		if(distance < 0.00001) {
+			continue;
+		}
+
+		// TODO: This is a spot where randomizing the order of the particles changes the output.
+		if(count >= 20 && distance >= distance_max) {
+			continue;
+		}
+
+		count = min(count + 1, 20);
+
+		// shift points over
+		var j = count - 1;
+		while(j > 0) {
+			if(points[j - 1].distance <= distance) {
+				break;
+			}
+			points[j] = points[j - 1];
+			j = j - 1;
+		}
+
+		var point : ClosestPoint;
+		point.position = candidate_position;
+		point.distance = distance;
+
+		points[j] = point;
+		distance_max = min(distance_max, points[count - 1].distance);
+	}
+
+	// Compute the centroid
+	var sum = vec3<f32>(0.0);
+	for(var i = 0; i < count; i++) {
+		sum += points[i].position;
+	}
+	let centroid = sum / f32(count);
+
+	// Covariance Matrix is the sum of (y - centroid) x (y - centroid)^T, the
+	// 3x3 matrices resulting from the outer product where y varies over the
+	// closest points.
+	var covariance_matrix = mat3x3<f32>(0,0,0,0,0,0,0,0,0);
+	for(var i = 0; i < count; i++) {
+		let position = points[i].position - centroid;
+		covariance_matrix += mat3x3<f32>(position.x * position, position.y * position, position.z * position);
+	}
+
+	// compute eigenvectors, taking the advantage of the fact that A^n v
+	// converges on the eigenvector with the largest eigenvalue. The covariance
+	// matrix is positive semi-definite, so all of its eigenvalues are
+	// non-negative. Thus, the eigenvector with the largest eigenvalue of the
+	// covariance matrix inverse is the vector we want.
+	//
+	// TODO: consider case of eigenvalue equalling zero
+
+	const ITERATION_STEPS = 100;
+
+	let position = points[0].position - centroid;
+
+	let cv_inverse = matrixInverse(covariance_matrix);
+	// The centroid is a good guess for the axis of the normal
+	var eigenvector = -centroid;
+
+	for(var i = 0; i < ITERATION_STEPS; i++) {
+		eigenvector = normalize(cv_inverse * eigenvector);
+	}
+
+	out_particles[particle_idx.x].normal_world = vec4<f32>(eigenvector, 0.0);
 }
 
 struct VertexOut {

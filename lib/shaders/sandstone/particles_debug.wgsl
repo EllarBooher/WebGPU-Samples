@@ -94,6 +94,7 @@ struct VertexOut {
 	@location(1) position_camera : vec3<f32>,
 	@location(2) @interpolate(flat) particle_idx : u32,
 	@location(3) @interpolate(flat) visible : u32,
+	@location(4) normal : vec3<f32>,
 }
 
 @vertex
@@ -120,6 +121,8 @@ fn vertexMain(
 	if(u_config.hide_non_surface > 0) {
 		out.visible = particle.is_surface;
 	}
+
+	out.normal = particle.normal_world.xyz;
 
 	return out;
 }
@@ -151,7 +154,11 @@ fn fragmentMain(
 	let normal_world = normalize((u_camera.model * vec4<f32>(normalize(hit_position), 0.0)).xyz);
 
 	var out: FragmentOut;
-	out.color = vec4<f32>(0.5 * (normal_world + 1.0), 1.0);
+
+	// let normal = normal_world;
+	let normal = frag_interpolated.normal;
+
+	out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
 	out.depth = (u_camera.proj * vec4<f32>(hit_position + frag_interpolated.particle_center_camera, 1.0)).z;
 
 	return out;
