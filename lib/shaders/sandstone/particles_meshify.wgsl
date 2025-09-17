@@ -5,6 +5,27 @@ struct GridPoint {
 	filled   : u32,
 }
 
+struct DrawIndexedIndirectParameters {
+	padding0 : vec3<f32>,
+	index_count : u32,
+	instance_count : u32,
+	first_index : u32,
+	base_vertex : u32,
+	first_instance : u32,
+}
+
+struct Edge {
+	first_idx  : u32,
+	second_idx : u32,
+}
+
+struct Graph {
+	padding0 : vec3<f32>,
+	count : u32,
+	indirect_draw : DrawIndexedIndirectParameters,
+	edges : array<Edge>,
+}
+
 @group(0) @binding(0) var<uniform> 				u_camera			: CameraUBO;
 @group(0) @binding(1) var<storage, read_write>  debug_neighborhood  : PointNeighborhood;
 
@@ -13,6 +34,10 @@ struct GridPoint {
 
 @group(2) @binding(0) var<storage, read> 		projected_grid		: array<GridPoint>;
 @group(2) @binding(0) var<storage, read_write> 	out_projected_grid	: array<GridPoint>;
+
+@group(3) @binding(0) var<storage, read>  particle_graph  : Graph;
+@group(3) @binding(0) var<storage, read_write>  out_particle_graph      : Graph;
+@group(3) @binding(1) var<storage, read_write>  out_particle_graph_pong : Graph;
 
 const GRID_GAP = 0.2;
 const GRID_DIMENSION: u32 = 64;
@@ -131,7 +156,28 @@ fn matrixInverse(
 }
 
 @compute @workgroup_size(256, 1, 1)
-fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
+fn initParticleGraph(@builtin(global_invocation_id) invocation_id : vec3<u32>)
+{
+	out_particle_graph.padding0 = vec3<f32>(0.0);
+	out_particle_graph.count = 0;
+
+	out_particle_graph.indirect_draw = DrawIndexedIndirectParameters();
+
+	out_particle_graph.edges[invocation_id.x].first_idx = 0;
+	out_particle_graph.edges[invocation_id.x].second_idx = 0;
+
+	out_particle_graph_pong.padding0 = vec3<f32>(0.0);
+	out_particle_graph_pong.count = 0;
+
+	out_particle_graph_pong.indirect_draw = DrawIndexedIndirectParameters();
+
+	out_particle_graph_pong.edges[invocation_id.x].first_idx = 0;
+	out_particle_graph_pong.edges[invocation_id.x].second_idx = 0;
+}
+
+@compute @workgroup_size(256, 1, 1)
+fn computeGridNormals(@builtin(global_invocation_id) invocation_id : vec3<u32>)
+{
 	// We estimate the normal as follows:
 	//
 	//      1) Get the k-neighborhood of closest points (k = 20) in our case
@@ -143,12 +189,13 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 	// it.
 
 	// Brute fore the neighborhood
-	var points : array<ClosestPoint,20>;
+	var points : array<ClosestPoint,NEIGHBORHOOD_SIZE>;
 	var count = 0;
 
-	let particle = out_particles.particles[particle_idx.x];
+	let particle_idx = invocation_id.x;
+	let particle = out_particles.particles[particle_idx];
 	if(particle.is_surface < 1) {
-		out_particles.particles[particle_idx.x].normal_world = vec3<f32>(0.0);
+		out_particles.particles[particle_idx].normal_world = vec3<f32>(0.0);
 		return;
 	}
 
@@ -162,12 +209,12 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 		}
 
 		// TODO: This is a spot where randomizing the order of the particles changes the output.
-		let further_than_furthest_possible = count >= 20 && distance >= points[count - 1].distance;
+		let further_than_furthest_possible = count >= NEIGHBORHOOD_SIZE && distance >= points[count - 1].distance;
 		if(further_than_furthest_possible) {
 			continue;
 		}
 
-		count = min(count + 1, 20);
+		count = min(count + 1, NEIGHBORHOOD_SIZE);
 
 		// shift points over
 		var j = count - 1;
@@ -187,11 +234,31 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 		points[j] = point;
 	}
 
-	if(particle_idx.x == debug_neighborhood.particle_idx) {
+	if(particle_idx == debug_neighborhood.particle_idx) {
 		for(var i = 0; i < min(count, NEIGHBORHOOD_SIZE); i++) {
 			debug_neighborhood.neighborhood[i / 4][i % 4] = points[i].particle_idx;
 		}
 		debug_neighborhood.count = u32(min(count, NEIGHBORHOOD_SIZE));
+	}
+
+	let edge_offset = 2 * NEIGHBORHOOD_SIZE * particle_idx;
+	for(var i = 0; i < min(count, NEIGHBORHOOD_SIZE); i++) {
+		let other_idx = points[i].particle_idx;
+
+		if(other_idx == particle_idx) {
+			continue;
+		}
+
+		var edge : Edge;
+		edge.first_idx = particle_idx;
+		edge.second_idx = other_idx;
+
+		var inverse_edge : Edge;
+		inverse_edge.first_idx = edge.second_idx;
+		inverse_edge.second_idx = edge.first_idx;
+
+		out_particle_graph.edges[edge_offset + u32(i)] = edge;
+		out_particle_graph.edges[edge_offset + u32(i) + NEIGHBORHOOD_SIZE] = inverse_edge;
 	}
 
 	// Compute the centroid
@@ -230,8 +297,225 @@ fn computeGridNormals(@builtin(global_invocation_id) particle_idx : vec3<u32>) {
 		eigenvector = normalize(cv_inverse * eigenvector);
 	}
 
-	out_particles.particles[particle_idx.x].normal_world = eigenvector;
+	out_particles.particles[particle_idx].normal_world = eigenvector;
 }
+
+/*
+ * Call with one invocation. Compacts the graph, removing loops and empty edges. This prepares the graph for sorting.
+ */
+@compute @workgroup_size(1,1,1)
+fn compactParticleGraph()
+{
+	var seek_idx : u32 = 0;
+	var count_valid : u32 = 0;
+
+	while(seek_idx < arrayLength(&out_particle_graph.edges)) {
+		let edge = out_particle_graph.edges[seek_idx];
+		if(edge.first_idx == edge.second_idx) {
+			seek_idx += 1;
+			continue;
+		}
+
+		out_particle_graph.edges[seek_idx] = out_particle_graph.edges[count_valid];
+		out_particle_graph.edges[count_valid] = edge;
+
+		seek_idx += 1;
+		count_valid += 1;
+	}
+
+	out_particle_graph.count = count_valid;
+
+	out_particle_graph.indirect_draw = DrawIndexedIndirectParameters();
+	out_particle_graph.indirect_draw.index_count = 2;
+	out_particle_graph.indirect_draw.instance_count = out_particle_graph.count;
+}
+
+/*
+ * Returns positive if left > right, returns 0 if =, returns negative otherwise
+ */
+fn compareEdge(
+	left: Edge,
+	right: Edge
+) -> i32
+{
+	if(left.first_idx < right.first_idx) {
+		return -1;
+	}
+
+	if (left.first_idx > right.first_idx) {
+		return 1;
+	}
+
+	if (left.second_idx < right.second_idx) {
+		return -1;
+	}
+
+	if (left.second_idx > right.second_idx) {
+		return 1;
+	}
+
+	return 0;
+}
+
+/*
+ * Performs the initial insertion sort before merging is possible.
+ */
+@compute @workgroup_size(256,1,1)
+fn sortParticleGraphInitialChunks(
+	@builtin(global_invocation_id) invocation_id : vec3<u32>
+)
+{
+	// assume count_max >= 32
+	let count_max = out_particle_graph.count;
+	let chunk_count = (count_max + 31) / 32;
+
+	if(invocation_id.x >= chunk_count) {
+		return;
+	}
+
+	let chunk_size_ideal = count_max / chunk_count;
+	let chunk_size_last = count_max - chunk_size_ideal * chunk_count;
+	let is_last_chunk = invocation_id.x == chunk_count - 1;
+
+	let chunk_size = u32(is_last_chunk) * chunk_size_last + (1 - u32(is_last_chunk)) * chunk_size_ideal;
+	let chunk_offset = invocation_id.x * chunk_size_ideal;
+
+	let start = chunk_offset;
+	let end = start + chunk_size;
+
+	// First element is trivially sorted
+	var count_sorted : u32 = 1;
+	for(var seek_idx = start + 1; seek_idx < end; seek_idx++) {
+		let edge = out_particle_graph.edges[seek_idx];
+
+		var insert_idx = start + count_sorted;
+		while(insert_idx > start) {
+			let other_edge = out_particle_graph.edges[insert_idx - 1];
+
+			let greater_than_or_equal = compareEdge(edge, other_edge) > 0;
+			if(greater_than_or_equal) {
+				break;
+			}
+
+			out_particle_graph.edges[insert_idx] = out_particle_graph.edges[insert_idx - 1];
+			insert_idx--;
+		}
+
+		out_particle_graph.edges[insert_idx] = edge;
+		count_sorted++;
+	}
+}
+
+/*
+ * Merges the chunks. call with one invocation.
+ */
+@compute @workgroup_size(1, 1, 1)
+fn sortParticleGraphMerge()
+{
+	// assume count_max >= 32
+	let count_max = out_particle_graph.count;
+	// 32 -> 1 chunk
+	// 33 -> 2 chunks
+	// 64 -> 2 chunks
+	// 65 -> 3 chunks
+	// etc
+	var chunk_count = (count_max + 31) / 32;
+
+	var write_into_pong = true;
+
+	var iter = 0;
+	while(chunk_count > 1) {
+		let merges = chunk_count / 2;
+
+		for(var merge : u32 = 0; merge < merges; merge++) {
+			let chunk_size_ideal = count_max / chunk_count;
+			let chunk_size_last = count_max - chunk_size_ideal * chunk_count;
+			let right_is_last_chunk = 2 * (merges + 1) == chunk_count;
+
+			let size_left = chunk_size_ideal;
+			let size_right = u32(right_is_last_chunk)
+				* chunk_size_last + (1 - u32(right_is_last_chunk)) * chunk_size_ideal;
+
+			var idx_left = merge * 2 * chunk_size_ideal;
+			let end_left = idx_left + size_left;
+
+
+			var idx_right = idx_left + chunk_size_ideal;
+			let end_right = idx_right + size_right;
+
+			var idx_dest = idx_left;
+
+			while(idx_left < end_left && idx_right < end_right) {
+				var edge_left : Edge;
+				var edge_right : Edge;
+
+				if(write_into_pong) {
+					edge_left = out_particle_graph.edges[idx_left];
+					edge_right = out_particle_graph.edges[idx_right];
+				} else {
+					edge_left = out_particle_graph_pong.edges[idx_left];
+					edge_right = out_particle_graph_pong.edges[idx_right];
+				}
+
+				let less_than_or_equal = compareEdge(edge_left, edge_right) < 0;
+				if(less_than_or_equal) {
+					if(write_into_pong) {
+						out_particle_graph_pong.edges[idx_dest] = edge_left;
+					} else {
+						out_particle_graph.edges[idx_dest] = edge_left;
+					}
+					idx_left++;
+				} else {
+					if(write_into_pong) {
+						out_particle_graph_pong.edges[idx_dest] = edge_right;
+					} else {
+						out_particle_graph.edges[idx_dest] = edge_right;
+					}
+					idx_right++;
+				}
+				idx_dest++;
+			}
+
+			while(idx_left < end_left) {
+				if(write_into_pong) {
+					out_particle_graph_pong.edges[idx_dest] = out_particle_graph.edges[idx_left];
+				} else {
+					out_particle_graph.edges[idx_dest] = out_particle_graph_pong.edges[idx_left];
+				}
+				idx_dest++;
+				idx_left++;
+			}
+			while(idx_right < end_right) {
+				if(write_into_pong) {
+					out_particle_graph_pong.edges[idx_dest] = out_particle_graph.edges[idx_right];
+				} else {
+					out_particle_graph.edges[idx_dest] = out_particle_graph_pong.edges[idx_right];
+				}
+				idx_dest++;
+				idx_right++;
+			}
+		}
+
+		chunk_count -= merges;
+		write_into_pong = !write_into_pong;
+		iter++;
+	}
+
+	let final_data_is_in_pong = !write_into_pong;
+	if(final_data_is_in_pong) {
+		for(var i : u32 = 0; i < count_max; i++) {
+			out_particle_graph.edges[i] = out_particle_graph_pong.edges[i];
+		}
+	}
+
+	out_particle_graph.indirect_draw = DrawIndexedIndirectParameters();
+	out_particle_graph.indirect_draw.index_count = 2;
+	out_particle_graph.indirect_draw.instance_count = out_particle_graph.count;
+}
+
+/********************************************************************************
+* Render projected grid, highlighting filled cells
+********************************************************************************/
 
 struct VertexOut {
     @builtin(position) position : vec4<f32>,
@@ -268,6 +552,51 @@ fn fragmentMain(
 ) -> FragmentOut {
 	var out: FragmentOut;
 	out.color = frag_interpolated.color;
+
+	return out;
+}
+
+/********************************************************************************
+* Render ParticleGraph with line list primitives
+********************************************************************************/
+
+struct DrawParticleGraphVertexOut {
+	@builtin(position) position : vec4<f32>,
+	@location(0) color : vec4<f32>,
+}
+struct DrawParticleGraphFragmentOut {
+	@location(0) color : vec4<f32>,
+}
+
+@vertex
+fn drawParticleGraphVertex(
+	@builtin(vertex_index) vertex_idx : u32,
+	@builtin(instance_index) edge_idx : u32
+) -> DrawParticleGraphVertexOut
+{
+	let edge = particle_graph.edges[edge_idx];
+
+	var particle_idx = edge.first_idx;
+	if(vertex_idx > 0) {
+		particle_idx = edge.second_idx;
+	}
+
+	let particle = particles.particles[particle_idx];
+
+	var out : DrawParticleGraphVertexOut;
+	out.position = u_camera.proj_view * vec4<f32>(particle.position_world.xyz, 1.0);
+	out.color = vec4<f32>(f32(edge_idx) / 100.0);
+
+	return out;
+}
+
+@fragment
+fn drawParticleGraphFragment(
+	frag : DrawParticleGraphVertexOut
+) -> DrawParticleGraphFragmentOut
+{
+	var out : DrawParticleGraphFragmentOut;
+	out.color = frag.color;
 
 	return out;
 }
