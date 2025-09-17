@@ -1133,6 +1133,42 @@ const drawParticleGraph = ({
 	pass.end();
 };
 
+/**
+ * Uses clear values to draw flat values into a color & depth target, with no pipelines.
+ */
+const drawBackground = ({
+	commandEncoder,
+	color,
+	depth,
+	clearValueColor,
+}: {
+	commandEncoder: GPUCommandEncoder;
+	color: RenderOutputTexture;
+	depth: RenderOutputTexture;
+	clearValueColor: GPUColor;
+}): void => {
+	const DEPTH_CLEAR_VALUE = 0.0;
+	commandEncoder
+		.beginRenderPass({
+			label: "Draw Background",
+			colorAttachments: [
+				{
+					loadOp: "clear",
+					storeOp: "store",
+					view: color.view,
+					clearValue: clearValueColor,
+				},
+			],
+			depthStencilAttachment: {
+				view: depth.view,
+				depthClearValue: DEPTH_CLEAR_VALUE,
+				depthLoadOp: "clear",
+				depthStoreOp: "store",
+			},
+		})
+		.end();
+};
+
 const RenderOutputCategory = [
 	"Debug Particles",
 	"Meshify Particles",
@@ -1374,12 +1410,11 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				break;
 			}
 			case "Particle Graph": {
-				drawParticleDebugPipeline({
+				drawBackground({
 					commandEncoder: main,
 					color: transientResources.outputColor.color,
 					depth: transientResources.outputColor.depth,
-					pipeline: permanentResources.particleDebugPipeline,
-					drawNormals: particlesDebugConfigUBO.data.drawNormals,
+					clearValueColor: [0.1, 0.1, 0.1, 1.0],
 				});
 				drawParticleGraph({
 					commandEncoder: main,
@@ -1391,16 +1426,12 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				break;
 			}
 			default: {
-				main.beginRenderPass({
-					colorAttachments: [
-						{
-							view: transientResources.outputColor.color.view,
-							loadOp: "clear",
-							storeOp: "store",
-							clearValue: { r: 0.4, g: 0.6, b: 0.9, a: 0 },
-						},
-					],
-				}).end();
+				drawBackground({
+					commandEncoder: main,
+					color: transientResources.outputColor.color,
+					depth: transientResources.outputColor.depth,
+					clearValueColor: [1.0, 0.0, 1.0, 1.0],
+				});
 				break;
 			}
 		}
