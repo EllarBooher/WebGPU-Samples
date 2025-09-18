@@ -1,5 +1,3 @@
-import { UBO } from "../../sky-sea/util/UBO";
-import { CameraUBO } from "../Camera";
 import {
 	PARTICLE_COUNT,
 	Particles,
@@ -12,32 +10,8 @@ import { RenderOutputTexture } from "../../sky-sea/RenderOutputController";
 // the physics model.
 const PARTICLE_RADIUS = 0.2;
 
-interface ParticlesDebugConfig {
-	drawSurfaceOnly: boolean;
-	drawNormals: boolean;
-}
-class ParticlesDebugConfigUBO extends UBO {
-	public readonly data: ParticlesDebugConfig = {
-		drawSurfaceOnly: true,
-		drawNormals: false,
-	};
-
-	constructor(device: GPUDevice) {
-		const SIZEOF = 8;
-		const BYTES_PER_FLOAT32 = 4;
-		super(device, SIZEOF / BYTES_PER_FLOAT32, "Camera UBO");
-	}
-
-	protected override packed(): Uint32Array {
-		return new Uint32Array([
-			this.data.drawSurfaceOnly ? 1 : 0,
-			this.data.drawNormals ? 1 : 0,
-		]);
-	}
-}
-
 // Capable of drawing particles as spheres
-interface ParticleDebugPipeline {
+interface ParticleDrawPipeline {
 	pipeline_populateVertexBuffer: GPUComputePipeline;
 	pipeline_renderParticles: GPURenderPipeline;
 	pipeline_renderNormals: GPURenderPipeline;
@@ -47,288 +21,313 @@ interface ParticleDebugPipeline {
 	group1Compute: GPUBindGroup;
 	quadIndexBuffer: GPUBuffer;
 	lineIndexBuffer: GPUBuffer;
-	drawStyle: ParticleDebugPipelineDrawStyle;
-	configUBO: ParticlesDebugConfigUBO;
+	configUBO: GPUBuffer;
+	/**
+	 * Settings that can be modified externally and will be read at draw time.
+	 */
+	settings: {
+		drawSurfaceOnly: boolean;
+		drawStyle: ParticleDrawPipelineDrawStyle;
+	};
 }
 
-export const buildParticleDebugPipeline = (
-	device: GPUDevice,
-	colorFormat: GPUTextureFormat,
-	depthFormat: GPUTextureFormat,
-	particles: Particles,
-	cameraUBO: CameraUBO,
-	debugNeighborhoodBuffer: PointNeighborhoodBuffer
-): ParticleDebugPipeline => {
-	const configUBO = new ParticlesDebugConfigUBO(device);
-	configUBO.writeToGPU(device.queue);
-
-	const group0Layout = device.createBindGroupLayout({
-		entries: [
-			{
-				binding: 0,
-				visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
-				buffer: { type: "read-only-storage" },
-			},
-			{
-				binding: 1,
-				visibility:
-					GPUShaderStage.VERTEX |
-					GPUShaderStage.COMPUTE |
-					GPUShaderStage.FRAGMENT,
-				buffer: { type: "uniform" },
-			},
-			{
-				binding: 2,
-				visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-				buffer: { type: "uniform" },
-			},
-			{
-				binding: 3,
-				visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-				buffer: { type: "uniform" },
-			},
-		],
-		label: `ParticleDebugPipeline Group0`,
-	});
-	const group1LayoutCompute = device.createBindGroupLayout({
-		entries: [
-			{
-				binding: 0,
-				visibility: GPUShaderStage.COMPUTE,
-				buffer: { type: "storage" },
-			},
-		],
-	});
-	const group1LayoutRender = device.createBindGroupLayout({
-		entries: [
-			{
-				binding: 0,
-				visibility: GPUShaderStage.VERTEX,
-				buffer: { type: "read-only-storage" },
-			},
-		],
-	});
-
-	const shaderModule = device.createShaderModule({
-		code: ParticlesDebugPak,
-		label: "ParticleDebugPipeline ParticlesDebugPak",
-	});
-	const pipeline_renderParticles = device.createRenderPipeline({
-		vertex: { module: shaderModule, entryPoint: "drawParticlesVertex" },
-		fragment: {
-			targets: [{ format: colorFormat }],
-			module: shaderModule,
-			constants: {
-				PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
-			},
-			entryPoint: "drawParticlesFragment",
-		},
-		depthStencil: {
-			format: depthFormat,
-			depthWriteEnabled: true,
-			depthCompare: "greater",
-		},
-		layout: device.createPipelineLayout({
-			bindGroupLayouts: [group0Layout, group1LayoutRender],
-			label: "ParticleDebugPipeline pipeline_render",
-		}),
-		label: "ParticleDebugPipeline pipeline_render",
-	});
-	const pipeline_populateVertexBuffer = device.createComputePipeline({
-		compute: {
-			module: shaderModule,
-			entryPoint: "populateVertexBuffer",
-			constants: {
-				PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
-			},
-		},
-		layout: device.createPipelineLayout({
-			bindGroupLayouts: [group0Layout, group1LayoutCompute],
-			label: "ParticleDebugPipeline compute",
-		}),
-		label: "ParticleDebugPipeline compute",
-	});
-	const pipeline_renderNormals = device.createRenderPipeline({
-		fragment: {
-			module: shaderModule,
-			entryPoint: "drawNormalsFragment",
-			targets: [{ format: colorFormat }],
-		},
-		vertex: {
-			module: shaderModule,
-			entryPoint: "drawNormalsVertex",
-		},
-		depthStencil: {
-			format: depthFormat,
-			depthWriteEnabled: true,
-			depthCompare: "greater",
-		},
-		primitive: { topology: "line-list" },
-		layout: device.createPipelineLayout({
-			bindGroupLayouts: [group0Layout, group1LayoutRender],
-			label: "ParticleDebugPipeline pipeline_renderNormals",
-		}),
-		label: "ParticleDebugPipeline pipeline_renderNormals",
-	});
-	const pipeline_renderTangentPlanes = device.createRenderPipeline({
-		fragment: {
-			module: shaderModule,
-			targets: [{ format: colorFormat }],
-			entryPoint: "drawTangentPlanesFragment",
-		},
-		vertex: {
-			module: shaderModule,
-			entryPoint: "drawTangentPlanesVertex",
-		},
-		depthStencil: {
-			format: depthFormat,
-			depthWriteEnabled: true,
-			depthCompare: "greater",
-		},
-		primitive: {
-			topology: "triangle-list",
-			cullMode: "none",
-		},
-		layout: device.createPipelineLayout({
-			bindGroupLayouts: [group0Layout, group1LayoutRender],
-			label: "ParticleDebugPipeline pipeline_renderTangentPlanes",
-		}),
-		label: "ParticleDebugPipeline pipeline_renderTangentPlanes",
-	});
-
-	const group0 = device.createBindGroup({
-		entries: [
-			{ binding: 0, resource: particles.particleBuffer },
-			{ binding: 1, resource: cameraUBO.buffer },
-			{ binding: 2, resource: configUBO.buffer },
-			{ binding: 3, resource: debugNeighborhoodBuffer.buffer },
-		],
-		layout: pipeline_renderParticles.getBindGroupLayout(0),
-		label: "ParticleDebugPipeline 0",
-	});
-	const group1Render = device.createBindGroup({
-		entries: [{ binding: 0, resource: particles.vertices }],
-		layout: pipeline_renderParticles.getBindGroupLayout(1),
-		label: "ParticleDebugPipeline render 1",
-	});
-	const group1Compute = device.createBindGroup({
-		entries: [{ binding: 0, resource: particles.vertices }],
-		layout: pipeline_populateVertexBuffer.getBindGroupLayout(1),
-		label: "ParticleDebugPipeline compute 1",
-	});
-
-	const quadIndices = new Uint32Array([0, 1, 2, 0, 2, 3]);
-	const quadIndexBuffer = device.createBuffer({
-		size: quadIndices.byteLength,
-		usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-	});
-	device.queue.writeBuffer(quadIndexBuffer, 0, quadIndices);
-
-	const lineIndices = new Uint32Array([0, 1]);
-	const lineIndexBuffer = device.createBuffer({
-		size: lineIndices.byteLength,
-		usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-	});
-	device.queue.writeBuffer(lineIndexBuffer, 0, lineIndices);
-
-	return {
-		pipeline_renderParticles,
-		pipeline_renderNormals,
-		pipeline_populateVertexBuffer,
-		pipeline_renderTangentPlanes,
-		group0,
-		group1Render,
-		group1Compute,
-		quadIndexBuffer,
-		lineIndexBuffer,
-		drawStyle: "Spheres",
-		configUBO,
-	};
-};
-
-export const ParticleDebugPipelineDrawStyle = [
+export const ParticleDrawPipelineDrawStyle = [
 	"Spheres",
 	"Spheres with Normals",
 	"Tangent Planes",
 ] as const;
-export type ParticleDebugPipelineDrawStyle =
-	(typeof ParticleDebugPipelineDrawStyle)[number];
+export type ParticleDrawPipelineDrawStyle =
+	(typeof ParticleDrawPipelineDrawStyle)[number];
 
-export const drawParticleDebugPipeline = ({
-	commandEncoder,
-	queue,
-	color,
-	depth,
-	pipeline,
-	surfaceParticlesCount,
-}: {
-	commandEncoder: GPUCommandEncoder;
-	queue: GPUQueue;
-	color: RenderOutputTexture;
-	depth: RenderOutputTexture;
-	pipeline: ParticleDebugPipeline;
-	surfaceParticlesCount: number;
-}): void => {
-	pipeline.configUBO.data.drawNormals = false;
-	if (pipeline.drawStyle == "Spheres with Normals") {
-		pipeline.configUBO.data.drawNormals = true;
-	}
-	pipeline.configUBO.writeToGPU(queue);
+export const ParticleDrawPipeline = Object.freeze({
+	build: ({
+		device,
+		colorFormat,
+		depthFormat,
+		particles,
+		cameraUBO,
+		debugNeighborhoodBuffer,
+	}: {
+		device: GPUDevice;
+		colorFormat: GPUTextureFormat;
+		depthFormat: GPUTextureFormat;
+		particles: Particles;
+		cameraUBO: GPUBuffer;
+		debugNeighborhoodBuffer: PointNeighborhoodBuffer;
+	}): ParticleDrawPipeline => {
+		const configUBO = device.createBuffer({
+			size: 8,
+			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+			label: "ParticleDrawPipeline configUBO",
+		});
 
-	const compute = commandEncoder.beginComputePass({
-		label: "Sandstone populateVertexBuffer",
-	});
+		const group0Layout = device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+					buffer: { type: "read-only-storage" },
+				},
+				{
+					binding: 1,
+					visibility:
+						GPUShaderStage.VERTEX |
+						GPUShaderStage.COMPUTE |
+						GPUShaderStage.FRAGMENT,
+					buffer: { type: "uniform" },
+				},
+				{
+					binding: 2,
+					visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+					buffer: { type: "uniform" },
+				},
+				{
+					binding: 3,
+					visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+					buffer: { type: "uniform" },
+				},
+			],
+			label: `ParticleDebugPipeline Group0`,
+		});
+		const group1LayoutCompute = device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.COMPUTE,
+					buffer: { type: "storage" },
+				},
+			],
+		});
+		const group1LayoutRender = device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.VERTEX,
+					buffer: { type: "read-only-storage" },
+				},
+			],
+		});
 
-	compute.setPipeline(pipeline.pipeline_populateVertexBuffer);
-	compute.setBindGroup(0, pipeline.group0);
-	compute.setBindGroup(1, pipeline.group1Compute);
-	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
-
-	compute.end();
-
-	const pass = commandEncoder.beginRenderPass({
-		label: "Sandstone Render Pass",
-		colorAttachments: [
-			{
-				loadOp: "load",
-				storeOp: "store",
-				view: color.view,
+		const shaderModule = device.createShaderModule({
+			code: ParticlesDebugPak,
+			label: "ParticleDebugPipeline ParticlesDebugPak",
+		});
+		const pipeline_renderParticles = device.createRenderPipeline({
+			vertex: { module: shaderModule, entryPoint: "drawParticlesVertex" },
+			fragment: {
+				targets: [{ format: colorFormat }],
+				module: shaderModule,
+				constants: {
+					PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
+				},
+				entryPoint: "drawParticlesFragment",
 			},
-		],
-		depthStencilAttachment: {
-			view: depth.view,
-			depthLoadOp: "load",
-			depthStoreOp: "store",
-		},
-	});
+			depthStencil: {
+				format: depthFormat,
+				depthWriteEnabled: true,
+				depthCompare: "greater",
+			},
+			layout: device.createPipelineLayout({
+				bindGroupLayouts: [group0Layout, group1LayoutRender],
+				label: "ParticleDebugPipeline pipeline_render",
+			}),
+			label: "ParticleDebugPipeline pipeline_render",
+		});
+		const pipeline_populateVertexBuffer = device.createComputePipeline({
+			compute: {
+				module: shaderModule,
+				entryPoint: "populateVertexBuffer",
+				constants: {
+					PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
+				},
+			},
+			layout: device.createPipelineLayout({
+				bindGroupLayouts: [group0Layout, group1LayoutCompute],
+				label: "ParticleDebugPipeline compute",
+			}),
+			label: "ParticleDebugPipeline compute",
+		});
+		const pipeline_renderNormals = device.createRenderPipeline({
+			fragment: {
+				module: shaderModule,
+				entryPoint: "drawNormalsFragment",
+				targets: [{ format: colorFormat }],
+			},
+			vertex: {
+				module: shaderModule,
+				entryPoint: "drawNormalsVertex",
+			},
+			depthStencil: {
+				format: depthFormat,
+				depthWriteEnabled: true,
+				depthCompare: "greater",
+			},
+			primitive: { topology: "line-list" },
+			layout: device.createPipelineLayout({
+				bindGroupLayouts: [group0Layout, group1LayoutRender],
+				label: "ParticleDebugPipeline pipeline_renderNormals",
+			}),
+			label: "ParticleDebugPipeline pipeline_renderNormals",
+		});
+		const pipeline_renderTangentPlanes = device.createRenderPipeline({
+			fragment: {
+				module: shaderModule,
+				targets: [{ format: colorFormat }],
+				entryPoint: "drawTangentPlanesFragment",
+			},
+			vertex: {
+				module: shaderModule,
+				entryPoint: "drawTangentPlanesVertex",
+			},
+			depthStencil: {
+				format: depthFormat,
+				depthWriteEnabled: true,
+				depthCompare: "greater",
+			},
+			primitive: {
+				topology: "triangle-list",
+				cullMode: "none",
+			},
+			layout: device.createPipelineLayout({
+				bindGroupLayouts: [group0Layout, group1LayoutRender],
+				label: "ParticleDebugPipeline pipeline_renderTangentPlanes",
+			}),
+			label: "ParticleDebugPipeline pipeline_renderTangentPlanes",
+		});
 
-	pass.setBindGroup(0, pipeline.group0);
-	pass.setBindGroup(1, pipeline.group1Render);
+		const group0 = device.createBindGroup({
+			entries: [
+				{ binding: 0, resource: particles.particleBuffer },
+				{ binding: 1, resource: cameraUBO },
+				{ binding: 2, resource: configUBO },
+				{ binding: 3, resource: debugNeighborhoodBuffer.buffer },
+			],
+			layout: pipeline_renderParticles.getBindGroupLayout(0),
+			label: "ParticleDebugPipeline 0",
+		});
+		const group1Render = device.createBindGroup({
+			entries: [{ binding: 0, resource: particles.vertices }],
+			layout: pipeline_renderParticles.getBindGroupLayout(1),
+			label: "ParticleDebugPipeline render 1",
+		});
+		const group1Compute = device.createBindGroup({
+			entries: [{ binding: 0, resource: particles.vertices }],
+			layout: pipeline_populateVertexBuffer.getBindGroupLayout(1),
+			label: "ParticleDebugPipeline compute 1",
+		});
 
-	switch (pipeline.drawStyle) {
-		case "Spheres": {
-			pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
-			pass.setPipeline(pipeline.pipeline_renderParticles);
-			pass.drawIndexed(6, PARTICLE_COUNT);
-			break;
+		const quadIndices = new Uint32Array([0, 1, 2, 0, 2, 3]);
+		const quadIndexBuffer = device.createBuffer({
+			size: quadIndices.byteLength,
+			usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+		});
+		device.queue.writeBuffer(quadIndexBuffer, 0, quadIndices);
+
+		const lineIndices = new Uint32Array([0, 1]);
+		const lineIndexBuffer = device.createBuffer({
+			size: lineIndices.byteLength,
+			usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+		});
+		device.queue.writeBuffer(lineIndexBuffer, 0, lineIndices);
+
+		return {
+			pipeline_renderParticles,
+			pipeline_renderNormals,
+			pipeline_populateVertexBuffer,
+			pipeline_renderTangentPlanes,
+			group0,
+			group1Render,
+			group1Compute,
+			quadIndexBuffer,
+			lineIndexBuffer,
+			configUBO,
+			settings: {
+				drawStyle: "Spheres",
+				drawSurfaceOnly: true,
+			},
+		};
+	},
+	draw: ({
+		commandEncoder,
+		queue,
+		color,
+		depth,
+		pipeline,
+		surfaceParticlesCount,
+	}: {
+		commandEncoder: GPUCommandEncoder;
+		queue: GPUQueue;
+		color: RenderOutputTexture;
+		depth: RenderOutputTexture;
+		pipeline: ParticleDrawPipeline;
+		surfaceParticlesCount: number;
+	}): void => {
+		const drawNormals =
+			pipeline.settings.drawStyle == "Spheres with Normals";
+		queue.writeBuffer(
+			pipeline.configUBO,
+			0,
+			new Uint32Array([
+				pipeline.settings.drawSurfaceOnly ? 1 : 0,
+				drawNormals ? 1 : 0,
+			])
+		);
+
+		const compute = commandEncoder.beginComputePass({
+			label: "Sandstone populateVertexBuffer",
+		});
+
+		compute.setPipeline(pipeline.pipeline_populateVertexBuffer);
+		compute.setBindGroup(0, pipeline.group0);
+		compute.setBindGroup(1, pipeline.group1Compute);
+		compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
+
+		compute.end();
+
+		const pass = commandEncoder.beginRenderPass({
+			label: "Sandstone Render Pass",
+			colorAttachments: [
+				{
+					loadOp: "load",
+					storeOp: "store",
+					view: color.view,
+				},
+			],
+			depthStencilAttachment: {
+				view: depth.view,
+				depthLoadOp: "load",
+				depthStoreOp: "store",
+			},
+		});
+
+		pass.setBindGroup(0, pipeline.group0);
+		pass.setBindGroup(1, pipeline.group1Render);
+
+		switch (pipeline.settings.drawStyle) {
+			case "Spheres": {
+				pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
+				pass.setPipeline(pipeline.pipeline_renderParticles);
+				pass.drawIndexed(6, PARTICLE_COUNT);
+				break;
+			}
+			case "Spheres with Normals": {
+				pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
+				pass.setPipeline(pipeline.pipeline_renderParticles);
+				pass.drawIndexed(6, PARTICLE_COUNT);
+
+				pass.setIndexBuffer(pipeline.lineIndexBuffer, "uint32");
+				pass.setPipeline(pipeline.pipeline_renderNormals);
+				pass.drawIndexed(2, PARTICLE_COUNT);
+				break;
+			}
+			case "Tangent Planes": {
+				pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
+				pass.setPipeline(pipeline.pipeline_renderTangentPlanes);
+				pass.drawIndexed(6, surfaceParticlesCount);
+				break;
+			}
 		}
-		case "Spheres with Normals": {
-			pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
-			pass.setPipeline(pipeline.pipeline_renderParticles);
-			pass.drawIndexed(6, PARTICLE_COUNT);
 
-			pass.setIndexBuffer(pipeline.lineIndexBuffer, "uint32");
-			pass.setPipeline(pipeline.pipeline_renderNormals);
-			pass.drawIndexed(2, PARTICLE_COUNT);
-			break;
-		}
-		case "Tangent Planes": {
-			pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
-			pass.setPipeline(pipeline.pipeline_renderTangentPlanes);
-			pass.drawIndexed(6, surfaceParticlesCount);
-			break;
-		}
-	}
-
-	pass.end();
-};
+		pass.end();
+	},
+});

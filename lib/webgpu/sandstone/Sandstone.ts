@@ -2,12 +2,7 @@ import { RendererApp, RendererAppConstructor } from "../RendererApp";
 import * as LilGUI from "lil-gui";
 import { FullscreenQuadPassResources } from "../sky-sea/FullscreenQuad";
 import { RenderOutputTexture } from "../sky-sea/RenderOutputController";
-import {
-	Camera,
-	CAMERA_PARAMETER_BOUNDS,
-	CameraStyle,
-	CameraUBO,
-} from "./Camera";
+import { Camera, CAMERA_PARAMETER_BOUNDS, CameraStyle } from "./Camera";
 import { WorldAxesPipeline } from "./pipelines/WorldAxes";
 import { KeyCode, KeyState } from "./Input";
 import {
@@ -16,16 +11,10 @@ import {
 	buildParticles,
 	writeParticles,
 } from "./Particles";
+import { ParticleMeshifyPipeline } from "./pipelines/ParticleMeshify";
 import {
-	buildParticleMeshifyPipeline,
-	computeParticleMesh,
-	drawParticleGraph,
-	drawParticleMeshifyProjectedGrid,
-} from "./pipelines/ParticleMeshify";
-import {
-	buildParticleDebugPipeline,
-	drawParticleDebugPipeline,
-	ParticleDebugPipelineDrawStyle,
+	ParticleDrawPipeline,
+	ParticleDrawPipelineDrawStyle,
 } from "./pipelines/ParticleDraw";
 
 interface Extent2D {
@@ -127,8 +116,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		"Sandstone"
 	);
 
-	const cameraUBO = new CameraUBO(device);
-	cameraUBO.writeToGPU(device.queue);
+	const camera = Camera.build(device);
 
 	const debugNeighborhood = PointNeighborhoodBuffer.build(device);
 	PointNeighborhoodBuffer.writeToGPU({
@@ -148,34 +136,31 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	const particles = buildParticles(device);
 	writeParticles(device, particles);
 
-	const particleDebugPipeline = buildParticleDebugPipeline(
-		device,
-		COLOR_FORMAT,
-		DEPTH_FORMAT,
-		particles,
-		cameraUBO,
-		debugNeighborhood
-	);
-	const particleMeshifyPipeline = buildParticleMeshifyPipeline(
-		device,
-		COLOR_FORMAT,
-		DEPTH_FORMAT,
-		particles,
-		cameraUBO,
-		debugNeighborhood
-	);
-
 	const permanentResources = {
-		particleDebugPipeline,
-		particleMeshifyPipeline,
+		particleDrawPipeline: ParticleDrawPipeline.build({
+			device,
+			colorFormat: COLOR_FORMAT,
+			depthFormat: DEPTH_FORMAT,
+			particles,
+			cameraUBO: camera.buffer,
+			debugNeighborhoodBuffer: debugNeighborhood,
+		}),
+		particleMeshifyPipeline: ParticleMeshifyPipeline.build(
+			device,
+			COLOR_FORMAT,
+			DEPTH_FORMAT,
+			particles,
+			camera.buffer,
+			debugNeighborhood
+		),
 		worldAxesPipeline: WorldAxesPipeline.build({
 			device,
-			cameraUBO,
+			cameraUBO: camera.buffer,
 			colorFormat: COLOR_FORMAT,
 			depthFormat: DEPTH_FORMAT,
 		}),
 		fullscreenQuad: new FullscreenQuadPassResources(device, COLOR_FORMAT),
-		cameraUBO,
+		camera,
 		particles,
 	};
 
@@ -229,10 +214,10 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 	const uiFunctions = {
 		resetCamera: (): void => {
-			cameraUBO.data.style = "Polar";
-			cameraUBO.data.polar.eulerAnglesX = -0.5;
-			cameraUBO.data.polar.eulerAnglesY = 0.5;
-			cameraUBO.data.polar.distanceFromOrigin = 25.0;
+			permanentResources.camera.style = "Polar";
+			permanentResources.camera.Polar.eulerAnglesX = -0.5;
+			permanentResources.camera.Polar.eulerAnglesY = 0.5;
+			permanentResources.camera.Polar.distanceFromOrigin = 25.0;
 		},
 		randomizeParticles: (): void => {
 			writeParticles(device, permanentResources.particles);
@@ -279,7 +264,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		};
 
 		folders.camera
-			.add(cameraUBO.data, "style")
+			.add(permanentResources.camera, "style")
 			.name("Camera Style")
 			.options(CameraStyle)
 			.onFinishChange(revealControllers)
@@ -289,19 +274,19 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.listen();
 		cameraControllers.Polar = [
 			folders.camera
-				.add(cameraUBO.data.polar, "distanceFromOrigin")
+				.add(permanentResources.camera.Polar, "distanceFromOrigin")
 				.name("Camera Radius")
 				.min(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[0])
 				.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
 				.listen(),
 			folders.camera
-				.add(cameraUBO.data.polar, "eulerAnglesX")
+				.add(permanentResources.camera.Polar, "eulerAnglesX")
 				.name("Camera Pitch")
 				.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[0])
 				.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[1])
 				.listen(),
 			folders.camera
-				.add(cameraUBO.data.polar, "eulerAnglesY")
+				.add(permanentResources.camera.Polar, "eulerAnglesY")
 				.name("Camera Yaw")
 				.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[0])
 				.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[1])
@@ -309,37 +294,37 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		];
 		cameraControllers.Cartesian = [
 			folders.camera
-				.add(cameraUBO.data.cartesian, "translationX")
+				.add(permanentResources.camera.Cartesian, "translationX")
 				.name("Translation X")
 				.min(-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
 				.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
 				.listen(),
 			folders.camera
-				.add(cameraUBO.data.cartesian, "translationY")
+				.add(permanentResources.camera.Cartesian, "translationY")
 				.name("Translation Y")
 				.min(-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
 				.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
 				.listen(),
 			folders.camera
-				.add(cameraUBO.data.cartesian, "translationZ")
+				.add(permanentResources.camera.Cartesian, "translationZ")
 				.name("Translation Z")
 				.min(-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
 				.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
 				.listen(),
 			folders.camera
-				.add(cameraUBO.data.cartesian, "eulerAnglesX")
+				.add(permanentResources.camera.Cartesian, "eulerAnglesX")
 				.name("Camera Pitch")
 				.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[0])
 				.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[1])
 				.listen(),
 			folders.camera
-				.add(cameraUBO.data.cartesian, "eulerAnglesY")
+				.add(permanentResources.camera.Cartesian, "eulerAnglesY")
 				.name("Camera Yaw")
 				.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[0])
 				.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[1])
 				.listen(),
 		];
-		revealControllers(cameraUBO.data.style);
+		revealControllers(permanentResources.camera.style);
 
 		folders.camera.add(uiFunctions, "resetCamera").name("Reset Camera");
 
@@ -349,13 +334,13 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.name("Debug Particles");
 		folders.pipeline
 			.add(
-				permanentResources.particleDebugPipeline.configUBO.data,
+				permanentResources.particleDrawPipeline.settings,
 				"drawSurfaceOnly"
 			)
 			.name("Draw Surface Only");
 		folders.pipeline
-			.add(permanentResources.particleDebugPipeline, "drawStyle")
-			.options(ParticleDebugPipelineDrawStyle)
+			.add(permanentResources.particleDrawPipeline.settings, "drawStyle")
+			.options(ParticleDrawPipelineDrawStyle)
 			.name("Draw Style");
 		debugParticleController = folders.pipeline
 			.add(pipelineParameters, "debugParticleIdx")
@@ -391,24 +376,27 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		_timeMilliseconds: number,
 		deltaTimeMilliseconds: number
 	): void => {
-		cameraUBO.data.aspectRatio =
-			presentTexture.width / presentTexture.height;
-		cameraUBO.writeToGPU(device.queue);
-
 		const main = device.createCommandEncoder({
 			label: "Sandstone Main",
 		});
 
 		if (KeyState.wasPressed(inputState.KeyR)) {
-			if (cameraUBO.data.style == "Cartesian") {
-				cameraUBO.data.style = "Polar";
-			} else if (cameraUBO.data.style == "Polar") {
-				cameraUBO.data.style = "Cartesian";
+			if (camera.style == "Cartesian") {
+				camera.style = "Polar";
+			} else if (camera.style == "Polar") {
+				camera.style = "Cartesian";
 			}
-			UICallbacks?.swapCameraStyle(cameraUBO.data.style);
+			UICallbacks?.swapCameraStyle(camera.style);
 		}
 
-		Camera.update(cameraUBO.data, inputState, deltaTimeMilliseconds);
+		const aspectRatio = presentTexture.width / presentTexture.height;
+		Camera.update(
+			device.queue,
+			aspectRatio,
+			camera,
+			inputState,
+			deltaTimeMilliseconds
+		);
 
 		for (const keyCode of KeyCode) {
 			inputState[keyCode].edge = false;
@@ -422,7 +410,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				particleIndex: pipelineParameters.debugParticleIdx,
 			});
 
-			computeParticleMesh({
+			ParticleMeshifyPipeline.computeMeshFromParticles({
 				commandEncoder: main,
 				pipeline: permanentResources.particleMeshifyPipeline,
 			});
@@ -485,19 +473,19 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 		switch (pipelineParameters.output) {
 			case "Debug Particles": {
-				drawParticleDebugPipeline({
+				ParticleDrawPipeline.draw({
 					commandEncoder: main,
 					queue: device.queue,
 					color: transientResources.outputColor.color,
 					depth: transientResources.outputColor.depth,
-					pipeline: permanentResources.particleDebugPipeline,
+					pipeline: permanentResources.particleDrawPipeline,
 					surfaceParticlesCount:
 						permanentResources.particles.countSurface ?? 0,
 				});
 				break;
 			}
 			case "Meshify Particles": {
-				drawParticleMeshifyProjectedGrid({
+				ParticleMeshifyPipeline.drawGrid({
 					commandEncoder: main,
 					color: transientResources.outputColor.color,
 					depth: transientResources.outputColor.depth,
@@ -506,7 +494,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				break;
 			}
 			case "Particle Graph": {
-				drawParticleGraph({
+				ParticleMeshifyPipeline.drawParticleGraph({
 					commandEncoder: main,
 					color: transientResources.outputColor.color,
 					depth: transientResources.outputColor.depth,

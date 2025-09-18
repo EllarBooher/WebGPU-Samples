@@ -1,6 +1,5 @@
 import WorldAxisPak from "../../../shaders/sandstone/world_axis.wgsl";
 import { RenderOutputTexture } from "../../sky-sea/RenderOutputController";
-import { CameraUBO } from "../Camera";
 import { SIZEOF } from "../Sizeof";
 
 const COUNT_AXES = 6;
@@ -19,7 +18,7 @@ export const WorldAxesPipeline = Object.freeze({
 		depthFormat,
 	}: {
 		device: GPUDevice;
-		cameraUBO: CameraUBO;
+		cameraUBO: GPUBuffer;
 		colorFormat: GPUTextureFormat;
 		depthFormat: GPUTextureFormat;
 	}): WorldAxesPipeline => {
@@ -58,7 +57,7 @@ export const WorldAxesPipeline = Object.freeze({
 
 		const group0 = device.createBindGroup({
 			label,
-			entries: [{ binding: 0, resource: { buffer: cameraUBO.buffer } }],
+			entries: [{ binding: 0, resource: { buffer: cameraUBO } }],
 			layout: pipeline_render.getBindGroupLayout(0),
 		});
 
