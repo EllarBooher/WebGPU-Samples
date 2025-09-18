@@ -5,7 +5,9 @@ import ParticleMeshifyPak from "../../shaders/sandstone/particles_meshify.wgsl";
 import { FullscreenQuadPassResources } from "../sky-sea/FullscreenQuad";
 import { RenderOutputTexture } from "../sky-sea/RenderOutputController";
 import { UBO } from "../sky-sea/util/UBO";
-import { mat4, vec4 } from "wgpu-matrix";
+import { CameraUBO } from "./Camera";
+import { WorldAxesPipeline } from "./WorldAxes";
+import { SIZEOF } from "./Sizeof";
 
 interface Extent2D {
 	width: number;
@@ -35,33 +37,6 @@ const CAMERA_PARAMETER_BOUNDS = {
 	],
 	eulerAnglesY: [-Math.PI, Math.PI],
 };
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const buildSizeOf = () => {
-	const f32 = 4;
-	const u32 = 4;
-	const vec2_u32 = 2 * u32;
-	const vec4_f32 = 4 * f32;
-	const mat3x3_f32 = 48;
-	const particle = 3 * vec4_f32;
-	const gridPoint = vec4_f32;
-	const pointNeighborhood = vec4_f32 + vec4_f32 * 5;
-	const drawIndexedIndirectParameters = 2 * vec4_f32;
-
-	return {
-		f32,
-		u32,
-		vec2_u32,
-		vec4_f32,
-		mat3x3_f32,
-		drawIndexedIndirectParameters,
-		particle,
-		gridPoint,
-		pointNeighborhood,
-	};
-};
-
-const SIZEOF = Object.freeze(buildSizeOf());
 
 const buildOutputColorResources = (
 	device: GPUDevice,
@@ -94,76 +69,6 @@ const buildOutputColorResources = (
 		},
 	};
 };
-
-interface CameraParameters {
-	// Applied in order Y * X
-	// X first, Y second
-	eulerAnglesX: number;
-	eulerAnglesY: number;
-	distanceFromOrigin: number;
-	// Needs to be updated each frame
-	aspectRatio: number;
-}
-class CameraUBO extends UBO {
-	/**
-	 * The data that will be packed and laid out in proper byte order in
-	 * {@link packed}, to be written to the GPU.
-	 */
-	public readonly data: CameraParameters = {
-		eulerAnglesX: 0,
-		eulerAnglesY: 0,
-		distanceFromOrigin: 30.0,
-		aspectRatio: 1,
-	};
-
-	constructor(device: GPUDevice) {
-		const SIZEOF_CAMERA_UBO = 5 * 64;
-		const BYTES_PER_FLOAT32 = 4;
-		super(device, SIZEOF_CAMERA_UBO / BYTES_PER_FLOAT32, "Camera UBO");
-	}
-
-	protected override packed(): Float32Array {
-		const vec2_zeroed = new Float32Array(2).fill(0.0);
-		const mat2x4_zeroed = new Float32Array(4 * 2).fill(0.0);
-
-		const rotationX = mat4.rotationX(this.data.eulerAnglesX);
-		const rotationY = mat4.rotationY(this.data.eulerAnglesY);
-		const rotation = mat4.mul(rotationY, rotationX);
-
-		const position = vec4.add(
-			vec4.transformMat4(
-				vec4.create(0.0, 0.0, this.data.distanceFromOrigin, 1.0),
-				rotation
-			),
-			vec4.create(6.4, 6.4, 6.4, 0.0)
-		);
-
-		const transform = mat4.mul(
-			mat4.translation(vec4.create(...position)),
-			mat4.mul(rotationY, rotationX)
-		);
-		const view = mat4.inverse(transform);
-		const fov = (60 * Math.PI) / 180;
-		const far = 0.1;
-		const near = 1000;
-
-		const proj = mat4.perspective(fov, this.data.aspectRatio, near, far);
-		const projView = mat4.mul(proj, view);
-		const focalLength = 1.0;
-
-		return new Float32Array([
-			...view,
-			...projView,
-			...position,
-			...vec2_zeroed,
-			this.data.aspectRatio,
-			focalLength,
-			...mat2x4_zeroed,
-			...proj,
-			...transform,
-		]);
-	}
-}
 
 interface ParticlesDebugConfig {
 	drawSurfaceOnly: boolean;
@@ -583,17 +488,15 @@ const drawParticleDebugPipeline = ({
 		label: "Sandstone Render Pass",
 		colorAttachments: [
 			{
-				loadOp: "clear",
+				loadOp: "load",
 				storeOp: "store",
 				view: color.view,
-				clearValue: { r: 0.4, g: 0.6, b: 1.0, a: 1.0 },
 			},
 		],
 		depthStencilAttachment: {
 			view: depth.view,
+			depthLoadOp: "load",
 			depthStoreOp: "store",
-			depthLoadOp: "clear",
-			depthClearValue: 0.0,
 		},
 	});
 
@@ -1067,17 +970,15 @@ const drawParticleMeshifyProjectedGrid = ({
 		label: "Sandstone Render Pass",
 		colorAttachments: [
 			{
-				loadOp: "clear",
+				loadOp: "load",
 				storeOp: "store",
 				view: color.view,
-				clearValue: { r: 0.0, g: 0.2, b: 0.0, a: 1.0 },
 			},
 		],
 		depthStencilAttachment: {
 			view: depth.view,
 			depthStoreOp: "store",
-			depthLoadOp: "clear",
-			depthClearValue: 0.0,
+			depthLoadOp: "load",
 		},
 	});
 
@@ -1203,7 +1104,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		output: RenderOutputCategory;
 		debugParticleIdx: number;
 	} = {
-		output: "Particle Graph",
+		output: "Debug Particles",
 		debugParticleIdx: 0,
 	};
 
@@ -1226,6 +1127,12 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	const permanentResources = {
 		particleDebugPipeline,
 		particleMeshifyPipeline,
+		worldAxesPipeline: WorldAxesPipeline.build({
+			device,
+			cameraUBO,
+			colorFormat: COLOR_FORMAT,
+			depthFormat: DEPTH_FORMAT,
+		}),
 		fullscreenQuad: new FullscreenQuadPassResources(device, COLOR_FORMAT),
 		cameraUBO,
 		particles,
@@ -1389,6 +1296,27 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			);
 		}
 
+		const clearColor = (
+			{
+				"Debug Particles": [0.4, 0.6, 1.0, 1.0],
+				"Meshify Particles": [0.05, 0.1, 0.05, 1.0],
+				"Particle Graph": [0.1, 0.1, 0.1, 1.0],
+			} as const
+		)[pipelineParameters.output];
+
+		drawBackground({
+			commandEncoder: main,
+			color: transientResources.outputColor.color,
+			depth: transientResources.outputColor.depth,
+			clearValueColor: clearColor,
+		});
+		WorldAxesPipeline.draw({
+			commandEncoder: main,
+			color: transientResources.outputColor.color,
+			depth: transientResources.outputColor.depth,
+			pipeline: permanentResources.worldAxesPipeline,
+		});
+
 		switch (pipelineParameters.output) {
 			case "Debug Particles": {
 				drawParticleDebugPipeline({
@@ -1410,27 +1338,12 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 				break;
 			}
 			case "Particle Graph": {
-				drawBackground({
-					commandEncoder: main,
-					color: transientResources.outputColor.color,
-					depth: transientResources.outputColor.depth,
-					clearValueColor: [0.1, 0.1, 0.1, 1.0],
-				});
 				drawParticleGraph({
 					commandEncoder: main,
 					color: transientResources.outputColor.color,
 					depth: transientResources.outputColor.depth,
 					pipeline: permanentResources.particleMeshifyPipeline,
 					particles: permanentResources.particles,
-				});
-				break;
-			}
-			default: {
-				drawBackground({
-					commandEncoder: main,
-					color: transientResources.outputColor.color,
-					depth: transientResources.outputColor.depth,
-					clearValueColor: [1.0, 0.0, 1.0, 1.0],
 				});
 				break;
 			}
