@@ -39,7 +39,7 @@ struct Graph {
 @group(3) @binding(0) var<storage, read_write>  out_particle_graph      : Graph;
 @group(3) @binding(1) var<storage, read_write>  out_particle_graph_pong : Graph;
 
-const GRID_GAP = 0.2;
+const GRID_GAP = 1;
 const GRID_DIMENSION: u32 = 64;
 
 const VERTEX_TWIDDLES: array<vec2<f32>,4> = array(
@@ -367,20 +367,22 @@ fn sortParticleGraphInitialChunks(
 {
 	// assume count_max >= 32
 	let count_max = out_particle_graph.count;
-	let chunk_count = (count_max + 31) / 32;
+
+	let chunk_size_ideal = 32u;
+
+	let chunk_count = (count_max + (chunk_size_ideal - 1)) / chunk_size_ideal;
 
 	if(invocation_id.x >= chunk_count) {
 		return;
 	}
 
-	let chunk_size_ideal = count_max / chunk_count;
-	let chunk_size_last = count_max - chunk_size_ideal * chunk_count;
-	let is_last_chunk = invocation_id.x == chunk_count - 1;
+	let chunk_size_leftover = count_max % chunk_size_ideal;
 
-	let chunk_size = u32(is_last_chunk) * chunk_size_last + (1 - u32(is_last_chunk)) * chunk_size_ideal;
-	let chunk_offset = invocation_id.x * chunk_size_ideal;
+	let is_last_chunk = (chunk_size_leftover > 0) && (invocation_id.x == chunk_count - 1);
+	let chunk_size = u32(is_last_chunk) * chunk_size_leftover
+		+ (1 - u32(is_last_chunk)) * chunk_size_ideal;
 
-	let start = chunk_offset;
+	let start = invocation_id.x * chunk_size_ideal;
 	let end = start + chunk_size;
 
 	// First element is trivially sorted
@@ -412,38 +414,37 @@ fn sortParticleGraphInitialChunks(
 @compute @workgroup_size(1, 1, 1)
 fn sortParticleGraphMerge()
 {
-	// assume count_max >= 32
 	let count_max = out_particle_graph.count;
-	// 32 -> 1 chunk
-	// 33 -> 2 chunks
-	// 64 -> 2 chunks
-	// 65 -> 3 chunks
-	// etc
-	var chunk_count = (count_max + 31) / 32;
 
 	var write_into_pong = true;
 
-	var iter = 0;
-	while(chunk_count > 1) {
-		let merges = chunk_count / 2;
+	var chunk_size_ideal = 32u;
+	while(chunk_size_ideal < count_max) {
+		// Ceiling division to ensure that we count the last chunk with the
+		// remainder of the elements.
+		let chunk_count = (count_max + (chunk_size_ideal - 1)) / chunk_size_ideal;
+		let merge_count = chunk_count / 2;
 
-		for(var merge : u32 = 0; merge < merges; merge++) {
-			let chunk_size_ideal = count_max / chunk_count;
-			let chunk_size_last = count_max - chunk_size_ideal * chunk_count;
-			let right_is_last_chunk = 2 * (merges + 1) == chunk_count;
+		let chunk_size_last = count_max % chunk_size_ideal;
+
+		var merge : u32 = 0;
+		for(; merge < merge_count; merge++) {
+			let right_is_last_chunk = (chunk_count % 2 == 0) && (merge == merge_count - 1);
 
 			let size_left = chunk_size_ideal;
-			let size_right = u32(right_is_last_chunk)
-				* chunk_size_last + (1 - u32(right_is_last_chunk)) * chunk_size_ideal;
+			let size_right = u32(right_is_last_chunk) * chunk_size_last
+				+ (1 - u32(right_is_last_chunk)) * chunk_size_ideal;
 
-			var idx_left = merge * 2 * chunk_size_ideal;
-			let end_left = idx_left + size_left;
+			let start_left = merge * 2 * chunk_size_ideal;
+			let start_right = start_left + size_left;
 
+			var idx_left = start_left;
+			let end_left = start_left + size_left;
 
-			var idx_right = idx_left + chunk_size_ideal;
-			let end_right = idx_right + size_right;
+			var idx_right = start_right;
+			let end_right = start_right + size_right;
 
-			var idx_dest = idx_left;
+			var idx_dest = start_left;
 
 			while(idx_left < end_left && idx_right < end_right) {
 				var edge_left : Edge;
@@ -496,9 +497,8 @@ fn sortParticleGraphMerge()
 			}
 		}
 
-		chunk_count -= merges;
+		chunk_size_ideal *= 2;
 		write_into_pong = !write_into_pong;
-		iter++;
 	}
 
 	let final_data_is_in_pong = !write_into_pong;
@@ -585,7 +585,7 @@ fn drawParticleGraphVertex(
 
 	var out : DrawParticleGraphVertexOut;
 	out.position = u_camera.proj_view * vec4<f32>(particle.position_world.xyz, 1.0);
-	out.color = vec4<f32>(f32(edge_idx) / 100.0);
+	out.color = vec4<f32>(1.0);
 
 	return out;
 }

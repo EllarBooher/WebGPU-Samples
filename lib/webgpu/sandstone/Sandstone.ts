@@ -22,10 +22,16 @@ interface OutputColorResources {
 
 const COLOR_FORMAT: GPUTextureFormat = "rgba16float";
 const DEPTH_FORMAT: GPUTextureFormat = "depth32float";
+// Add a bit of a gap so no particles are negative
+const PARTICLE_BOUNDING_BOX = {
+	min: [1.0, 1.0, 1.0],
+	max: [31.0, 31.0, 31.0],
+};
 // Particle radius is purely for debug purposes, the particles have no size in the model.
-const PARTICLE_RADIUS = 0.1;
-const PARTICLE_GAP = 0.2;
-const PARTICLE_COUNT = 64 * 64 * 64;
+const PARTICLE_RADIUS = 0.2;
+const PARTICLE_DIMENSIONS = [64, 64, 64];
+const PARTICLE_COUNT =
+	PARTICLE_DIMENSIONS[0] * PARTICLE_DIMENSIONS[1] * PARTICLE_DIMENSIONS[2];
 const GRID_DIMENSION = 64;
 const EULER_ANGLES_X_SAFETY_MARGIN = 0.01;
 const NEIGHBORHOOD_SIZE = 4;
@@ -125,78 +131,6 @@ const buildParticles = (device: GPUDevice): Particles => {
 		usage: GPUBufferUsage.STORAGE,
 	});
 
-	interface Layer {
-		start: number;
-		end: number;
-		color: [number, number, number];
-	}
-	const layers: Layer[] = [];
-	let totalHeight = 0;
-	const minColor = [0.78, 0.658, 0.494];
-	const maxColor = [0.31, 0.173, 0.0745];
-	const lerp = (min: number, max: number, t: number): number =>
-		min * (1 - t) + max * t;
-
-	while (totalHeight < 12.8) {
-		let height = Math.random();
-		if (layers.length === 0) {
-			height = Math.max(height, 1.0);
-		}
-		if (totalHeight >= 12.8 - 1.0) {
-			height = 1.5;
-		}
-		const t = Math.pow(Math.random(), 1 / 2);
-		layers.push({
-			start: totalHeight,
-			end: totalHeight + height,
-			color: [
-				lerp(minColor[0], maxColor[0], t),
-				lerp(minColor[1], maxColor[1], t),
-				lerp(minColor[2], maxColor[2], t),
-			],
-		});
-		totalHeight += height;
-	}
-	const sampleColor = (height: number): [number, number, number] => {
-		let layer = 0;
-		while (layer < layers.length && (layers.at(layer)?.end ?? 0) < height) {
-			layer += 1;
-		}
-		if (layer >= layers.length) {
-			return [0.0, 0.0, 0.0];
-		}
-		return layers[layer].color;
-	};
-
-	const f32PerParticle = SIZEOF.particle / SIZEOF.f32;
-	const particles = new Float32Array(PARTICLE_COUNT * f32PerParticle).fill(
-		0.0
-	);
-	for (let x = 0; x < 64; x++) {
-		for (let y = 0; y < 64; y++) {
-			for (let z = 0; z < 64; z++) {
-				const particleIdx = x * 64 * 64 + y * 64 + z;
-				const offset = particleIdx * f32PerParticle;
-
-				const position = {
-					x: PARTICLE_GAP * (x + (Math.random() - 0.5)),
-					y: PARTICLE_GAP * (y + (Math.random() - 0.5)),
-					z: PARTICLE_GAP * (z + (Math.random() - 0.5)),
-				};
-
-				particles[offset] = position.x;
-				particles[offset + 1] = position.y;
-				particles[offset + 2] = position.z;
-				particles[offset + 3] = 1.0;
-
-				const [r, g, b] = sampleColor(position.y);
-				particles[offset + 8] = r;
-				particles[offset + 9] = g;
-				particles[offset + 10] = b;
-			}
-		}
-	}
-
 	const particleBufferHeaderSize = SIZEOF.vec4_f32;
 	const particleHeaderHostBuffer = device.createBuffer({
 		size: particleBufferHeaderSize,
@@ -209,16 +143,6 @@ const buildParticles = (device: GPUDevice): Particles => {
 			GPUBufferUsage.STORAGE |
 			GPUBufferUsage.COPY_SRC,
 	});
-	device.queue.writeBuffer(
-		particleBuffer,
-		0,
-		new Uint32Array([0, 0, 0, PARTICLE_COUNT])
-	);
-	device.queue.writeBuffer(
-		particleBuffer,
-		particleBufferHeaderSize,
-		particles
-	);
 
 	const edgeCount = NEIGHBORHOOD_SIZE * PARTICLE_COUNT * 2;
 	const particleGraphBufferHeaderSize =
@@ -249,6 +173,126 @@ const buildParticles = (device: GPUDevice): Particles => {
 		projectedGrid: projectedGridBuffer,
 		meshDirty: true,
 	};
+};
+
+const writeParticles = (device: GPUDevice, particles: Particles): void => {
+	interface Layer {
+		start: number;
+		end: number;
+		color: [number, number, number];
+	}
+	const layers: Layer[] = [];
+	let totalFractionalHeight = 0;
+	const minColor = [0.78, 0.658, 0.494];
+	const maxColor = [0.31, 0.173, 0.0745];
+	const lerp = (min: number, max: number, t: number): number =>
+		min * (1 - t) + max * t;
+
+	const particleBoundingBoxExtent = PARTICLE_BOUNDING_BOX.max.map(
+		(value, idx) => value - PARTICLE_BOUNDING_BOX.min[idx]
+	);
+
+	while (totalFractionalHeight < 1) {
+		let height = 0.1 * Math.random();
+		if (layers.length === 0) {
+			height = Math.max(height, 0.1);
+		}
+		if (totalFractionalHeight >= 0.9) {
+			height = 1.0;
+		}
+		const t = Math.pow(Math.random(), 1 / 2);
+		layers.push({
+			start: totalFractionalHeight,
+			end: totalFractionalHeight + height,
+			color: [
+				lerp(minColor[0], maxColor[0], t),
+				lerp(minColor[1], maxColor[1], t),
+				lerp(minColor[2], maxColor[2], t),
+			],
+		});
+		totalFractionalHeight += height;
+	}
+	const sampleColor = (
+		fractionOfHeight: number
+	): [number, number, number] => {
+		let layer = 0;
+		while (
+			layer < layers.length &&
+			(layers.at(layer)?.end ?? 0) < fractionOfHeight
+		) {
+			layer += 1;
+		}
+		if (layer >= layers.length) {
+			return [0.0, 0.0, 0.0];
+		}
+		return layers[layer].color;
+	};
+
+	const f32PerParticle = SIZEOF.particle / SIZEOF.f32;
+	const randomPositions = new Float32Array(
+		PARTICLE_COUNT * f32PerParticle
+	).fill(0.0);
+
+	for (let x = 0; x < PARTICLE_DIMENSIONS[0]; x++) {
+		for (let y = 0; y < PARTICLE_DIMENSIONS[1]; y++) {
+			for (let z = 0; z < PARTICLE_DIMENSIONS[2]; z++) {
+				const particleIdx =
+					x * PARTICLE_DIMENSIONS[2] * PARTICLE_DIMENSIONS[1] +
+					y * PARTICLE_DIMENSIONS[2] +
+					z;
+				const offset = particleIdx * f32PerParticle;
+
+				const deviation = 0.4 * (Math.random() - 0.5);
+
+				const position = {
+					x:
+						(particleBoundingBoxExtent[0] /
+							PARTICLE_DIMENSIONS[0]) *
+							(x + deviation) +
+						PARTICLE_BOUNDING_BOX.min[0] +
+						deviation,
+					y:
+						(particleBoundingBoxExtent[1] /
+							PARTICLE_DIMENSIONS[1]) *
+							(y + deviation) +
+						PARTICLE_BOUNDING_BOX.min[1] +
+						deviation,
+					z:
+						(particleBoundingBoxExtent[2] /
+							PARTICLE_DIMENSIONS[2]) *
+							(z + deviation) +
+						PARTICLE_BOUNDING_BOX.min[2] +
+						deviation,
+				};
+
+				randomPositions[offset] = position.x;
+				randomPositions[offset + 1] = position.y;
+				randomPositions[offset + 2] = position.z;
+				randomPositions[offset + 3] = 1.0;
+
+				const [r, g, b] = sampleColor(
+					(y + deviation) / PARTICLE_DIMENSIONS[1]
+				);
+				randomPositions[offset + 8] = r;
+				randomPositions[offset + 9] = g;
+				randomPositions[offset + 10] = b;
+			}
+		}
+	}
+
+	const particleBufferHeaderSize = SIZEOF.vec4_f32;
+	device.queue.writeBuffer(
+		particles.particleBuffer,
+		0,
+		new Uint32Array([0, 0, 0, PARTICLE_COUNT])
+	);
+	device.queue.writeBuffer(
+		particles.particleBuffer,
+		particleBufferHeaderSize,
+		randomPositions
+	);
+
+	particles.meshDirty = true;
 };
 
 interface PointNeighborhoodBuffer {
@@ -925,7 +969,9 @@ const computeParticleMesh = ({
 	compute.dispatchWorkgroups(1, 1, 1);
 
 	compute.setBindGroup(1, pipeline.groups.particlesRead);
+	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
 	compute.setBindGroup(3, pipeline.groups.particleGraphPingPong);
+
 	compute.setPipeline(pipeline.pipeline_initParticleGraph);
 	compute.dispatchWorkgroups(
 		(2 * PARTICLE_COUNT * NEIGHBORHOOD_SIZE) / 256,
@@ -934,21 +980,30 @@ const computeParticleMesh = ({
 	);
 
 	compute.setBindGroup(1, pipeline.groups.particlesReadWrite);
+	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
 	compute.setBindGroup(3, pipeline.groups.particleGraphReadWrite);
 
 	compute.setPipeline(pipeline.pipeline_computeGridNormals);
 	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
 
 	compute.setBindGroup(1, pipeline.groups.particlesRead);
+	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
+	compute.setBindGroup(3, pipeline.groups.particleGraphReadWrite);
 
 	compute.setPipeline(pipeline.pipeline_compactParticleGraph);
 	compute.dispatchWorkgroups(1, 1, 1);
+
+	compute.setBindGroup(1, pipeline.groups.particlesRead);
+	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
+	compute.setBindGroup(3, pipeline.groups.particleGraphReadWrite);
 
 	compute.setPipeline(pipeline.pipeline_sortParticleGraphInitialChunks);
 	const potentialEdges = 2 * NEIGHBORHOOD_SIZE * 20000;
 	const chunkCount = Math.floor((potentialEdges + 31) / 32);
 	compute.dispatchWorkgroups(chunkCount / 256, 1, 1);
 
+	compute.setBindGroup(1, pipeline.groups.particlesRead);
+	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
 	compute.setBindGroup(3, pipeline.groups.particleGraphPingPong);
 	compute.setPipeline(pipeline.pipeline_sortParticleGraphMerge);
 	compute.dispatchWorkgroups(1, 1, 1);
@@ -1109,6 +1164,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	};
 
 	const particles = buildParticles(device);
+	writeParticles(device, particles);
 
 	const particleDebugPipeline = buildParticleDebugPipeline(
 		device,
@@ -1184,46 +1240,50 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	let debugParticleController: LilGUI.Controller | undefined = undefined;
 
 	const setupUI = (gui: LilGUI.GUI): void => {
+		const folders = {
+			camera: gui.addFolder("Camera").open(),
+			pipeline: gui.addFolder("Pipeline").open(),
+			particles: gui.addFolder("Particles").open(),
+		};
+
 		const label = document.createElement("p");
 		label.innerHTML =
 			"Mouse Scroll wheel controls camera zoom. Keyboard keys augment this when held: <br/><br/> Control : Controls camera yaw <br/> Shift : Controls camera pitch <br/> Alt : Decreases scroll sensitivity";
 		label.style = "margin: 8px";
-		const cameraParameters = gui.addFolder("Camera").open();
-		cameraParameters.domElement.appendChild(label);
-		cameraParameters
+		folders.camera.domElement.appendChild(label);
+		folders.camera
 			.add(cameraUBO.data, "distanceFromOrigin")
 			.name("Camera Radius")
 			.min(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[0])
 			.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
 			.listen();
 
-		cameraParameters
+		folders.camera
 			.add(cameraUBO.data, "eulerAnglesX")
 			.name("Camera Pitch")
 			.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[0])
 			.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[1])
 			.listen();
-		cameraParameters
+		folders.camera
 			.add(cameraUBO.data, "eulerAnglesY")
 			.name("Camera Yaw")
 			.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[0])
 			.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[1])
 			.listen();
 
-		cameraParameters.add(uiFunctions, "resetCamera").name("Reset Camera");
+		folders.camera.add(uiFunctions, "resetCamera").name("Reset Camera");
 
-		const pipeline = gui.addFolder("Pipeline").open();
-		pipeline
+		folders.pipeline
 			.add(pipelineParameters, "output")
 			.options(RenderOutputCategory)
 			.name("Debug Particles");
-		pipeline
+		folders.pipeline
 			.add(particlesDebugConfigUBO.data, "drawSurfaceOnly")
 			.name("Draw Surface Only");
-		pipeline
+		folders.pipeline
 			.add(particlesDebugConfigUBO.data, "drawNormals")
 			.name("Draw Normals");
-		debugParticleController = pipeline
+		debugParticleController = folders.pipeline
 			.add(pipelineParameters, "debugParticleIdx")
 			.name("Debug Particle Index")
 			.min(0)
@@ -1233,6 +1293,14 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.onFinishChange(() => {
 				permanentResources.particles.meshDirty = true;
 			});
+
+		folders.particles.add(
+			{
+				"Randomize Particles": () =>
+					writeParticles(device, permanentResources.particles),
+			},
+			"Randomize Particles"
+		);
 	};
 
 	let particleHeaderReadState:
@@ -1281,6 +1349,8 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			debugParticleController?.disable();
 			debugParticleController?.min(0);
 			debugParticleController?.max(0);
+
+			done = false;
 		}
 
 		if (
@@ -1401,8 +1471,9 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 								return `u32 (${u32s[first]})\n`;
 							},
 						};
+						console.log("particle graph");
 						console.log("    padding0 " + log.vec3f32(0));
-						console.log("    count    " + log.u32(3));
+						console.log("    edge_count " + log.u32(3));
 						console.log("    indirect draw");
 						console.log("        padding0       " + log.vec3f32(4));
 						console.log("        index_count    " + log.u32(7));
@@ -1410,14 +1481,6 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 						console.log("        first_index    " + log.u32(9));
 						console.log("        base_vertex    " + log.u32(10));
 						console.log("        first_instance " + log.u32(11));
-						console.log("    edges");
-						for (let i = 0; i < 200; i++) {
-							console.log(
-								`        ${i}: (${u32s[12 + i * 2]}, ${
-									u32s[12 + i * 2 + 1]
-								})`
-							);
-						}
 						permanentResources.particles.particleGraphBufferDebug.unmap();
 					})
 					.catch((reason) => {
