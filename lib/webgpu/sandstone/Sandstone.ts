@@ -5,9 +5,10 @@ import ParticleMeshifyPak from "../../shaders/sandstone/particles_meshify.wgsl";
 import { FullscreenQuadPassResources } from "../sky-sea/FullscreenQuad";
 import { RenderOutputTexture } from "../sky-sea/RenderOutputController";
 import { UBO } from "../sky-sea/util/UBO";
-import { CameraUBO } from "./Camera";
+import { Camera, CameraStyle, CameraUBO } from "./Camera";
 import { WorldAxesPipeline } from "./WorldAxes";
 import { SIZEOF } from "./Sizeof";
+import { vec4 } from "wgpu-matrix";
 
 interface Extent2D {
 	width: number;
@@ -1132,6 +1133,26 @@ const RenderOutputCategory = [
 ] as const;
 type RenderOutputCategory = (typeof RenderOutputCategory)[number];
 
+interface KeyState {
+	edge: boolean;
+	down: boolean;
+}
+const KeyCode = [
+	"KeyW",
+	"KeyA",
+	"KeyS",
+	"KeyD",
+	"KeyR",
+	"ControlLeft",
+	"ControlRight",
+	"Space",
+	"ShiftLeft",
+	"ShiftRight",
+	"AltLeft",
+	"AltRight",
+] as const;
+type KeyCode = (typeof KeyCode)[number];
+
 export const SandstoneAppConstructor: RendererAppConstructor = (
 	device,
 	_presentFormat
@@ -1197,6 +1218,20 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	const transientResources = {
 		outputColor,
 	};
+	const inputState: Record<KeyCode, KeyState> = {
+		KeyW: { edge: false, down: false },
+		KeyA: { edge: false, down: false },
+		KeyS: { edge: false, down: false },
+		KeyD: { edge: false, down: false },
+		KeyR: { edge: false, down: false },
+		Space: { edge: false, down: false },
+		ControlLeft: { edge: false, down: false },
+		ControlRight: { edge: false, down: false },
+		ShiftLeft: { edge: false, down: false },
+		ShiftRight: { edge: false, down: false },
+		AltLeft: { edge: false, down: false },
+		AltRight: { edge: false, down: false },
+	};
 	let trashcan: { frame: number; destroy: () => void }[] = [];
 	let frame = 0;
 
@@ -1230,15 +1265,17 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 	const uiFunctions = {
 		resetCamera: (): void => {
-			cameraUBO.data.eulerAnglesX = -0.5;
-			cameraUBO.data.eulerAnglesY = 0.5;
-			cameraUBO.data.distanceFromOrigin = 25.0;
+			cameraUBO.data.style = "Polar";
+			cameraUBO.data.polar.eulerAnglesX = -0.5;
+			cameraUBO.data.polar.eulerAnglesY = 0.5;
+			cameraUBO.data.polar.distanceFromOrigin = 25.0;
 		},
 	};
 	uiFunctions.resetCamera();
 
 	let debugParticleController: LilGUI.Controller | undefined = undefined;
 
+	const UICallbacks: { swapCameraStyle?: (style: CameraStyle) => void } = {};
 	const setupUI = (gui: LilGUI.GUI): void => {
 		const folders = {
 			camera: gui.addFolder("Camera").open(),
@@ -1251,25 +1288,87 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			"Mouse Scroll wheel controls camera zoom. Keyboard keys augment this when held: <br/><br/> Control : Controls camera yaw <br/> Shift : Controls camera pitch <br/> Alt : Decreases scroll sensitivity";
 		label.style = "margin: 8px";
 		folders.camera.domElement.appendChild(label);
-		folders.camera
-			.add(cameraUBO.data, "distanceFromOrigin")
-			.name("Camera Radius")
-			.min(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[0])
-			.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
-			.listen();
+
+		const cameraControllers: Record<
+			CameraStyle | "All",
+			LilGUI.Controller[]
+		> = {
+			All: [],
+			Cartesian: [],
+			Polar: [],
+		};
+		const revealControllers = (style: CameraStyle): void => {
+			for (const controller of [
+				...cameraControllers.Cartesian,
+				...cameraControllers.Polar,
+			]) {
+				controller.hide();
+			}
+			for (const controller of cameraControllers[style]) {
+				controller.show();
+			}
+		};
+		UICallbacks.swapCameraStyle = revealControllers;
 
 		folders.camera
-			.add(cameraUBO.data, "eulerAnglesX")
-			.name("Camera Pitch")
-			.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[0])
-			.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[1])
+			.add(cameraUBO.data, "style")
+			.name("Camera Style")
+			.options(CameraStyle)
+			.onFinishChange(revealControllers)
 			.listen();
-		folders.camera
-			.add(cameraUBO.data, "eulerAnglesY")
-			.name("Camera Yaw")
-			.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[0])
-			.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[1])
-			.listen();
+		cameraControllers.Polar = [
+			folders.camera
+				.add(cameraUBO.data.polar, "distanceFromOrigin")
+				.name("Camera Radius")
+				.min(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[0])
+				.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
+				.listen(),
+			folders.camera
+				.add(cameraUBO.data.polar, "eulerAnglesX")
+				.name("Camera Pitch")
+				.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[0])
+				.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[1])
+				.listen(),
+			folders.camera
+				.add(cameraUBO.data.polar, "eulerAnglesY")
+				.name("Camera Yaw")
+				.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[0])
+				.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[1])
+				.listen(),
+		];
+		cameraControllers.Cartesian = [
+			folders.camera
+				.add(cameraUBO.data.cartesian, "translationX")
+				.name("Translation X")
+				.min(-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
+				.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
+				.listen(),
+			folders.camera
+				.add(cameraUBO.data.cartesian, "translationY")
+				.name("Translation Y")
+				.min(-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
+				.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
+				.listen(),
+			folders.camera
+				.add(cameraUBO.data.cartesian, "translationZ")
+				.name("Translation Z")
+				.min(-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
+				.max(CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1])
+				.listen(),
+			folders.camera
+				.add(cameraUBO.data.cartesian, "eulerAnglesX")
+				.name("Camera Pitch")
+				.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[0])
+				.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesX[1])
+				.listen(),
+			folders.camera
+				.add(cameraUBO.data.cartesian, "eulerAnglesY")
+				.name("Camera Yaw")
+				.min(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[0])
+				.max(CAMERA_PARAMETER_BOUNDS.eulerAnglesY[1])
+				.listen(),
+		];
+		revealControllers(cameraUBO.data.style);
 
 		folders.camera.add(uiFunctions, "resetCamera").name("Reset Camera");
 
@@ -1308,7 +1407,12 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		| "ready-to-map"
 		| "up-to-date" = "up-to-date";
 
-	const draw = (presentTexture: GPUTexture): void => {
+	const draw = (
+		presentTexture: GPUTexture,
+		_aspectRatio: number,
+		_timeMilliseconds: number,
+		deltaTimeMilliseconds: number
+	): void => {
 		cameraUBO.data.aspectRatio =
 			presentTexture.width / presentTexture.height;
 		cameraUBO.writeToGPU(device.queue);
@@ -1317,6 +1421,250 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		const main = device.createCommandEncoder({
 			label: "Sandstone Main",
 		});
+
+		if (inputState.KeyR.down && inputState.KeyR.edge) {
+			if (cameraUBO.data.style == "Cartesian") {
+				cameraUBO.data.style = "Polar";
+			} else if (cameraUBO.data.style == "Polar") {
+				cameraUBO.data.style = "Cartesian";
+			}
+			UICallbacks.swapCameraStyle?.(cameraUBO.data.style);
+		}
+
+		switch (cameraUBO.data.style) {
+			case "Cartesian": {
+				const movementAxes: [number, number, number] = [0, 0, 0];
+
+				const sensDistance = 1 / 20;
+				const sensEulerX = 1 / 1000;
+				const sensEulerY = 1 / 800;
+
+				const rotationMode = inputState.Space.down;
+				if (rotationMode) {
+					if (inputState.KeyA.down) {
+						movementAxes[0] += 1;
+					}
+					if (inputState.KeyD.down) {
+						movementAxes[0] -= 1;
+					}
+					if (inputState.KeyW.down) {
+						movementAxes[1] += 1;
+					}
+					if (inputState.KeyS.down) {
+						movementAxes[1] -= 1;
+					}
+				} else {
+					if (inputState.KeyA.down) {
+						movementAxes[0] -= 1;
+					}
+					if (inputState.KeyD.down) {
+						movementAxes[0] += 1;
+					}
+					if (inputState.KeyW.down) {
+						movementAxes[2] -= 1;
+					}
+					if (inputState.KeyS.down) {
+						movementAxes[2] += 1;
+					}
+
+					const cameraTransform = Camera.buildTransform(
+						cameraUBO.data
+					);
+
+					const cameraRight = vec4.transformMat4(
+						vec4.create(1.0, 0.0, 0.0, 0.0),
+						cameraTransform
+					);
+					const cameraForward = vec4.transformMat4(
+						vec4.create(0.0, 0.0, 1.0, 0.0),
+						cameraTransform
+					);
+					const x =
+						movementAxes[0] * cameraRight[0] +
+						movementAxes[2] * cameraForward[0];
+					const y =
+						movementAxes[0] * cameraRight[1] +
+						movementAxes[2] * cameraForward[1];
+					const z =
+						movementAxes[0] * cameraRight[2] +
+						movementAxes[2] * cameraForward[2];
+					// console.log(cameraRight);
+					// console.log(cameraForward);
+
+					movementAxes[0] = x;
+					movementAxes[1] = y;
+					movementAxes[2] = z;
+				}
+
+				if (inputState.ShiftLeft.down || inputState.ShiftRight.down) {
+					movementAxes[0] *= 0.2;
+					movementAxes[1] *= 0.2;
+					movementAxes[2] *= 0.2;
+				}
+
+				if (rotationMode) {
+					{
+						const [min, max] = CAMERA_PARAMETER_BOUNDS.eulerAnglesX;
+						const value =
+							cameraUBO.data.cartesian.eulerAnglesX +
+							sensEulerX *
+								deltaTimeMilliseconds *
+								movementAxes[1];
+						cameraUBO.data.cartesian.eulerAnglesX = Math.max(
+							Math.min(value, max),
+							min
+						);
+					}
+					{
+						const [min, max] = CAMERA_PARAMETER_BOUNDS.eulerAnglesY;
+						let value =
+							cameraUBO.data.cartesian.eulerAnglesY +
+							sensEulerY *
+								deltaTimeMilliseconds *
+								movementAxes[0];
+
+						if (value > max) {
+							value -=
+								Math.ceil(value / (max - min)) * (max - min);
+						} else if (value < min) {
+							value +=
+								Math.ceil(Math.abs(value / (max - min))) *
+								(max - min);
+						}
+
+						cameraUBO.data.cartesian.eulerAnglesY = Math.max(
+							Math.min(max, value),
+							min
+						);
+					}
+				} else {
+					{
+						const [min, max] = [
+							-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1],
+							CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1],
+						];
+						const value =
+							cameraUBO.data.cartesian.translationX +
+							sensDistance *
+								deltaTimeMilliseconds *
+								movementAxes[0];
+						cameraUBO.data.cartesian.translationX = Math.max(
+							Math.min(value, max),
+							min
+						);
+					}
+					{
+						const [min, max] = [
+							-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1],
+							CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1],
+						];
+						const value =
+							cameraUBO.data.cartesian.translationY +
+							sensDistance *
+								deltaTimeMilliseconds *
+								movementAxes[1];
+						cameraUBO.data.cartesian.translationY = Math.max(
+							Math.min(value, max),
+							min
+						);
+					}
+					{
+						const [min, max] = [
+							-CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1],
+							CAMERA_PARAMETER_BOUNDS.distanceFromOrigin[1],
+						];
+						const value =
+							cameraUBO.data.cartesian.translationZ +
+							sensDistance *
+								deltaTimeMilliseconds *
+								movementAxes[2];
+						cameraUBO.data.cartesian.translationZ = Math.max(
+							Math.min(value, max),
+							min
+						);
+					}
+				}
+
+				break;
+			}
+			case "Polar": {
+				const movementAxes: [number, number, number] = [0, 0, 0];
+
+				const sensDistance = 1 / 20;
+				const sensEulerX = 1 / 1000;
+				const sensEulerY = 1 / 800;
+
+				if (inputState.KeyW.down && !inputState.Space.down) {
+					movementAxes[1] -= 1;
+				}
+				if (inputState.KeyS.down && !inputState.Space.down) {
+					movementAxes[1] += 1;
+				}
+				if (inputState.KeyA.down) {
+					movementAxes[0] -= 1;
+				}
+				if (inputState.KeyD.down) {
+					movementAxes[0] += 1;
+				}
+				if (inputState.KeyW.down && inputState.Space.down) {
+					movementAxes[2] -= 1;
+				}
+				if (inputState.KeyS.down && inputState.Space.down) {
+					movementAxes[2] += 1;
+				}
+
+				if (inputState.ShiftLeft.down || inputState.ShiftRight.down) {
+					movementAxes[0] *= 0.2;
+					movementAxes[1] *= 0.2;
+					movementAxes[2] *= 0.2;
+				}
+
+				{
+					const [min, max] = CAMERA_PARAMETER_BOUNDS.eulerAnglesX;
+					const value =
+						cameraUBO.data.polar.eulerAnglesX +
+						sensEulerX * deltaTimeMilliseconds * movementAxes[1];
+					cameraUBO.data.polar.eulerAnglesX = Math.max(
+						Math.min(value, max),
+						min
+					);
+				}
+				{
+					const [min, max] = CAMERA_PARAMETER_BOUNDS.eulerAnglesY;
+					let value =
+						cameraUBO.data.polar.eulerAnglesY +
+						sensEulerY * deltaTimeMilliseconds * movementAxes[0];
+
+					if (value > max) {
+						value -= Math.ceil(value / (max - min)) * (max - min);
+					} else if (value < min) {
+						value +=
+							Math.ceil(Math.abs(value / (max - min))) *
+							(max - min);
+					}
+
+					cameraUBO.data.polar.eulerAnglesY = Math.max(
+						Math.min(max, value),
+						min
+					);
+				}
+				{
+					const [min, max] =
+						CAMERA_PARAMETER_BOUNDS.distanceFromOrigin;
+					const value =
+						cameraUBO.data.polar.distanceFromOrigin +
+						sensDistance * deltaTimeMilliseconds * movementAxes[2];
+					cameraUBO.data.polar.distanceFromOrigin = Math.max(
+						Math.min(max, value),
+						min
+					);
+				}
+				break;
+			}
+		}
+		for (const keyCode of KeyCode) {
+			inputState[keyCode].edge = false;
+		}
 
 		let copying = false;
 		if (permanentResources.particles.meshDirty) {
@@ -1553,50 +1901,38 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		device.destroy();
 	};
 
+	const handleKey = ({
+		code,
+		down,
+	}: {
+		code: string;
+		down: boolean;
+	}): void => {
+		const codeMapped = KeyCode.find((value) => value === code);
+		if (codeMapped === undefined) {
+			return;
+		}
+
+		const keyState = inputState[codeMapped];
+
+		if (keyState.down === down) return;
+
+		keyState.down = down;
+		keyState.edge = true;
+	};
+
+	const handleToggleFocus = (): void => {
+		for (const keyCode of KeyCode) {
+			inputState[keyCode] = { down: false, edge: true };
+		}
+	};
+
 	return {
 		quit: false,
 		presentationInterface: () => ({ device, format: COLOR_FORMAT }),
 		draw,
-		handleWheel: ({ delta, shift, ctrl, alt }): void => {
-			const sensAlt = alt ? 0.2 : 1;
-			const sensDistance = 1 / 10;
-			const sensEulerX = 1 / 500;
-			const sensEulerY = 1 / 400;
-
-			if (shift === ctrl) {
-				const [min, max] = CAMERA_PARAMETER_BOUNDS.distanceFromOrigin;
-				cameraUBO.data.distanceFromOrigin +=
-					sensAlt * sensDistance * delta;
-				cameraUBO.data.distanceFromOrigin = Math.max(
-					Math.min(max, cameraUBO.data.distanceFromOrigin),
-					min
-				);
-			} else if (shift) {
-				const [min, max] = CAMERA_PARAMETER_BOUNDS.eulerAnglesX;
-				const value =
-					cameraUBO.data.eulerAnglesX + sensAlt * sensEulerX * delta;
-				cameraUBO.data.eulerAnglesX = Math.max(
-					Math.min(value, max),
-					min
-				);
-			} else if (ctrl) {
-				const [min, max] = CAMERA_PARAMETER_BOUNDS.eulerAnglesY;
-				let value =
-					cameraUBO.data.eulerAnglesY + sensAlt * sensEulerY * delta;
-
-				if (value > max) {
-					value -= Math.ceil(value / (max - min)) * (max - min);
-				} else if (value < min) {
-					value +=
-						Math.ceil(Math.abs(value / (max - min))) * (max - min);
-				}
-
-				cameraUBO.data.eulerAnglesY = Math.max(
-					Math.min(max, value),
-					min
-				);
-			}
-		},
+		handleKey,
+		handleToggleFocus,
 		setupUI,
 		destroy,
 		handleResize,

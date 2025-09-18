@@ -14,12 +14,27 @@ export interface RendererApp {
 	 * is an unexpected size, cutting this handleResize method.
 	 */
 	handleResize?: (newWidth: number, newHeight: number) => void;
+
+	/**
+	 * Signals that the mouse scroll wheel has changed.
+	 */
 	handleWheel?: (args: {
 		delta: number;
 		shift: boolean;
 		ctrl: boolean;
 		alt: boolean;
 	}) => void;
+
+	/**
+	 * Signals that a key has been pressed (up or down).
+	 */
+	handleKey?: (args: { code: string; down: boolean }) => void;
+
+	/**
+	 * Signals that the user has focused on the canvas.
+	 */
+	handleToggleFocus?: () => void;
+
 	draw: (
 		presentTexture: GPUTexture,
 		aspectRatio: number,

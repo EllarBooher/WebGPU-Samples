@@ -76,6 +76,7 @@ const RenderingCanvas = function RenderingCanvas({
 	const [guiDocked, setGUIDocked] = useState<boolean>(true);
 	const resizeTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const lastTimeRef = useRef<number | null>(null);
+	const focusRef = useRef<boolean>(false);
 
 	const resizeCanvas = useCallback(() => {
 		const canvas = canvasRef.current;
@@ -205,8 +206,11 @@ const RenderingCanvas = function RenderingCanvas({
 		resizeCanvas();
 	}, [resizeCanvas, guiDocked]);
 
-	const handleWheel = useCallback(
-		(e: WheelEvent) => {
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const handleWheel = (e: WheelEvent): void => {
 			e.preventDefault();
 			app.handleWheel?.({
 				delta: e.deltaY,
@@ -214,19 +218,53 @@ const RenderingCanvas = function RenderingCanvas({
 				ctrl: e.ctrlKey,
 				alt: e.altKey,
 			});
-		},
-		[app]
-	);
+		};
+		const handleKey = (e: KeyboardEvent, down: boolean): void => {
+			if (!focusRef.current) {
+				return;
+			}
 
-	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
+			if (e.code == "Escape") {
+				focusRef.current = false;
+				return;
+			}
+
+			e.preventDefault();
+			app.handleKey?.({
+				code: e.code,
+				down,
+			});
+		};
+		const handleClick = (e: MouseEvent): void => {
+			const canvasRect = canvas.getBoundingClientRect();
+			const clickIsOnCanvas =
+				e.clientX > canvasRect.left &&
+				e.clientX < canvasRect.right &&
+				e.clientY < canvasRect.bottom &&
+				e.clientY > canvasRect.top;
+
+			if (focusRef.current === clickIsOnCanvas) {
+				return;
+			}
+
+			app.handleToggleFocus?.();
+			focusRef.current = clickIsOnCanvas;
+		};
+
+		const handleKeyDown = (e: KeyboardEvent): void => handleKey(e, true);
+		const handleKeyUp = (e: KeyboardEvent): void => handleKey(e, false);
 
 		canvas.addEventListener("wheel", handleWheel, { passive: false });
+		document.addEventListener("keydown", handleKeyDown, { passive: false });
+		document.addEventListener("keyup", handleKeyUp, { passive: false });
+		document.addEventListener("click", handleClick);
 		return (): void => {
 			canvas.removeEventListener("wheel", handleWheel);
+			document.removeEventListener("keydown", handleKeyDown);
+			document.removeEventListener("keyup", handleKeyUp);
+			document.removeEventListener("click", handleClick);
 		};
-	}, [handleWheel]);
+	}, [app]);
 
 	/*
 	 * The precise hierarchy of these elements is important for the desired
