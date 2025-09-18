@@ -26,7 +26,7 @@ const PARTICLE_GAP = 0.2;
 const PARTICLE_COUNT = 64 * 64 * 64;
 const GRID_DIMENSION = 64;
 const EULER_ANGLES_X_SAFETY_MARGIN = 0.01;
-const NEIGHBORHOOD_SIZE = 20;
+const NEIGHBORHOOD_SIZE = 4;
 const CAMERA_PARAMETER_BOUNDS = {
 	distanceFromOrigin: [0.0, 100.0],
 	eulerAnglesX: [
