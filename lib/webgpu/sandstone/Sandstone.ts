@@ -337,11 +337,13 @@ interface ParticleDebugPipeline {
 	pipeline_populateVertexBuffer: GPUComputePipeline;
 	pipeline_renderParticles: GPURenderPipeline;
 	pipeline_renderNormals: GPURenderPipeline;
+	pipeline_renderTangentPlanes: GPURenderPipeline;
 	group0: GPUBindGroup;
 	group1Render: GPUBindGroup;
 	group1Compute: GPUBindGroup;
 	quadIndexBuffer: GPUBuffer;
 	lineIndexBuffer: GPUBuffer;
+	drawStyle: ParticleDebugPipelineDrawStyle;
 }
 const buildParticleDebugPipeline = (
 	device: GPUDevice,
@@ -458,6 +460,31 @@ const buildParticleDebugPipeline = (
 		}),
 		label: "ParticleDebugPipeline pipeline_renderNormals",
 	});
+	const pipeline_renderTangentPlanes = device.createRenderPipeline({
+		fragment: {
+			module: shaderModule,
+			targets: [{ format: COLOR_FORMAT }],
+			entryPoint: "drawTangentPlanesFragment",
+		},
+		vertex: {
+			module: shaderModule,
+			entryPoint: "drawTangentPlanesVertex",
+		},
+		depthStencil: {
+			format: DEPTH_FORMAT,
+			depthWriteEnabled: true,
+			depthCompare: "greater",
+		},
+		primitive: {
+			topology: "triangle-list",
+			cullMode: "none",
+		},
+		layout: device.createPipelineLayout({
+			bindGroupLayouts: [group0Layout, group1LayoutRender],
+			label: "ParticleDebugPipeline pipeline_renderTangentPlanes",
+		}),
+		label: "ParticleDebugPipeline pipeline_renderTangentPlanes",
+	});
 
 	const group0 = device.createBindGroup({
 		entries: [
@@ -498,25 +525,36 @@ const buildParticleDebugPipeline = (
 		pipeline_renderParticles,
 		pipeline_renderNormals,
 		pipeline_populateVertexBuffer,
+		pipeline_renderTangentPlanes,
 		group0,
 		group1Render,
 		group1Compute,
 		quadIndexBuffer,
 		lineIndexBuffer,
+		drawStyle: "Spheres",
 	};
 };
+const ParticleDebugPipelineDrawStyle = [
+	"Spheres",
+	"Spheres with Normals",
+	"Tangent Planes",
+] as const;
+type ParticleDebugPipelineDrawStyle =
+	(typeof ParticleDebugPipelineDrawStyle)[number];
 const drawParticleDebugPipeline = ({
 	commandEncoder,
 	color,
 	depth,
 	pipeline,
-	drawNormals,
+	surfaceParticlesCount,
+	drawStyle,
 }: {
 	commandEncoder: GPUCommandEncoder;
 	color: RenderOutputTexture;
 	depth: RenderOutputTexture;
 	pipeline: ParticleDebugPipeline;
-	drawNormals: boolean;
+	surfaceParticlesCount: number;
+	drawStyle: ParticleDebugPipelineDrawStyle;
 }): void => {
 	const compute = commandEncoder.beginComputePass({
 		label: "Sandstone populateVertexBuffer",
@@ -548,14 +586,29 @@ const drawParticleDebugPipeline = ({
 	pass.setBindGroup(0, pipeline.group0);
 	pass.setBindGroup(1, pipeline.group1Render);
 
-	pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
-	pass.setPipeline(pipeline.pipeline_renderParticles);
-	pass.drawIndexed(6, PARTICLE_COUNT);
+	switch (drawStyle) {
+		case "Spheres": {
+			pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
+			pass.setPipeline(pipeline.pipeline_renderParticles);
+			pass.drawIndexed(6, PARTICLE_COUNT);
+			break;
+		}
+		case "Spheres with Normals": {
+			pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
+			pass.setPipeline(pipeline.pipeline_renderParticles);
+			pass.drawIndexed(6, PARTICLE_COUNT);
 
-	if (drawNormals) {
-		pass.setIndexBuffer(pipeline.lineIndexBuffer, "uint32");
-		pass.setPipeline(pipeline.pipeline_renderNormals);
-		pass.drawIndexed(2, PARTICLE_COUNT);
+			pass.setIndexBuffer(pipeline.lineIndexBuffer, "uint32");
+			pass.setPipeline(pipeline.pipeline_renderNormals);
+			pass.drawIndexed(2, PARTICLE_COUNT);
+			break;
+		}
+		case "Tangent Planes": {
+			pass.setIndexBuffer(pipeline.quadIndexBuffer, "uint32");
+			pass.setPipeline(pipeline.pipeline_renderTangentPlanes);
+			pass.drawIndexed(6, surfaceParticlesCount);
+			break;
+		}
 	}
 
 	pass.end();
@@ -1380,8 +1433,9 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.add(particlesDebugConfigUBO.data, "drawSurfaceOnly")
 			.name("Draw Surface Only");
 		folders.pipeline
-			.add(particlesDebugConfigUBO.data, "drawNormals")
-			.name("Draw Normals");
+			.add(permanentResources.particleDebugPipeline, "drawStyle")
+			.options(ParticleDebugPipelineDrawStyle)
+			.name("Draw Style");
 		debugParticleController = folders.pipeline
 			.add(pipelineParameters, "debugParticleIdx")
 			.name("Debug Particle Index")
@@ -1416,6 +1470,13 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		cameraUBO.data.aspectRatio =
 			presentTexture.width / presentTexture.height;
 		cameraUBO.writeToGPU(device.queue);
+		particlesDebugConfigUBO.data.drawNormals = false;
+		if (
+			permanentResources.particleDebugPipeline.drawStyle ==
+			"Spheres with Normals"
+		) {
+			particlesDebugConfigUBO.data.drawNormals = true;
+		}
 		particlesDebugConfigUBO.writeToGPU(device.queue);
 
 		const main = device.createCommandEncoder({
@@ -1742,7 +1803,10 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 					color: transientResources.outputColor.color,
 					depth: transientResources.outputColor.depth,
 					pipeline: permanentResources.particleDebugPipeline,
-					drawNormals: particlesDebugConfigUBO.data.drawNormals,
+					drawStyle:
+						permanentResources.particleDebugPipeline.drawStyle,
+					surfaceParticlesCount:
+						permanentResources.particles.countSurface ?? 0,
 				});
 				break;
 			}

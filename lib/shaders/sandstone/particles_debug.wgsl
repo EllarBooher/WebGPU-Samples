@@ -186,7 +186,7 @@ fn drawParticlesFragment(
 
 struct NormalVertexOut {
 	@builtin(position) position : vec4<f32>,
-	@location(0) color : vec4<f32>,
+	@location(0) color : vec3<f32>,
 	@location(1) @interpolate(flat) visible : u32,
 }
 struct NormalFragmentOut {
@@ -209,8 +209,7 @@ fn drawNormalsVertex(
 	let position = particle.position_world.xyz + length * particle.normal_world.xyz;
 	out.position = u_camera.proj_view * vec4<f32>(position, 1.0);
 
-	let normal = particle.normal_world.xyz;
-	out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
+	out.color = abs(particle.normal_world.xyz);
 
 	out.visible = 1;
 	if(u_config.draw_surface_only > 0) {
@@ -230,7 +229,57 @@ fn drawNormalsFragment(
 
 	var out : NormalFragmentOut;
 
-	out.color = frag.color;
+	out.color = vec4<f32>(frag.color,1.0);
+
+	return out;
+}
+
+/********************************************************************************
+* Draw tangent planes of spheres (requires normals)
+********************************************************************************/
+
+struct DragTangentPlanesVertexOut {
+	@builtin(position) position : vec4<f32>,
+	@location(0) color : vec3<f32>,
+}
+struct DrawTangentPlanesFragmentOut {
+	@location(0) color : vec4<f32>,
+}
+@vertex
+fn drawTangentPlanesVertex(
+   @builtin(vertex_index) vertex_idx : u32,
+   @builtin(instance_index) particle_idx : u32
+) -> DragTangentPlanesVertexOut {
+
+	let particle = particles.particles[particle_idx];
+
+	let b = cross(particle.normal_world, particle.normal_world.yxz + vec3<f32>(1.0,0.0,0.0));
+	let a = cross(b, particle.normal_world);
+
+	let vertex_selector = VERTEX_TWIDDLES[vertex_idx];
+
+	let position_world =
+		NORMAL_LENGTH
+			* (vertex_selector.x * normalize(a)
+			+ vertex_selector.y * normalize(b))
+		+ particle.position_world;
+
+	var out : DragTangentPlanesVertexOut;
+	out.position = u_camera.proj_view * vec4<f32>(position_world, 1.0);
+	// out.color = 0.5 * (particle.normal_world.xyz + 1.0);
+	out.color = abs(particle.normal_world.xyz);
+
+	return out;
+}
+
+@fragment
+fn drawTangentPlanesFragment(
+	frag : DragTangentPlanesVertexOut
+
+) -> DrawTangentPlanesFragmentOut {
+
+	var out : DrawTangentPlanesFragmentOut;
+	out.color = vec4<f32>(frag.color.xyz, 1.0);
 
 	return out;
 }
