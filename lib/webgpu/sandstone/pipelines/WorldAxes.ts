@@ -1,7 +1,7 @@
-import WorldAxisPak from "../../shaders/sandstone/world_axis.wgsl";
-import { RenderOutputTexture } from "../sky-sea/RenderOutputController";
-import { CameraUBO } from "./Camera";
-import { SIZEOF } from "./Sizeof";
+import WorldAxisPak from "../../../shaders/sandstone/world_axis.wgsl";
+import { RenderOutputTexture } from "../../sky-sea/RenderOutputController";
+import { CameraUBO } from "../Camera";
+import { SIZEOF } from "../Sizeof";
 
 const COUNT_AXES = 6;
 const COUNT_VERTICES_PER_AXIS = 2;
