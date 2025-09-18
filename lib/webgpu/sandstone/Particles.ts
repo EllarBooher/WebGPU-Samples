@@ -8,7 +8,7 @@ export const PARTICLE_DIMENSIONS = [64, 64, 64];
 export const PARTICLE_COUNT =
 	PARTICLE_DIMENSIONS[0] * PARTICLE_DIMENSIONS[1] * PARTICLE_DIMENSIONS[2];
 export const GRID_DIMENSION = 64;
-export const NEIGHBORHOOD_SIZE = 4;
+export const NEIGHBORHOOD_SIZE = 9;
 
 export interface Particles {
 	/* ParticleBuffer in types.inc.wgsl */

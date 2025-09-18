@@ -42,7 +42,7 @@ struct ParticleBuffer {
 	particles     : array<Particle>,
 }
 
-const NEIGHBORHOOD_SIZE = 4;
+const NEIGHBORHOOD_SIZE = 9;
 struct PointNeighborhood {
 	padding0       : vec2<f32> ,
 	count          : u32,
