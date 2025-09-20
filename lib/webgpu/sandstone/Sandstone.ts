@@ -268,9 +268,6 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.name("Camera Style")
 			.options(CameraStyle)
 			.onFinishChange(revealControllers)
-			.onFinishChange(() => {
-				console.log("changed");
-			})
 			.listen();
 		cameraControllers.Polar = [
 			folders.camera
