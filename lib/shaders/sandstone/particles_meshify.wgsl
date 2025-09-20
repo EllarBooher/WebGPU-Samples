@@ -1,4 +1,5 @@
 #include types.inc.wgsl
+#include svd.inc.wgsl
 
 struct GridPoint {
 	position : vec3<f32>,
@@ -55,6 +56,13 @@ const GRID_STRIDE = vec3<u32>(
 );
 
 override PARTICLE_COUNT : u32;
+
+const EIGENVECTOR_METHOD_SVD       = 0u;
+const EIGENVECTOR_METHOD_ITERATIVE = 1u;
+
+// Sets the method used to compute the eigenvectors from the covariance matrix,
+// which are used as the surface normals.
+override EIGENVECTOR_METHOD : u32;
 
 @compute @workgroup_size(8, 8, 4)
 fn initGrid(@builtin(global_invocation_id) grid_position : vec3<u32>) {
@@ -277,24 +285,26 @@ fn computeGridNormals(@builtin(global_invocation_id) invocation_id : vec3<u32>)
 		covariance_matrix += mat3x3<f32>(position.x * position, position.y * position, position.z * position);
 	}
 
-	// compute eigenvectors, taking the advantage of the fact that A^n v
-	// converges on the eigenvector with the largest eigenvalue. The covariance
-	// matrix is positive semi-definite, so all of its eigenvalues are
-	// non-negative. Thus, the eigenvector with the largest eigenvalue of the
-	// covariance matrix inverse is the vector we want.
-	//
-	// TODO: consider case of eigenvalue equalling zero
+	var eigenvector : vec3<f32>;
 
-	const ITERATION_STEPS = 100;
+	if(EIGENVECTOR_METHOD == EIGENVECTOR_METHOD_ITERATIVE) {
+		/*
+         * Taking the advantage of the fact that A^n v converges on the
+		 * eigenvector with the largest eigenvalue. The covariance matrix
+		 * is positive semi-definite, so all of its eigenvalues are non-negative.
+		 * Thus, the eigenvector with the largest eigenvalue of the covariance
+		 * matrix inverse is the vector we want.
+		 */
+		let cv_inverse = matrixInverse(covariance_matrix);
+		// The centroid is a good guess for the axis of the normal
+		eigenvector = -centroid;
 
-	let position = points[0].position - centroid;
-
-	let cv_inverse = matrixInverse(covariance_matrix);
-	// The centroid is a good guess for the axis of the normal
-	var eigenvector = -centroid;
-
-	for(var i = 0; i < ITERATION_STEPS; i++) {
-		eigenvector = normalize(cv_inverse * eigenvector);
+		for(var i = 0; i < 20; i++) {
+			eigenvector = normalize(cv_inverse * eigenvector);
+		}
+	} else if (EIGENVECTOR_METHOD == EIGENVECTOR_METHOD_SVD) {
+		let TBN = svd_3D(covariance_matrix).U;
+		eigenvector = normalize(TBN[2]);
 	}
 
 	out_particles.particles[particle_idx].normal_world = eigenvector;

@@ -11,7 +11,7 @@ import {
 	buildParticles,
 	writeParticles,
 } from "./Particles";
-import { ParticleMeshifyPipeline } from "./pipelines/ParticleMeshify";
+import * as ParticleMeshifyPipeline from "./pipelines/ParticleMeshify";
 import {
 	ParticleDrawPipeline,
 	ParticleDrawPipelineDrawStyle,
@@ -359,6 +359,16 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			},
 			"Randomize Particles"
 		);
+		folders.particles
+			.add(
+				permanentResources.particleMeshifyPipeline.settings,
+				"eigenvectorMethod"
+			)
+			.name("Eigenvector Method")
+			.options(ParticleMeshifyPipeline.EigenvectorMethod)
+			.onFinishChange(() => {
+				permanentResources.particles.meshDirty = true;
+			});
 
 		UICallbacks = {
 			swapCameraStyle: revealControllers,
