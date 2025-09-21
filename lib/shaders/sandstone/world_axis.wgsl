@@ -1,6 +1,6 @@
 #include types.inc.wgsl
 
-@group(0) @binding(0) var<uniform> u_camera : CameraUBO;
+@group(0) @binding(0) var<uniform> u_global : GlobalUniforms;
 
 const WORLD_AXES_VERTEX_LIST : array<vec4<f32>, 6> = array(
 	// X
@@ -43,7 +43,7 @@ fn drawWorldAxesVertex(
 		color = vec4<f32>(0.8);
 	}
 
-	out.position = u_camera.proj_view * vec4<f32>(vertex, 1.0);
+	out.position = u_global.camera.proj_view * vec4<f32>(vertex, 1.0);
 	out.color = color;
 
 	return out;

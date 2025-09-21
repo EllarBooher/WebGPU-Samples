@@ -29,7 +29,7 @@ interface ParticleMeshifyPipeline {
 	pipeline_drawParticleGraph: GPURenderPipeline;
 	pipeline_render: GPURenderPipeline;
 	groups: {
-		camera: GPUBindGroup;
+		globalUniforms: GPUBindGroup;
 		particlesRead: GPUBindGroup;
 		particlesReadWrite: GPUBindGroup;
 		projectedGridRead: GPUBindGroup;
@@ -50,10 +50,10 @@ export const build = (
 	colorFormat: GPUTextureFormat,
 	depthFormat: GPUTextureFormat,
 	particles: Particles,
-	cameraUBO: GPUBuffer
+	globalUniformsBuffer: GPUBuffer
 ): ParticleMeshifyPipeline => {
 	const layouts = {
-		camera: device.createBindGroupLayout({
+		globalUniforms: device.createBindGroupLayout({
 			entries: [
 				{
 					binding: 0,
@@ -61,7 +61,7 @@ export const build = (
 					buffer: { type: "uniform" },
 				},
 			],
-			label: "ParticleMeshifyPipeline camera",
+			label: "ParticleMeshifyPipeline globalUniforms",
 		}),
 		readWriteStorage: device.createBindGroupLayout({
 			entries: [
@@ -144,7 +144,7 @@ export const build = (
 		primitive: { cullMode: "none" },
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
 			],
@@ -159,7 +159,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readOnlyStorage,
 				layouts.readWriteStorage,
 			],
@@ -174,7 +174,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readOnlyStorage,
 				layouts.readWriteStorage,
 			],
@@ -189,7 +189,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readWriteStorage,
 				layouts.readOnlyStorage,
 			],
@@ -204,7 +204,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readWriteStorage,
 				layouts.readOnlyStorage,
 			],
@@ -222,7 +222,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
 				layouts.graphWithIndirect,
@@ -242,7 +242,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readWriteStorage,
 				layouts.readOnlyStorage,
 				layouts.graphPingPong,
@@ -262,7 +262,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readWriteStorage,
 				layouts.readOnlyStorage,
 				layouts.graphWithIndirect,
@@ -278,7 +278,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
 				layouts.graphWithIndirect,
@@ -294,7 +294,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
 				layouts.graphWithIndirect,
@@ -311,7 +311,7 @@ export const build = (
 			},
 			layout: device.createPipelineLayout({
 				bindGroupLayouts: [
-					layouts.camera,
+					layouts.globalUniforms,
 					layouts.readOnlyStorage,
 					layouts.readOnlyStorage,
 					layouts.graphPingPong,
@@ -327,7 +327,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
 				layouts.graphPingPong,
@@ -348,7 +348,7 @@ export const build = (
 		},
 		depthStencil: {
 			format: depthFormat,
-			depthWriteEnabled: false,
+			depthWriteEnabled: true,
 			depthCompare: "greater",
 		},
 		primitive: {
@@ -356,7 +356,7 @@ export const build = (
 		},
 		layout: device.createPipelineLayout({
 			bindGroupLayouts: [
-				layouts.camera,
+				layouts.globalUniforms,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
 				layouts.graphReadOnly,
@@ -367,10 +367,10 @@ export const build = (
 	});
 
 	const groups = {
-		camera: device.createBindGroup({
-			entries: [{ binding: 0, resource: cameraUBO }],
-			layout: layouts.camera,
-			label: "ParticleMeshifyPipeline camera",
+		globalUniforms: device.createBindGroup({
+			entries: [{ binding: 0, resource: globalUniformsBuffer }],
+			layout: layouts.globalUniforms,
+			label: "ParticleMeshifyPipeline globalUniforms",
 		}),
 		particlesRead: device.createBindGroup({
 			entries: [{ binding: 0, resource: particles.particleBuffer }],
@@ -494,7 +494,7 @@ export const computeMeshFromParticles = ({
 		label: "Sandstone populateVertexBuffer",
 	});
 
-	compute.setBindGroup(0, pipeline.groups.camera);
+	compute.setBindGroup(0, pipeline.groups.globalUniforms);
 
 	compute.setBindGroup(1, pipeline.groups.particlesRead);
 	compute.setBindGroup(2, pipeline.groups.projectedGridReadWrite);
@@ -608,7 +608,7 @@ export const drawGrid = ({
 
 	pass.setPipeline(pipeline.pipeline_render);
 	pass.setIndexBuffer(pipeline.gridPointQuadIndexBuffer, "uint32");
-	pass.setBindGroup(0, pipeline.groups.camera);
+	pass.setBindGroup(0, pipeline.groups.globalUniforms);
 	pass.setBindGroup(1, pipeline.groups.particlesRead);
 	pass.setBindGroup(2, pipeline.groups.projectedGridRead);
 	pass.drawIndexed(6, GRID_DIMENSION * GRID_DIMENSION * GRID_DIMENSION);
@@ -646,7 +646,7 @@ export const drawParticleGraph = ({
 
 	pass.setPipeline(pipeline.pipeline_drawParticleGraph);
 	pass.setIndexBuffer(pipeline.lineIndexBuffer, "uint32");
-	pass.setBindGroup(0, pipeline.groups.camera);
+	pass.setBindGroup(0, pipeline.groups.globalUniforms);
 	pass.setBindGroup(1, pipeline.groups.particlesRead);
 	pass.setBindGroup(2, pipeline.groups.projectedGridRead);
 	pass.setBindGroup(3, pipeline.groups.graphReadOnly);

@@ -1,5 +1,6 @@
 #include raycast.inc.wgsl
 #include types.inc.wgsl
+#include graph.inc.wgsl
 
 // Render a buffer of particle positions, as many tiny spheres with their
 // properties optionally layered on top. These properties are populated in
@@ -24,16 +25,15 @@ struct ParticlesDebugConfig {
 	draw_surface_only  : u32,
 	// Shader particles with their normal vector
 	draw_normals       : u32,
-	// A particle for which its position and graph neighbors will be highlighted
-	debug_particle_idx : u32,
 }
 
-@group(0) @binding(0) var<storage, read> particles: ParticleBuffer;
-@group(0) @binding(1) var<uniform> u_camera: CameraUBO;
-@group(0) @binding(2) var<uniform> u_config: ParticlesDebugConfig;
+@group(0) @binding(0) var<uniform>       u_global  : GlobalUniforms;
+@group(0) @binding(1) var<uniform>       u_config  : ParticlesDebugConfig;
+@group(0) @binding(2) var<storage, read> particles : ParticleBuffer;
+@group(0) @binding(3) var<storage, read> graph     : Graph;
 
-@group(1) @binding(0) var<storage, read_write> vertices_out: array<vec4<f32>>;
-@group(1) @binding(0) var<storage, read> vertices_in: array<vec4<f32>>;
+@group(1) @binding(0) var<storage, read_write> out_vertices : array<vec4<f32>>;
+@group(1) @binding(0) var<storage, read>       vertices  : array<vec4<f32>>;
 
 @compute @workgroup_size(256, 1, 1)
 fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
@@ -44,7 +44,7 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 	// manual ray-plane intersection with the view plane.
 
 	// Remember, particle center is not the generally the center of the ellipse.
-	let particle_center = (u_camera.view * vec4<f32>(particles.particles[particle_idx.x].position_world.xyz,1.0)).xyz;
+	let particle_center = (u_global.camera.view * vec4<f32>(particles.particles[particle_idx.x].position_world.xyz,1.0)).xyz;
 
 	let depth = particle_center.z - sqrt(PARTICLE_RADIUS_SQUARED);
 
@@ -88,7 +88,7 @@ fn populateVertexBuffer(@builtin(global_invocation_id) particle_idx : vec3<u32>)
 		) / discriminant;
 
 		// Negate due to handed-ness
-		vertices_out[particle_idx.x * 4 + vertex_idx] = vec4<f32>(x_vertex, y_vertex, depth, 0);
+		out_vertices[particle_idx.x * 4 + vertex_idx] = vec4<f32>(x_vertex, y_vertex, depth, 0);
 	}
 }
 
@@ -108,6 +108,78 @@ struct ParticleFragmentOut {
 	@location(0) color: vec4<f32>
 }
 
+// Returns an interval of edge indices, start (inclusive) and stop (inclusive)
+fn searchSortedGraphForEdge(search_edge: Edge) -> bool
+{
+	let count = graph.count;
+
+	if(count == 0) {
+		return false;
+	}
+
+	var min = 0u;
+	var max = count;
+
+	while(min < max) {
+		let idx = (min + max) / 2;
+		let edge = graph.edges[idx];
+
+		if(edge.first_idx == search_edge.first_idx) {
+			min = idx;
+			max = idx;
+			break;
+		}
+
+		if(edge.first_idx < search_edge.first_idx) {
+			min = idx;
+		} else {
+			max = idx;
+		}
+	}
+
+	// min == max
+	var idx = min;
+
+	// We probably hit some random position in the interval of edges with the
+	// right first_idx, so we linear search up and down.
+
+	if(graph.edges[idx].first_idx != search_edge.first_idx) {
+		return false;
+	}
+
+	if(graph.edges[idx].second_idx == search_edge.second_idx) {
+		return true;
+	} else if (graph.edges[idx].second_idx > search_edge.second_idx) {
+		idx -= 1;
+		while(idx > 0) {
+			if(graph.edges[idx].first_idx != search_edge.first_idx) {
+				return false;
+			}
+
+			if(graph.edges[idx].second_idx == search_edge.second_idx) {
+				return true;
+			}
+
+			idx -= 1;
+		}
+	} else if (graph.edges[idx].second_idx < search_edge.second_idx) {
+		idx += 1;
+		while(idx < count) {
+			if(graph.edges[idx].first_idx != search_edge.first_idx) {
+				return false;
+			}
+
+			if(graph.edges[idx].second_idx == search_edge.second_idx) {
+				return true;
+			}
+
+			idx += 1;
+		}
+	}
+
+	return false;
+}
+
 @vertex
 fn drawParticlesVertex(
 	@builtin(vertex_index) vertex_idx : u32,
@@ -116,16 +188,16 @@ fn drawParticlesVertex(
 {
 	let particle = particles.particles[particle_idx];
 
-	let particle_center = (u_camera.view * vec4<f32>(particle.position_world.xyz,1.0)).xyz;
+	let particle_center = (u_global.camera.view * vec4<f32>(particle.position_world.xyz,1.0)).xyz;
 
 	var out: ParticleVertexOut;
 
 	// For our ray-sphere intersection
 	out.particle_center_camera = particle_center;
-	out.position_camera = vertices_in[particle_idx * 4 + vertex_idx].xyz;
+	out.position_camera = vertices[particle_idx * 4 + vertex_idx].xyz;
 
 	// For rasterization
-	out.position = u_camera.proj * vec4<f32>(out.position_camera, 1.0);
+	out.position = u_global.camera.proj * vec4<f32>(out.position_camera, 1.0);
 	out.particle_idx = particle_idx;
 
 	out.visible = 1;
@@ -136,8 +208,10 @@ fn drawParticlesVertex(
 	out.normal = particle.normal_world.xyz;
 	out.color = particle.color;
 
-	if(u_config.debug_particle_idx == particle_idx) {
+	if(u_global.debug_particle_idx == particle_idx) {
 		out.color = vec3<f32>(0.0, 0.0, 1.0);
+	} else if(searchSortedGraphForEdge(Edge(u_global.debug_particle_idx, particle_idx))) {
+		out.color = vec3<f32>(1.0, 0.0, 0.0);
 	}
 
 	return out;
@@ -169,11 +243,11 @@ fn drawParticlesFragment(
 		let normal = frag.normal;
 		out.color = vec4<f32>(0.5 * (normal + 1.0), 1.0);
 	} else {
-		let normal = normalize((u_camera.model * vec4<f32>(hit_position, 0.0)).xyz);
+		let normal = normalize((u_global.camera.model * vec4<f32>(hit_position, 0.0)).xyz);
 		out.color = vec4<f32>(frag.color, 1.0);
 	}
 
-	let projected = u_camera.proj * vec4<f32>(hit_position + frag.particle_center_camera, 1.0);
+	let projected = u_global.camera.proj * vec4<f32>(hit_position + frag.particle_center_camera, 1.0);
 	out.depth = projected.z / projected.w;
 
 	return out;
@@ -197,12 +271,12 @@ fn drawNormalsVertex(
 
 	// index should be 0 (for startpoint) and 1 (for endpoint)
 	let length = NORMAL_LENGTH * f32(vertex_idx) * f32(particle.is_surface);
-	let particle_center = (u_camera.view * vec4<f32>(particle.position_world.xyz,1.0)).xyz;
+	let particle_center = (u_global.camera.view * vec4<f32>(particle.position_world.xyz,1.0)).xyz;
 
 	var out : NormalVertexOut;
 
 	let position = particle.position_world.xyz + length * particle.normal_world.xyz;
-	out.position = u_camera.proj_view * vec4<f32>(position, 1.0);
+	out.position = u_global.camera.proj_view * vec4<f32>(position, 1.0);
 
 	out.color = abs(particle.normal_world.xyz);
 
@@ -260,7 +334,7 @@ fn drawTangentPlanesVertex(
 		+ particle.position_world;
 
 	var out : DragTangentPlanesVertexOut;
-	out.position = u_camera.proj_view * vec4<f32>(position_world, 1.0);
+	out.position = u_global.camera.proj_view * vec4<f32>(position_world, 1.0);
 	// out.color = 0.5 * (particle.normal_world.xyz + 1.0);
 	out.color = abs(particle.normal_world.xyz);
 

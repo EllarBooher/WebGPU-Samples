@@ -7,6 +7,7 @@ import { WorldAxesPipeline } from "./pipelines/WorldAxes";
 import { KeyCode, KeyState } from "./Input";
 import { PARTICLE_COUNT, buildParticles, writeParticles } from "./Particles";
 import * as ParticleMeshifyPipeline from "./pipelines/ParticleMeshify";
+import * as GlobalUniforms from "./GlobalUniforms";
 import {
 	ParticleDrawPipeline,
 	ParticleDrawPipelineDrawStyle,
@@ -113,6 +114,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 	);
 
 	const camera = Camera.build(device);
+	const globalUniforms = GlobalUniforms.build(device);
 
 	const pipelineParameters: {
 		output: RenderOutputCategory;
@@ -129,18 +131,18 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			colorFormat: COLOR_FORMAT,
 			depthFormat: DEPTH_FORMAT,
 			particles,
-			cameraUBO: camera.buffer,
+			globalUniformsBuffer: globalUniforms.buffer,
 		}),
 		particleMeshifyPipeline: ParticleMeshifyPipeline.build(
 			device,
 			COLOR_FORMAT,
 			DEPTH_FORMAT,
 			particles,
-			camera.buffer
+			globalUniforms.buffer
 		),
 		worldAxesPipeline: WorldAxesPipeline.build({
 			device,
-			cameraUBO: camera.buffer,
+			globalUniformsBuffer: globalUniforms.buffer,
 			colorFormat: COLOR_FORMAT,
 			depthFormat: DEPTH_FORMAT,
 		}),
@@ -382,12 +384,17 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		}
 
 		const aspectRatio = presentTexture.width / presentTexture.height;
-		Camera.update(
-			device.queue,
-			aspectRatio,
-			camera,
-			inputState,
-			deltaTimeMilliseconds
+		Camera.update(camera, inputState, deltaTimeMilliseconds);
+		GlobalUniforms.writeToGPU(
+			globalUniforms,
+			{
+				aspectRatio,
+				camera,
+				debugParticleIdx:
+					permanentResources.particleDrawPipeline.settings
+						.debugParticleIdx,
+			},
+			device.queue
 		);
 
 		for (const keyCode of KeyCode) {

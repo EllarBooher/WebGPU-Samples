@@ -30,10 +30,9 @@ export interface Camera {
 		distanceFromOrigin: number;
 	};
 	style: CameraStyle;
-	buffer: GPUBuffer;
 }
 export const Camera = Object.freeze({
-	build: (device: GPUDevice): Camera => {
+	build: (): Camera => {
 		return {
 			Cartesian: {
 				translationX: 0,
@@ -48,11 +47,6 @@ export const Camera = Object.freeze({
 				distanceFromOrigin: 30.0,
 			},
 			style: "Polar",
-			buffer: device.createBuffer({
-				label: "Camera",
-				size: 5 * 64,
-				usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-			}),
 		};
 	},
 	buildTransform: ({ Polar, Cartesian, style }: Camera): Mat4 => {
@@ -89,8 +83,6 @@ export const Camera = Object.freeze({
 		}
 	},
 	update: (
-		queue: GPUQueue,
-		aspectRatio: number,
 		camera: Camera,
 		inputState: Record<KeyCode, KeyState>,
 		deltaTimeMilliseconds: number
@@ -323,43 +315,6 @@ export const Camera = Object.freeze({
 				}
 				break;
 			}
-		}
-
-		{
-			const vec2_zeroed = new Float32Array(2).fill(0.0);
-			const mat2x4_zeroed = new Float32Array(4 * 2).fill(0.0);
-
-			const transform = Camera.buildTransform(camera);
-
-			const view = mat4.inverse(transform);
-			const fov = (60 * Math.PI) / 180;
-			const far = 0.1;
-			const near = 1000;
-
-			const proj = mat4.perspective(fov, aspectRatio, near, far);
-			const projView = mat4.mul(proj, view);
-			const focalLength = 1.0;
-
-			const translation = vec4.create(
-				...mat4.getTranslation(transform),
-				1.0
-			);
-
-			queue.writeBuffer(
-				camera.buffer,
-				0,
-				new Float32Array([
-					...view,
-					...projView,
-					...translation,
-					...vec2_zeroed,
-					aspectRatio,
-					focalLength,
-					...mat2x4_zeroed,
-					...proj,
-					...transform,
-				])
-			);
 		}
 	},
 });

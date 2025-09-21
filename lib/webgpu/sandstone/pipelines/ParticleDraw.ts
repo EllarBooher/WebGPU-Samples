@@ -43,13 +43,13 @@ export const ParticleDrawPipeline = Object.freeze({
 		colorFormat,
 		depthFormat,
 		particles,
-		cameraUBO,
+		globalUniformsBuffer,
 	}: {
 		device: GPUDevice;
 		colorFormat: GPUTextureFormat;
 		depthFormat: GPUTextureFormat;
 		particles: Particles;
-		cameraUBO: GPUBuffer;
+		globalUniformsBuffer: GPUBuffer;
 	}): ParticleDrawPipeline => {
 		const configUBO = device.createBuffer({
 			size: 3 * SIZEOF.u32,
@@ -57,52 +57,78 @@ export const ParticleDrawPipeline = Object.freeze({
 			label: "ParticleDrawPipeline configUBO",
 		});
 
-		const group0Layout = device.createBindGroupLayout({
-			entries: [
-				{
-					binding: 0,
-					visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
-					buffer: { type: "read-only-storage" },
-				},
-				{
-					binding: 1,
-					visibility:
-						GPUShaderStage.VERTEX |
-						GPUShaderStage.COMPUTE |
-						GPUShaderStage.FRAGMENT,
-					buffer: { type: "uniform" },
-				},
-				{
-					binding: 2,
-					visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-					buffer: { type: "uniform" },
-				},
-			],
-			label: `ParticleDebugPipeline Group0`,
-		});
-		const group1LayoutCompute = device.createBindGroupLayout({
-			entries: [
-				{
-					binding: 0,
-					visibility: GPUShaderStage.COMPUTE,
-					buffer: { type: "storage" },
-				},
-			],
-		});
-		const group1LayoutRender = device.createBindGroupLayout({
-			entries: [
-				{
-					binding: 0,
-					visibility: GPUShaderStage.VERTEX,
-					buffer: { type: "read-only-storage" },
-				},
-			],
-		});
+		const layouts = {
+			group0: device.createBindGroupLayout({
+				entries: [
+					{
+						binding: 0,
+						visibility:
+							GPUShaderStage.VERTEX |
+							GPUShaderStage.COMPUTE |
+							GPUShaderStage.FRAGMENT,
+						buffer: { type: "uniform" },
+					},
+					{
+						binding: 1,
+						visibility:
+							GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+						buffer: { type: "uniform" },
+					},
+					{
+						binding: 2,
+						visibility:
+							GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+						buffer: { type: "read-only-storage" },
+					},
+					{
+						binding: 3,
+						visibility:
+							GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+						buffer: { type: "read-only-storage" },
+					},
+				],
+				label: `ParticleDebugPipeline Group0`,
+			}),
+			verticesReadWrite: device.createBindGroupLayout({
+				entries: [
+					{
+						binding: 0,
+						visibility: GPUShaderStage.COMPUTE,
+						buffer: { type: "storage" },
+					},
+				],
+			}),
+			verticesReadOnly: device.createBindGroupLayout({
+				entries: [
+					{
+						binding: 0,
+						visibility: GPUShaderStage.VERTEX,
+						buffer: { type: "read-only-storage" },
+					},
+				],
+			}),
+		};
 
 		const shaderModule = device.createShaderModule({
 			code: ParticlesDebugPak,
 			label: "ParticleDebugPipeline ParticlesDebugPak",
 		});
+
+		const pipeline_populateVertexBuffer = device.createComputePipeline({
+			compute: {
+				module: shaderModule,
+				entryPoint: "populateVertexBuffer",
+				constants: {
+					PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
+				},
+			},
+			layout: device.createPipelineLayout({
+				bindGroupLayouts: [layouts.group0, layouts.verticesReadWrite],
+				label: "ParticleDebugPipeline compute",
+			}),
+			label: "ParticleDebugPipeline compute",
+		});
+
 		const pipeline_renderParticles = device.createRenderPipeline({
 			vertex: { module: shaderModule, entryPoint: "drawParticlesVertex" },
 			fragment: {
@@ -119,25 +145,12 @@ export const ParticleDrawPipeline = Object.freeze({
 				depthCompare: "greater",
 			},
 			layout: device.createPipelineLayout({
-				bindGroupLayouts: [group0Layout, group1LayoutRender],
+				bindGroupLayouts: [layouts.group0, layouts.verticesReadOnly],
 				label: "ParticleDebugPipeline pipeline_render",
 			}),
 			label: "ParticleDebugPipeline pipeline_render",
 		});
-		const pipeline_populateVertexBuffer = device.createComputePipeline({
-			compute: {
-				module: shaderModule,
-				entryPoint: "populateVertexBuffer",
-				constants: {
-					PARTICLE_RADIUS_SQUARED: PARTICLE_RADIUS * PARTICLE_RADIUS,
-				},
-			},
-			layout: device.createPipelineLayout({
-				bindGroupLayouts: [group0Layout, group1LayoutCompute],
-				label: "ParticleDebugPipeline compute",
-			}),
-			label: "ParticleDebugPipeline compute",
-		});
+
 		const pipeline_renderNormals = device.createRenderPipeline({
 			fragment: {
 				module: shaderModule,
@@ -155,11 +168,12 @@ export const ParticleDrawPipeline = Object.freeze({
 			},
 			primitive: { topology: "line-list" },
 			layout: device.createPipelineLayout({
-				bindGroupLayouts: [group0Layout, group1LayoutRender],
+				bindGroupLayouts: [layouts.group0, layouts.verticesReadOnly],
 				label: "ParticleDebugPipeline pipeline_renderNormals",
 			}),
 			label: "ParticleDebugPipeline pipeline_renderNormals",
 		});
+
 		const pipeline_renderTangentPlanes = device.createRenderPipeline({
 			fragment: {
 				module: shaderModule,
@@ -180,7 +194,7 @@ export const ParticleDrawPipeline = Object.freeze({
 				cullMode: "none",
 			},
 			layout: device.createPipelineLayout({
-				bindGroupLayouts: [group0Layout, group1LayoutRender],
+				bindGroupLayouts: [layouts.group0, layouts.verticesReadOnly],
 				label: "ParticleDebugPipeline pipeline_renderTangentPlanes",
 			}),
 			label: "ParticleDebugPipeline pipeline_renderTangentPlanes",
@@ -188,9 +202,10 @@ export const ParticleDrawPipeline = Object.freeze({
 
 		const group0 = device.createBindGroup({
 			entries: [
-				{ binding: 0, resource: particles.particleBuffer },
-				{ binding: 1, resource: cameraUBO },
-				{ binding: 2, resource: configUBO },
+				{ binding: 0, resource: globalUniformsBuffer },
+				{ binding: 1, resource: configUBO },
+				{ binding: 2, resource: particles.particleBuffer },
+				{ binding: 3, resource: particles.particleGraphBuffer },
 			],
 			layout: pipeline_renderParticles.getBindGroupLayout(0),
 			label: "ParticleDebugPipeline 0",

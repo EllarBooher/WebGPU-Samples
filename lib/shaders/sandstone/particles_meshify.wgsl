@@ -1,34 +1,24 @@
 #include types.inc.wgsl
 #include svd.inc.wgsl
+#include graph.inc.wgsl
 
 struct GridPoint {
 	position : vec3<f32>,
-	filled   : u32,
+	filled   :      u32 ,
 }
 
 struct DrawIndexedIndirectParameters {
-	padding0 : vec3<f32>,
-	index_count : u32,
-	instance_count : u32,
-	first_index : u32,
-	base_vertex : u32,
-	first_instance : u32,
+	padding0       : vec3<f32>,
+	index_count    :      u32 ,
+	instance_count :      u32 ,
+	first_index    :      u32 ,
+	base_vertex    :      u32 ,
+	first_instance :      u32 ,
 }
 
 struct DispatchIndirectParameters {
 	workgroup_count : vec3<u32>,
-	padding0 : u32,
-}
-
-struct Edge {
-	first_idx  : u32,
-	second_idx : u32,
-}
-
-struct Graph {
-	padding0 : vec3<f32> ,
-	count    : u32          ,
-	edges    : array<Edge>  ,
+	padding0        :      u32 ,
 }
 
 struct GraphIndirectParameters {
@@ -36,7 +26,7 @@ struct GraphIndirectParameters {
 	dispatch_sort : DispatchIndirectParameters   ,
 }
 
-@group(0) @binding(0) var<uniform> 				u_camera			: CameraUBO;
+@group(0) @binding(0) var<uniform> 				u_global			: GlobalUniforms;
 
 @group(1) @binding(0) var<storage, read> 		particles			: ParticleBuffer;
 @group(1) @binding(0) var<storage, read_write> 	out_particles		: ParticleBuffer;
@@ -586,11 +576,11 @@ fn vertexMain(
 ) -> VertexOut {
 	let grid_point = projected_grid[grid_idx];
 
-	let center = u_camera.proj_view * vec4<f32>(GRID_GAP * grid_point.position, 1.0);
+	let center = u_global.camera.proj_view * vec4<f32>(GRID_GAP * grid_point.position, 1.0);
 	let depth = center.z / center.w;
 
 	var out: VertexOut;
-	out.position = vec4<f32>(center.xy + 0.05 * (1.0 - depth) * VERTEX_TWIDDLES[vertex_idx] * vec2<f32>(1.0 / u_camera.aspect_ratio, 1.0), center.zw);
+	out.position = vec4<f32>(center.xy + 0.05 * (1.0 - depth) * VERTEX_TWIDDLES[vertex_idx] * vec2<f32>(1.0 / u_global.camera.aspect_ratio, 1.0), center.zw);
 
 	let green = vec4<f32>(0.0, 1.0, 0.0, 1.0);
 	let red = vec4<f32>(1.0, 0.0, 0.0, 1.0);
@@ -637,8 +627,14 @@ fn drawParticleGraphVertex(
 	let particle = particles.particles[particle_idx];
 
 	var out : DrawParticleGraphVertexOut;
-	out.position = u_camera.proj_view * vec4<f32>(particle.position_world.xyz, 1.0);
-	out.color = vec4<f32>(1.0);
+	out.position = u_global.camera.proj_view * vec4<f32>(particle.position_world.xyz, 1.0);
+
+	// Dim further graph edges to make closer ones easier to see
+	out.color = vec4<f32>(max(min(50 * out.position.z / out.position.w, 0.7), 0.2));
+
+	if(edge.first_idx == u_global.debug_particle_idx || edge.second_idx == u_global.debug_particle_idx) {
+		out.color = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+	}
 
 	return out;
 }

@@ -13,12 +13,12 @@ export interface WorldAxesPipeline {
 export const WorldAxesPipeline = Object.freeze({
 	build: ({
 		device,
-		cameraUBO,
+		globalUniformsBuffer,
 		colorFormat,
 		depthFormat,
 	}: {
 		device: GPUDevice;
-		cameraUBO: GPUBuffer;
+		globalUniformsBuffer: GPUBuffer;
 		colorFormat: GPUTextureFormat;
 		depthFormat: GPUTextureFormat;
 	}): WorldAxesPipeline => {
@@ -57,7 +57,9 @@ export const WorldAxesPipeline = Object.freeze({
 
 		const group0 = device.createBindGroup({
 			label,
-			entries: [{ binding: 0, resource: { buffer: cameraUBO } }],
+			entries: [
+				{ binding: 0, resource: { buffer: globalUniformsBuffer } },
+			],
 			layout: pipeline_render.getBindGroupLayout(0),
 		});
 
