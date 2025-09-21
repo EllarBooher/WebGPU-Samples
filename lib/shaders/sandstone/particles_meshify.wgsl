@@ -15,16 +15,25 @@ struct DrawIndexedIndirectParameters {
 	first_instance : u32,
 }
 
+struct DispatchIndirectParameters {
+	workgroup_count : vec3<u32>,
+	padding0 : u32,
+}
+
 struct Edge {
 	first_idx  : u32,
 	second_idx : u32,
 }
 
 struct Graph {
-	padding0 : vec3<f32>,
-	count : u32,
-	indirect_draw : DrawIndexedIndirectParameters,
-	edges : array<Edge>,
+	padding0 : vec3<f32> ,
+	count    : u32          ,
+	edges    : array<Edge>  ,
+}
+
+struct GraphIndirectParameters {
+	draw          : DrawIndexedIndirectParameters,
+	dispatch_sort : DispatchIndirectParameters   ,
 }
 
 @group(0) @binding(0) var<uniform> 				u_camera			: CameraUBO;
@@ -36,8 +45,15 @@ struct Graph {
 @group(2) @binding(0) var<storage, read> 		projected_grid		: array<GridPoint>;
 @group(2) @binding(0) var<storage, read_write> 	out_projected_grid	: array<GridPoint>;
 
+// Graph Read-Only
 @group(3) @binding(0) var<storage, read>  particle_graph  : Graph;
+
+// Graph with Indirect Buffer
 @group(3) @binding(0) var<storage, read_write>  out_particle_graph      : Graph;
+@group(3) @binding(1) var<storage, read_write>  out_particle_graph_indirect : GraphIndirectParameters;
+
+// Graph Sorting
+// @group(3) @binding(0) var<storage, read_write>  out_particle_graph      : Graph;
 @group(3) @binding(1) var<storage, read_write>  out_particle_graph_pong : Graph;
 
 const GRID_GAP = 1;
@@ -169,18 +185,11 @@ fn initParticleGraph(@builtin(global_invocation_id) invocation_id : vec3<u32>)
 	out_particle_graph.padding0 = vec3<f32>(0.0);
 	out_particle_graph.count = 0;
 
-	out_particle_graph.indirect_draw = DrawIndexedIndirectParameters();
-
 	out_particle_graph.edges[invocation_id.x].first_idx = 0;
 	out_particle_graph.edges[invocation_id.x].second_idx = 0;
 
-	out_particle_graph_pong.padding0 = vec3<f32>(0.0);
-	out_particle_graph_pong.count = 0;
-
-	out_particle_graph_pong.indirect_draw = DrawIndexedIndirectParameters();
-
-	out_particle_graph_pong.edges[invocation_id.x].first_idx = 0;
-	out_particle_graph_pong.edges[invocation_id.x].second_idx = 0;
+	out_particle_graph_indirect.draw = DrawIndexedIndirectParameters();
+	out_particle_graph_indirect.dispatch_sort = DispatchIndirectParameters();
 }
 
 @compute @workgroup_size(256, 1, 1)
@@ -335,9 +344,12 @@ fn compactParticleGraph()
 
 	out_particle_graph.count = count_valid;
 
-	out_particle_graph.indirect_draw = DrawIndexedIndirectParameters();
-	out_particle_graph.indirect_draw.index_count = 2;
-	out_particle_graph.indirect_draw.instance_count = out_particle_graph.count;
+	out_particle_graph_indirect.draw = DrawIndexedIndirectParameters();
+	out_particle_graph_indirect.draw.index_count = 2;
+	out_particle_graph_indirect.draw.instance_count = out_particle_graph.count;
+
+	out_particle_graph_indirect.dispatch_sort = DispatchIndirectParameters();
+	out_particle_graph_indirect.dispatch_sort.workgroup_count = vec3<u32>(count_valid / (256 * 32) + 1, 1, 1);
 }
 
 /*
@@ -379,14 +391,13 @@ fn sortParticleGraphInitialChunks(
 	let count_max = out_particle_graph.count;
 
 	let chunk_size_ideal = 32u;
+	let chunk_size_leftover = count_max % chunk_size_ideal;
 
-	let chunk_count = (count_max + (chunk_size_ideal - 1)) / chunk_size_ideal;
+	let chunk_count = count_max / chunk_size_ideal + u32(chunk_size_leftover > 0);
 
 	if(invocation_id.x >= chunk_count) {
 		return;
 	}
-
-	let chunk_size_leftover = count_max % chunk_size_ideal;
 
 	let is_last_chunk = (chunk_size_leftover > 0) && (invocation_id.x == chunk_count - 1);
 	let chunk_size = u32(is_last_chunk) * chunk_size_leftover
@@ -429,21 +440,22 @@ fn sortParticleGraphMerge()
 	var write_into_pong = true;
 
 	var chunk_size_ideal = 32u;
+
 	while(chunk_size_ideal < count_max) {
-		// Ceiling division to ensure that we count the last chunk with the
-		// remainder of the elements.
-		let chunk_count = (count_max + (chunk_size_ideal - 1)) / chunk_size_ideal;
+		let chunk_size_leftover = count_max % chunk_size_ideal;
+
+		let chunk_count = count_max / chunk_size_ideal + u32(chunk_size_leftover > 0);
 		let merge_count = chunk_count / 2;
 
-		let chunk_size_last = count_max % chunk_size_ideal;
-
-		var merge : u32 = 0;
+		var merge = 0u;
+		var edges_transferred = 0u;
 		for(; merge < merge_count; merge++) {
-			let right_is_last_chunk = (chunk_count % 2 == 0) && (merge == merge_count - 1);
+			let right_is_last_chunk = (2 * merge + 1) == (chunk_count - 1);
+			let right_is_leftover_chunk = (chunk_size_leftover > 0) && right_is_last_chunk;
 
 			let size_left = chunk_size_ideal;
-			let size_right = u32(right_is_last_chunk) * chunk_size_last
-				+ (1 - u32(right_is_last_chunk)) * chunk_size_ideal;
+			let size_right = u32(right_is_leftover_chunk) * chunk_size_leftover
+				+ (1 - u32(right_is_leftover_chunk)) * chunk_size_ideal;
 
 			let start_left = merge * 2 * chunk_size_ideal;
 			let start_right = start_left + size_left;
@@ -505,6 +517,17 @@ fn sortParticleGraphMerge()
 				idx_dest++;
 				idx_right++;
 			}
+
+			edges_transferred += size_left + size_right;
+		}
+
+		// Copy any edges that may have been left if there are an odd amount of chunks
+		for(var idx_dest = edges_transferred; idx_dest < count_max; idx_dest++) {
+			if(write_into_pong) {
+				out_particle_graph_pong.edges[idx_dest] = out_particle_graph.edges[idx_dest];
+			} else {
+				out_particle_graph.edges[idx_dest] = out_particle_graph_pong.edges[idx_dest];
+			}
 		}
 
 		chunk_size_ideal *= 2;
@@ -517,10 +540,6 @@ fn sortParticleGraphMerge()
 			out_particle_graph.edges[i] = out_particle_graph_pong.edges[i];
 		}
 	}
-
-	out_particle_graph.indirect_draw = DrawIndexedIndirectParameters();
-	out_particle_graph.indirect_draw.index_count = 2;
-	out_particle_graph.indirect_draw.instance_count = out_particle_graph.count;
 }
 
 /********************************************************************************

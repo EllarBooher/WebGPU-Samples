@@ -34,9 +34,9 @@ interface ParticleMeshifyPipeline {
 		particlesReadWrite: GPUBindGroup;
 		projectedGridRead: GPUBindGroup;
 		projectedGridReadWrite: GPUBindGroup;
-		particleGraphRead: GPUBindGroup;
-		particleGraphReadWrite: GPUBindGroup;
-		particleGraphPingPong: GPUBindGroup;
+		graphReadOnly: GPUBindGroup;
+		graphPingPong: GPUBindGroup;
+		graphWithIndirect: GPUBindGroup;
 	};
 	gridPointQuadIndexBuffer: GPUBuffer;
 	lineIndexBuffer: GPUBuffer;
@@ -89,7 +89,17 @@ export const build = (
 			],
 			label: "ParticleMeshifyPipeline read-only storage",
 		}),
-		storagePingPong: device.createBindGroupLayout({
+		graphReadOnly: device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.VERTEX,
+					buffer: { type: "read-only-storage" },
+				},
+			],
+			label: "ParticleMeshifyPipeline graph read-only",
+		}),
+		graphWithIndirect: device.createBindGroupLayout({
 			entries: [
 				{
 					binding: 0,
@@ -102,7 +112,22 @@ export const build = (
 					buffer: { type: "storage" },
 				},
 			],
-			label: "ParticleMeshifyPipeline ping-pong",
+			label: "ParticleMeshifyPipeline graph with indirect",
+		}),
+		graphPingPong: device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.COMPUTE,
+					buffer: { type: "storage" },
+				},
+				{
+					binding: 1,
+					visibility: GPUShaderStage.COMPUTE,
+					buffer: { type: "storage" },
+				},
+			],
+			label: "ParticleMeshifyPipeline graph ping-pong",
 		}),
 	};
 
@@ -206,7 +231,7 @@ export const build = (
 				layouts.camera,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
-				layouts.storagePingPong,
+				layouts.graphWithIndirect,
 			],
 			label: "ParticleMeshifyPipeline initParticleGraph",
 		}),
@@ -226,7 +251,7 @@ export const build = (
 				layouts.camera,
 				layouts.readWriteStorage,
 				layouts.readOnlyStorage,
-				layouts.readWriteStorage,
+				layouts.graphPingPong,
 			],
 			label: "ParticleMeshifyPipeline computeGridNormals SVD",
 		}),
@@ -246,7 +271,7 @@ export const build = (
 				layouts.camera,
 				layouts.readWriteStorage,
 				layouts.readOnlyStorage,
-				layouts.readWriteStorage,
+				layouts.graphWithIndirect,
 			],
 			label: "ParticleMeshifyPipeline computeGridNormals Iterative",
 		}),
@@ -262,7 +287,7 @@ export const build = (
 				layouts.camera,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
-				layouts.readWriteStorage,
+				layouts.graphWithIndirect,
 			],
 			label: "ParticleMeshifyPipeline compactParticleGraph",
 		}),
@@ -279,7 +304,7 @@ export const build = (
 					layouts.camera,
 					layouts.readOnlyStorage,
 					layouts.readOnlyStorage,
-					layouts.readWriteStorage,
+					layouts.graphPingPong,
 				],
 				label: "ParticleMeshifyPipeline sortParticleGraphInitialChunks",
 			}),
@@ -295,7 +320,7 @@ export const build = (
 				layouts.camera,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
-				layouts.storagePingPong,
+				layouts.graphPingPong,
 			],
 			label: "ParticleMeshifyPipeline sortParticleGraphMerge",
 		}),
@@ -324,7 +349,7 @@ export const build = (
 				layouts.camera,
 				layouts.readOnlyStorage,
 				layouts.readOnlyStorage,
-				layouts.readOnlyStorage,
+				layouts.graphReadOnly,
 			],
 			label: "ParticleMeshifyPipeline drawParticleGraph",
 		}),
@@ -365,18 +390,43 @@ export const build = (
 			layout: layouts.readOnlyStorage,
 			label: "ParticleMeshifyPipeline particle_graph read",
 		}),
-		particleGraphReadWrite: device.createBindGroup({
-			entries: [{ binding: 0, resource: particles.particleGraphBuffer }],
-			layout: layouts.readWriteStorage,
-			label: "ParticleMeshifyPipeline particle_graph read-write",
-		}),
-		particleGraphPingPong: device.createBindGroup({
+		graphReadOnly: device.createBindGroup({
 			entries: [
-				{ binding: 0, resource: particles.particleGraphBuffer },
-				{ binding: 1, resource: particles.particleGraphPongBuffer },
+				{
+					binding: 0,
+					resource: particles.particleGraphBuffer,
+				},
 			],
-			layout: layouts.storagePingPong,
-			label: "ParticleMeshifyPipeline particle_graph ping-pong",
+			layout: layouts.graphReadOnly,
+			label: "ParticleMeshifyPipeline graph read-only",
+		}),
+		graphPingPong: device.createBindGroup({
+			entries: [
+				{
+					binding: 0,
+					resource: particles.particleGraphBuffer,
+				},
+				{
+					binding: 1,
+					resource: particles.particleGraphPongBuffer,
+				},
+			],
+			layout: layouts.graphPingPong,
+			label: "ParticleMeshifyPipeline graph ping-pong",
+		}),
+		graphWithIndirect: device.createBindGroup({
+			entries: [
+				{
+					binding: 0,
+					resource: particles.particleGraphBuffer,
+				},
+				{
+					binding: 1,
+					resource: particles.particleGraphIndirect,
+				},
+			],
+			layout: layouts.graphWithIndirect,
+			label: "ParticleMeshifyPipeline graph with indirect",
 		}),
 	};
 
@@ -426,9 +476,11 @@ export const build = (
 export const computeMeshFromParticles = ({
 	commandEncoder,
 	pipeline,
+	particleGraphCommands,
 }: {
 	commandEncoder: GPUCommandEncoder;
 	pipeline: ParticleMeshifyPipeline;
+	particleGraphCommands: GPUBuffer;
 }): void => {
 	const compute = commandEncoder.beginComputePass({
 		label: "Sandstone populateVertexBuffer",
@@ -450,8 +502,6 @@ export const computeMeshFromParticles = ({
 
 	compute.setBindGroup(1, pipeline.groups.particlesReadWrite);
 	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
-	compute.setBindGroup(3, pipeline.groups.particleGraphReadWrite);
-
 	compute.setPipeline(pipeline.pipeline_identifySurfaceParticles);
 	compute.dispatchWorkgroups(PARTICLE_COUNT / 256, 1, 1);
 
@@ -460,7 +510,7 @@ export const computeMeshFromParticles = ({
 
 	compute.setBindGroup(1, pipeline.groups.particlesRead);
 	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
-	compute.setBindGroup(3, pipeline.groups.particleGraphPingPong);
+	compute.setBindGroup(3, pipeline.groups.graphWithIndirect);
 
 	compute.setPipeline(pipeline.pipeline_initParticleGraph);
 	compute.dispatchWorkgroups(
@@ -471,7 +521,7 @@ export const computeMeshFromParticles = ({
 
 	compute.setBindGroup(1, pipeline.groups.particlesReadWrite);
 	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
-	compute.setBindGroup(3, pipeline.groups.particleGraphReadWrite);
+	compute.setBindGroup(3, pipeline.groups.graphWithIndirect);
 
 	switch (pipeline.settings.eigenvectorMethod) {
 		case "SVD": {
@@ -487,23 +537,28 @@ export const computeMeshFromParticles = ({
 
 	compute.setBindGroup(1, pipeline.groups.particlesRead);
 	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
-	compute.setBindGroup(3, pipeline.groups.particleGraphReadWrite);
+	compute.setBindGroup(3, pipeline.groups.graphWithIndirect);
 
 	compute.setPipeline(pipeline.pipeline_compactParticleGraph);
 	compute.dispatchWorkgroups(1, 1, 1);
 
 	compute.setBindGroup(1, pipeline.groups.particlesRead);
 	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
-	compute.setBindGroup(3, pipeline.groups.particleGraphReadWrite);
+	compute.setBindGroup(3, pipeline.groups.graphPingPong);
 
 	compute.setPipeline(pipeline.pipeline_sortParticleGraphInitialChunks);
 	const potentialEdges = 2 * NEIGHBORHOOD_SIZE * 20000;
 	const chunkCount = Math.floor((potentialEdges + 31) / 32);
 	compute.dispatchWorkgroups(chunkCount / 256, 1, 1);
 
+	compute.dispatchWorkgroupsIndirect(
+		particleGraphCommands,
+		SIZEOF.drawIndexedIndirectParameters
+	);
+
 	compute.setBindGroup(1, pipeline.groups.particlesRead);
 	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
-	compute.setBindGroup(3, pipeline.groups.particleGraphPingPong);
+	compute.setBindGroup(3, pipeline.groups.graphPingPong);
 	compute.setPipeline(pipeline.pipeline_sortParticleGraphMerge);
 	compute.dispatchWorkgroups(1, 1, 1);
 
@@ -579,11 +634,8 @@ export const drawParticleGraph = ({
 	pass.setBindGroup(0, pipeline.groups.camera);
 	pass.setBindGroup(1, pipeline.groups.particlesRead);
 	pass.setBindGroup(2, pipeline.groups.projectedGridRead);
-	pass.setBindGroup(3, pipeline.groups.particleGraphRead);
-	pass.drawIndexedIndirect(
-		particles.particleGraphBuffer,
-		SIZEOF.vec4_f32 + 12
-	);
+	pass.setBindGroup(3, pipeline.groups.graphReadOnly);
+	pass.drawIndexedIndirect(particles.particleGraphIndirect, SIZEOF.vec3_u32);
 
 	pass.end();
 };

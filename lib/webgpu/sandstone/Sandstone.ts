@@ -16,6 +16,7 @@ import {
 	ParticleDrawPipeline,
 	ParticleDrawPipelineDrawStyle,
 } from "./pipelines/ParticleDraw";
+import { SIZEOF } from "./Sizeof";
 
 interface Extent2D {
 	width: number;
@@ -420,6 +421,8 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			ParticleMeshifyPipeline.computeMeshFromParticles({
 				commandEncoder: main,
 				pipeline: permanentResources.particleMeshifyPipeline,
+				particleGraphCommands:
+					permanentResources.particles.particleGraphIndirect,
 			});
 
 			if (
@@ -428,8 +431,15 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			) {
 				copying = true;
 				main.copyBufferToBuffer(
-					permanentResources.particles.particleGraphBuffer,
+					permanentResources.particles.particleGraphIndirect,
 					permanentResources.particles.particleGraphBufferDebug
+				);
+				main.copyBufferToBuffer(
+					permanentResources.particles.particleGraphBuffer,
+					0,
+					permanentResources.particles.particleGraphBufferDebug,
+					SIZEOF.drawIndexedIndirectParameters +
+						SIZEOF.dispatchIndirectParameters
 				);
 			}
 
@@ -551,29 +561,38 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 						const u32s = new Uint32Array(mappedRange);
 						const log = {
 							vec4f32: (first: number): string => {
-								return `vec4 (${floats[first]},${
+								return `vec4         (${floats[first]},${
 									floats[first + 1]
 								},${floats[first + 2]},${floats[first + 3]})\n`;
 							},
 							vec3f32: (first: number): string => {
-								return `vec3 (${floats[first]},${
+								return `vec3         (${floats[first]},${
 									floats[first + 1]
 								},${floats[first + 2]})\n`;
 							},
 							u32: (first: number): string => {
-								return `u32 (${u32s[first]})\n`;
+								return `u32          (${u32s[first]})\n`;
+							},
+							vec4u32: (first: number): string => {
+								return `vec4<u32>    (${u32s[first]},${
+									u32s[first + 1]
+								},${u32s[first + 2]}, ${u32s[first + 3]})\n`;
 							},
 						};
-						console.log("particle graph");
-						console.log("    padding0 " + log.vec3f32(0));
-						console.log("    edge_count " + log.u32(3));
+						console.log("particle graph indirect");
 						console.log("    indirect draw");
-						console.log("        padding0       " + log.vec3f32(4));
-						console.log("        index_count    " + log.u32(7));
-						console.log("        instance_count " + log.u32(8));
-						console.log("        first_index    " + log.u32(9));
-						console.log("        base_vertex    " + log.u32(10));
-						console.log("        first_instance " + log.u32(11));
+						console.log("        padding0       " + log.vec3f32(0));
+						console.log("        index_count    " + log.u32(3));
+						console.log("        instance_count " + log.u32(4));
+						console.log("        first_index    " + log.u32(5));
+						console.log("        base_vertex    " + log.u32(6));
+						console.log("        first_instance " + log.u32(7));
+						console.log("    sort_dispatch      " + log.vec4u32(8));
+						console.log("particle graph");
+						console.log(
+							"    padding0           " + log.vec3f32(12)
+						);
+						console.log("    edge_count         " + log.u32(15));
 						permanentResources.particles.particleGraphBufferDebug.unmap();
 					})
 					.catch((reason) => {

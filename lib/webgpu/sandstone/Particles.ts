@@ -20,6 +20,7 @@ export interface Particles {
 	particleGraphBuffer: GPUBuffer;
 	particleGraphBufferDebug: GPUBuffer;
 	particleGraphPongBuffer: GPUBuffer;
+	particleGraphIndirect: GPUBuffer;
 
 	// Each particle has 4 vertices, for the quad when rendering a debug view
 	vertices: GPUBuffer;
@@ -53,18 +54,23 @@ export const buildParticles = (device: GPUDevice): Particles => {
 			GPUBufferUsage.COPY_SRC,
 	});
 
-	const edgeCount = NEIGHBORHOOD_SIZE * PARTICLE_COUNT * 2;
-	const particleGraphBufferHeaderSize =
-		SIZEOF.vec4_f32 + SIZEOF.drawIndexedIndirectParameters;
+	const edgeCapacity = NEIGHBORHOOD_SIZE * PARTICLE_COUNT * 2;
+	const particleGraphBufferHeaderSize = SIZEOF.vec4_u32;
 	const particleGraphBuffer = device.createBuffer({
-		size: particleGraphBufferHeaderSize + edgeCount * SIZEOF.vec2_u32,
+		size: particleGraphBufferHeaderSize + edgeCapacity * SIZEOF.vec2_u32,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+	});
+	const particleGraphIndirect = device.createBuffer({
+		size:
+			SIZEOF.dispatchIndirectParameters +
+			SIZEOF.drawIndexedIndirectParameters,
 		usage:
-			GPUBufferUsage.STORAGE |
 			GPUBufferUsage.INDIRECT |
+			GPUBufferUsage.STORAGE |
 			GPUBufferUsage.COPY_SRC,
 	});
 	const particleGraphBufferDebug = device.createBuffer({
-		size: particleGraphBuffer.size,
+		size: particleGraphIndirect.size + particleGraphBuffer.size,
 		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 	});
 	const particleGraphPongBuffer = device.createBuffer({
@@ -81,6 +87,7 @@ export const buildParticles = (device: GPUDevice): Particles => {
 		vertices: verticesBuffer,
 		projectedGrid: projectedGridBuffer,
 		meshDirty: true,
+		particleGraphIndirect,
 	};
 };
 export const writeParticles = (
