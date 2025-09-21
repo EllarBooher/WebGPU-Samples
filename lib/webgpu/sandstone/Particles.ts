@@ -2,12 +2,12 @@ import { SIZEOF } from "./Sizeof";
 
 export const PARTICLE_BOUNDING_BOX = {
 	min: [1.0, 1.0, 1.0],
-	max: [31.0, 31.0, 31.0],
+	max: [15.0, 15.0, 15.0],
 };
-export const PARTICLE_DIMENSIONS = [64, 64, 64];
+export const PARTICLE_DIMENSIONS = [32, 32, 32];
 export const PARTICLE_COUNT =
 	PARTICLE_DIMENSIONS[0] * PARTICLE_DIMENSIONS[1] * PARTICLE_DIMENSIONS[2];
-export const GRID_DIMENSION = 64;
+export const GRID_DIMENSION = 32;
 export const NEIGHBORHOOD_SIZE = 9;
 
 export interface Particles {

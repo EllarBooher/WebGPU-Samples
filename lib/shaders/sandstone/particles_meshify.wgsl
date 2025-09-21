@@ -57,7 +57,7 @@ struct GraphIndirectParameters {
 @group(3) @binding(1) var<storage, read_write>  out_particle_graph_pong : Graph;
 
 const GRID_GAP = 1;
-const GRID_DIMENSION: u32 = 64;
+const GRID_DIMENSION: u32 = 32;
 
 const VERTEX_TWIDDLES: array<vec2<f32>,4> = array(
 	vec2<f32>(1.0, 1.0),
@@ -325,20 +325,17 @@ fn computeGridNormals(@builtin(global_invocation_id) invocation_id : vec3<u32>)
 @compute @workgroup_size(1,1,1)
 fn compactParticleGraph()
 {
-	var seek_idx : u32 = 0;
 	var count_valid : u32 = 0;
 
-	while(seek_idx < arrayLength(&out_particle_graph.edges)) {
+	for(var seek_idx = 0u; seek_idx < arrayLength(&out_particle_graph.edges); seek_idx++) {
 		let edge = out_particle_graph.edges[seek_idx];
 		if(edge.first_idx == edge.second_idx) {
-			seek_idx += 1;
+			out_particle_graph.edges[seek_idx] = Edge(0, 0);
 			continue;
 		}
 
-		out_particle_graph.edges[seek_idx] = out_particle_graph.edges[count_valid];
 		out_particle_graph.edges[count_valid] = edge;
 
-		seek_idx += 1;
 		count_valid += 1;
 	}
 
@@ -377,6 +374,41 @@ fn compareEdge(
 	}
 
 	return 0;
+}
+
+/*
+ * Call with one invocation. Compacts the graph, removing runs of duplicates.
+ * The graph must already be sorted for this to remove all duplicates.
+ */
+@compute @workgroup_size(1,1,1)
+fn compactSortedParticleGraph()
+{
+	// First one is valid for free
+	var count_valid : u32 = 1;
+
+	for(var seek_idx = 1u; seek_idx < out_particle_graph.count; seek_idx++) {
+		let edge = out_particle_graph.edges[seek_idx];
+
+		let this_edge_is_duplicate = compareEdge(edge, out_particle_graph.edges[count_valid - 1]) == 0;
+		if(this_edge_is_duplicate) {
+			continue;
+		}
+
+		out_particle_graph.edges[count_valid] = edge;
+		count_valid += 1;
+	}
+
+	out_particle_graph.count = count_valid;
+
+	for(var wipe_idx = out_particle_graph.count; wipe_idx < arrayLength(&out_particle_graph.edges); wipe_idx++) {
+		out_particle_graph.edges[wipe_idx] = Edge(0, 0);
+	}
+
+	out_particle_graph_indirect.draw = DrawIndexedIndirectParameters();
+	out_particle_graph_indirect.draw.index_count = 2;
+	out_particle_graph_indirect.draw.instance_count = out_particle_graph.count;
+
+	out_particle_graph_indirect.dispatch_sort = DispatchIndirectParameters();
 }
 
 /*

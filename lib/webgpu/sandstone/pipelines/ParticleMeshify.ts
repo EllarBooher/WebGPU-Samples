@@ -24,6 +24,7 @@ interface ParticleMeshifyPipeline {
 	pipeline_computeGridNormals_svd: GPUComputePipeline;
 	pipeline_computeGridNormals_iterative: GPUComputePipeline;
 	pipeline_compactParticleGraph: GPUComputePipeline;
+	pipeline_compactSortedParticleGraph: GPUComputePipeline;
 	pipeline_sortParticleGraphInitialChunks: GPUComputePipeline;
 	pipeline_sortParticleGraphMerge: GPUComputePipeline;
 	pipeline_drawParticleGraph: GPURenderPipeline;
@@ -293,6 +294,22 @@ export const build = (
 		}),
 		label: "ParticleMeshifyPipeline compactParticleGraph",
 	});
+	const pipeline_compactSortedParticleGraph = device.createComputePipeline({
+		compute: {
+			module: shaderModule,
+			entryPoint: "compactSortedParticleGraph",
+		},
+		layout: device.createPipelineLayout({
+			bindGroupLayouts: [
+				layouts.camera,
+				layouts.readOnlyStorage,
+				layouts.readOnlyStorage,
+				layouts.graphWithIndirect,
+			],
+			label: "ParticleMeshifyPipeline compactSortedParticleGraph",
+		}),
+		label: "ParticleMeshifyPipeline compactSortedParticleGraph",
+	});
 	const pipeline_sortParticleGraphInitialChunks =
 		device.createComputePipeline({
 			compute: {
@@ -456,6 +473,7 @@ export const build = (
 		pipeline_sortParticleGraphInitialChunks,
 		pipeline_sortParticleGraphMerge,
 		pipeline_compactParticleGraph,
+		pipeline_compactSortedParticleGraph,
 		pipeline_drawParticleGraph,
 		groups,
 		gridPointQuadIndexBuffer,
@@ -560,6 +578,13 @@ export const computeMeshFromParticles = ({
 	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
 	compute.setBindGroup(3, pipeline.groups.graphPingPong);
 	compute.setPipeline(pipeline.pipeline_sortParticleGraphMerge);
+	compute.dispatchWorkgroups(1, 1, 1);
+
+	compute.setBindGroup(1, pipeline.groups.particlesRead);
+	compute.setBindGroup(2, pipeline.groups.projectedGridRead);
+	compute.setBindGroup(3, pipeline.groups.graphWithIndirect);
+
+	compute.setPipeline(pipeline.pipeline_compactSortedParticleGraph);
 	compute.dispatchWorkgroups(1, 1, 1);
 
 	compute.end();

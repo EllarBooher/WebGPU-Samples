@@ -593,6 +593,21 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 							"    padding0           " + log.vec3f32(12)
 						);
 						console.log("    edge_count         " + log.u32(15));
+
+						/*
+						const edges = u32s.slice(16, 16 + 2 * u32s[15]);
+						console.log(
+							JSON.stringify(
+								new Array(u32s[15])
+									.fill(0)
+									.map((_, idx) => [
+										edges[2 * idx],
+										edges[2 * idx + 1],
+									])
+							)
+						);
+						*/
+
 						permanentResources.particles.particleGraphBufferDebug.unmap();
 					})
 					.catch((reason) => {
