@@ -37,7 +37,6 @@ struct GraphIndirectParameters {
 }
 
 @group(0) @binding(0) var<uniform> 				u_camera			: CameraUBO;
-@group(0) @binding(1) var<storage, read_write>  debug_neighborhood  : PointNeighborhood;
 
 @group(1) @binding(0) var<storage, read> 		particles			: ParticleBuffer;
 @group(1) @binding(0) var<storage, read_write> 	out_particles		: ParticleBuffer;
@@ -249,13 +248,6 @@ fn computeGridNormals(@builtin(global_invocation_id) invocation_id : vec3<u32>)
 		point.particle_idx = candidate_idx;
 
 		points[j] = point;
-	}
-
-	if(particle_idx == debug_neighborhood.particle_idx) {
-		for(var i = 0; i < min(count, NEIGHBORHOOD_SIZE); i++) {
-			debug_neighborhood.neighborhood[i / 4][i % 4] = points[i].particle_idx;
-		}
-		debug_neighborhood.count = u32(min(count, NEIGHBORHOOD_SIZE));
 	}
 
 	let edge_offset = 2 * NEIGHBORHOOD_SIZE * particle_idx;

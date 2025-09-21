@@ -1,10 +1,7 @@
-import {
-	PARTICLE_COUNT,
-	Particles,
-	PointNeighborhoodBuffer,
-} from "../Particles";
+import { PARTICLE_COUNT, Particles } from "../Particles";
 import ParticlesDebugPak from "../../../shaders/sandstone/particles_debug.wgsl";
 import { RenderOutputTexture } from "../../sky-sea/RenderOutputController";
+import { SIZEOF } from "../Sizeof";
 
 // Particle radius is purely for debug purposes, the particles have no size in
 // the physics model.
@@ -28,6 +25,7 @@ interface ParticleDrawPipeline {
 	settings: {
 		drawSurfaceOnly: boolean;
 		drawStyle: ParticleDrawPipelineDrawStyle;
+		debugParticleIdx: number;
 	};
 }
 
@@ -46,17 +44,15 @@ export const ParticleDrawPipeline = Object.freeze({
 		depthFormat,
 		particles,
 		cameraUBO,
-		debugNeighborhoodBuffer,
 	}: {
 		device: GPUDevice;
 		colorFormat: GPUTextureFormat;
 		depthFormat: GPUTextureFormat;
 		particles: Particles;
 		cameraUBO: GPUBuffer;
-		debugNeighborhoodBuffer: PointNeighborhoodBuffer;
 	}): ParticleDrawPipeline => {
 		const configUBO = device.createBuffer({
-			size: 8,
+			size: 3 * SIZEOF.u32,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 			label: "ParticleDrawPipeline configUBO",
 		});
@@ -78,11 +74,6 @@ export const ParticleDrawPipeline = Object.freeze({
 				},
 				{
 					binding: 2,
-					visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-					buffer: { type: "uniform" },
-				},
-				{
-					binding: 3,
 					visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
 					buffer: { type: "uniform" },
 				},
@@ -200,7 +191,6 @@ export const ParticleDrawPipeline = Object.freeze({
 				{ binding: 0, resource: particles.particleBuffer },
 				{ binding: 1, resource: cameraUBO },
 				{ binding: 2, resource: configUBO },
-				{ binding: 3, resource: debugNeighborhoodBuffer.buffer },
 			],
 			layout: pipeline_renderParticles.getBindGroupLayout(0),
 			label: "ParticleDebugPipeline 0",
@@ -244,6 +234,7 @@ export const ParticleDrawPipeline = Object.freeze({
 			settings: {
 				drawStyle: "Spheres",
 				drawSurfaceOnly: true,
+				debugParticleIdx: 0,
 			},
 		};
 	},
@@ -270,6 +261,7 @@ export const ParticleDrawPipeline = Object.freeze({
 			new Uint32Array([
 				pipeline.settings.drawSurfaceOnly ? 1 : 0,
 				drawNormals ? 1 : 0,
+				pipeline.settings.debugParticleIdx,
 			])
 		);
 

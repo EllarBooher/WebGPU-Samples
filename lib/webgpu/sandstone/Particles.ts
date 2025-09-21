@@ -212,38 +212,3 @@ export const writeParticles = (
 
 	particles.meshDirty = true;
 };
-export interface PointNeighborhoodBuffer {
-	buffer: GPUBuffer;
-}
-export const PointNeighborhoodBuffer = {
-	build: (device: GPUDevice): PointNeighborhoodBuffer => {
-		const buffer = device.createBuffer({
-			usage:
-				GPUBufferUsage.COPY_DST |
-				GPUBufferUsage.STORAGE |
-				GPUBufferUsage.UNIFORM,
-			size: SIZEOF.pointNeighborhood,
-			label: "Point Neighborhood",
-		});
-		return { buffer };
-	},
-	writeToGPU: ({
-		device,
-		neighborhood,
-		particleIndex,
-	}: {
-		device: GPUDevice;
-		neighborhood: PointNeighborhoodBuffer;
-		particleIndex: number;
-	}): void => {
-		const bytes = new ArrayBuffer(neighborhood.buffer.size / SIZEOF.f32);
-
-		const floats = new Float32Array(bytes);
-		floats.fill(0.0);
-
-		const uints = new Uint32Array(bytes);
-		uints[3] = particleIndex;
-
-		device.queue.writeBuffer(neighborhood.buffer, 0, bytes);
-	},
-}; // Add a bit of a gap so no particles are negative

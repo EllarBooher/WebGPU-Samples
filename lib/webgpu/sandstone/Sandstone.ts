@@ -5,12 +5,7 @@ import { RenderOutputTexture } from "../sky-sea/RenderOutputController";
 import { Camera, CAMERA_PARAMETER_BOUNDS, CameraStyle } from "./Camera";
 import { WorldAxesPipeline } from "./pipelines/WorldAxes";
 import { KeyCode, KeyState } from "./Input";
-import {
-	PARTICLE_COUNT,
-	PointNeighborhoodBuffer,
-	buildParticles,
-	writeParticles,
-} from "./Particles";
+import { PARTICLE_COUNT, buildParticles, writeParticles } from "./Particles";
 import * as ParticleMeshifyPipeline from "./pipelines/ParticleMeshify";
 import {
 	ParticleDrawPipeline,
@@ -119,19 +114,10 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 	const camera = Camera.build(device);
 
-	const debugNeighborhood = PointNeighborhoodBuffer.build(device);
-	PointNeighborhoodBuffer.writeToGPU({
-		device,
-		neighborhood: debugNeighborhood,
-		particleIndex: 0,
-	});
-
 	const pipelineParameters: {
 		output: RenderOutputCategory;
-		debugParticleIdx: number;
 	} = {
 		output: "Debug Particles",
-		debugParticleIdx: 0,
 	};
 
 	const particles = buildParticles(device);
@@ -144,15 +130,13 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			depthFormat: DEPTH_FORMAT,
 			particles,
 			cameraUBO: camera.buffer,
-			debugNeighborhoodBuffer: debugNeighborhood,
 		}),
 		particleMeshifyPipeline: ParticleMeshifyPipeline.build(
 			device,
 			COLOR_FORMAT,
 			DEPTH_FORMAT,
 			particles,
-			camera.buffer,
-			debugNeighborhood
+			camera.buffer
 		),
 		worldAxesPipeline: WorldAxesPipeline.build({
 			device,
@@ -329,7 +313,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		folders.pipeline
 			.add(pipelineParameters, "output")
 			.options(RenderOutputCategory)
-			.name("Debug Particles");
+			.name("Output");
 		folders.pipeline
 			.add(
 				permanentResources.particleDrawPipeline.settings,
@@ -341,15 +325,15 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			.options(ParticleDrawPipelineDrawStyle)
 			.name("Draw Style");
 		debugParticleController = folders.pipeline
-			.add(pipelineParameters, "debugParticleIdx")
+			.add(
+				permanentResources.particleDrawPipeline.settings,
+				"debugParticleIdx"
+			)
 			.name("Debug Particle Index")
 			.min(0)
 			.max(PARTICLE_COUNT)
 			.step(1)
-			.listen()
-			.onFinishChange(() => {
-				permanentResources.particles.meshDirty = true;
-			});
+			.listen();
 
 		folders.particles.add(
 			{
@@ -412,12 +396,6 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 
 		let copying = false;
 		if (permanentResources.particles.meshDirty) {
-			PointNeighborhoodBuffer.writeToGPU({
-				device,
-				neighborhood: debugNeighborhood,
-				particleIndex: pipelineParameters.debugParticleIdx,
-			});
-
 			ParticleMeshifyPipeline.computeMeshFromParticles({
 				commandEncoder: main,
 				pipeline: permanentResources.particleMeshifyPipeline,
@@ -640,7 +618,8 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 						debugParticleController?.setValue(
 							Math.max(
 								Math.min(
-									pipelineParameters.debugParticleIdx,
+									permanentResources.particleDrawPipeline
+										.settings.debugParticleIdx,
 									max
 								),
 								min

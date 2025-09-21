@@ -20,14 +20,17 @@ const VERTEX_TWIDDLES: array<vec2<f32>,4> = array(
 const NORMAL_LENGTH = 0.4;
 
 struct ParticlesDebugConfig {
-	draw_surface_only : u32,
-	draw_normals : u32,
+	// Only draw surface particles
+	draw_surface_only  : u32,
+	// Shader particles with their normal vector
+	draw_normals       : u32,
+	// A particle for which its position and graph neighbors will be highlighted
+	debug_particle_idx : u32,
 }
 
 @group(0) @binding(0) var<storage, read> particles: ParticleBuffer;
 @group(0) @binding(1) var<uniform> u_camera: CameraUBO;
 @group(0) @binding(2) var<uniform> u_config: ParticlesDebugConfig;
-@group(0) @binding(3) var<uniform> u_debug_neighborhood: PointNeighborhood;
 
 @group(1) @binding(0) var<storage, read_write> vertices_out: array<vec4<f32>>;
 @group(1) @binding(0) var<storage, read> vertices_in: array<vec4<f32>>;
@@ -133,15 +136,7 @@ fn drawParticlesVertex(
 	out.normal = particle.normal_world.xyz;
 	out.color = particle.color;
 
-	if(particles.particles[u_debug_neighborhood.particle_idx].is_surface > 0) {
-		for(var neighborhood_idx = 0; neighborhood_idx < NEIGHBORHOOD_SIZE; neighborhood_idx++) {
-			if(u_debug_neighborhood.neighborhood[neighborhood_idx / 4][neighborhood_idx % 4] == particle_idx) {
-				out.color = vec3<f32>(1.0,0.0,0.0);
-			}
-		}
-
-	}
-	if(u_debug_neighborhood.particle_idx == particle_idx) {
+	if(u_config.debug_particle_idx == particle_idx) {
 		out.color = vec3<f32>(0.0, 0.0, 1.0);
 	}
 

@@ -5,7 +5,6 @@ import {
 	NEIGHBORHOOD_SIZE,
 	PARTICLE_COUNT,
 	Particles,
-	PointNeighborhoodBuffer,
 } from "../Particles";
 import { SIZEOF } from "../Sizeof";
 
@@ -51,8 +50,7 @@ export const build = (
 	colorFormat: GPUTextureFormat,
 	depthFormat: GPUTextureFormat,
 	particles: Particles,
-	cameraUBO: GPUBuffer,
-	debugNeighborhoodBuffer: PointNeighborhoodBuffer
+	cameraUBO: GPUBuffer
 ): ParticleMeshifyPipeline => {
 	const layouts = {
 		camera: device.createBindGroupLayout({
@@ -61,11 +59,6 @@ export const build = (
 					binding: 0,
 					visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX,
 					buffer: { type: "uniform" },
-				},
-				{
-					binding: 1,
-					visibility: GPUShaderStage.COMPUTE,
-					buffer: { type: "storage" },
 				},
 			],
 			label: "ParticleMeshifyPipeline camera",
@@ -375,10 +368,7 @@ export const build = (
 
 	const groups = {
 		camera: device.createBindGroup({
-			entries: [
-				{ binding: 0, resource: cameraUBO },
-				{ binding: 1, resource: debugNeighborhoodBuffer.buffer },
-			],
+			entries: [{ binding: 0, resource: cameraUBO }],
 			layout: layouts.camera,
 			label: "ParticleMeshifyPipeline camera",
 		}),
