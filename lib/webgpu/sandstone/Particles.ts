@@ -147,7 +147,7 @@ export const writeParticles = (
 	};
 
 	const f32PerParticle = SIZEOF.particle / SIZEOF.f32;
-	const randomPositions = new Float32Array(
+	const particlesFloats = new Float32Array(
 		PARTICLE_COUNT * f32PerParticle
 	).fill(0.0);
 
@@ -183,17 +183,27 @@ export const writeParticles = (
 						deviation,
 				};
 
-				randomPositions[offset] = position.x;
-				randomPositions[offset + 1] = position.y;
-				randomPositions[offset + 2] = position.z;
-				randomPositions[offset + 3] = 1.0;
+				// Offsets into GPU-side Particle type
+
+				// position_world
+				particlesFloats[offset] = position.x;
+				particlesFloats[offset + 1] = position.y;
+				particlesFloats[offset + 2] = position.z;
 
 				const [r, g, b] = sampleColor(
 					(y + deviation) / PARTICLE_DIMENSIONS[1]
 				);
-				randomPositions[offset + 8] = r;
-				randomPositions[offset + 9] = g;
-				randomPositions[offset + 10] = b;
+				// color
+				particlesFloats[offset + 8] = r;
+				particlesFloats[offset + 9] = g;
+				particlesFloats[offset + 10] = b;
+
+				// affine_velocity, velocity, and stress_cauchy all start 0
+
+				// deformation_gradient, identity matrix
+				particlesFloats[offset + 28] = 1.0;
+				particlesFloats[offset + 28 + 4 + 1] = 1.0;
+				particlesFloats[offset + 28 + 4 + 4 + 1] = 1.0;
 			}
 		}
 	}
@@ -207,7 +217,7 @@ export const writeParticles = (
 	device.queue.writeBuffer(
 		particles.particleBuffer,
 		particleBufferHeaderSize,
-		randomPositions
+		particlesFloats
 	);
 
 	particles.meshDirty = true;

@@ -7,6 +7,7 @@ import { WorldAxesPipeline } from "./pipelines/WorldAxes";
 import { KeyCode, KeyState } from "./Input";
 import { PARTICLE_COUNT, buildParticles, writeParticles } from "./Particles";
 import * as ParticleMeshifyPipeline from "./pipelines/ParticleMeshify";
+import * as MaterialGridPipeline from "./pipelines/MaterialGrid";
 import * as GlobalUniforms from "./GlobalUniforms";
 import {
 	ParticleDrawPipeline,
@@ -113,7 +114,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 		"Sandstone"
 	);
 
-	const camera = Camera.build(device);
+	const camera = Camera.build();
 	const globalUniforms = GlobalUniforms.build(device);
 
 	const pipelineParameters: {
@@ -146,6 +147,7 @@ export const SandstoneAppConstructor: RendererAppConstructor = (
 			colorFormat: COLOR_FORMAT,
 			depthFormat: DEPTH_FORMAT,
 		}),
+		materialGridPipeline: MaterialGridPipeline.build({ device, particles }),
 		fullscreenQuad: new FullscreenQuadPassResources(device, COLOR_FORMAT),
 		camera,
 		particles,

@@ -19,6 +19,11 @@ struct SVDecomposition {
 	V : mat3x3<f32>,
 }
 
+struct PolarDecomposition {
+	R : mat3x3<f32>,
+	S : mat3x3<f32>,
+}
+
 struct SVDIntermediate {
 	U : mat3x3<f32>,
 	A : mat3x3<f32>,
@@ -479,6 +484,18 @@ fn svd_3D(A_in: mat3x3<f32>) -> SVDecomposition
 		out = solve_reduced_bot_right(UAV);
 		out = sort_with_bot_right_sub(out);
 	}
+
+	return out;
+}
+
+// Produces a polar decomposition of A: that is, A = RS where R is a rotation and S is symmetric.
+fn polar_decomposition_3D(A: mat3x3<f32>) -> PolarDecomposition
+{
+	let svd = svd_3D(A);
+
+	var out : PolarDecomposition;
+	out.R = svd.U * transpose(svd.V);
+	out.S = svd.V * mat3x3<f32>(svd.Σ[0], 0, 0, 0, svd.Σ[1], 0, 0, 0, svd.Σ[2]) * transpose(svd.V);
 
 	return out;
 }

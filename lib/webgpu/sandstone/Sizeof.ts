@@ -6,11 +6,14 @@ const buildSizeOf = () => {
 	const vec4_f32 = 4 * f32;
 	const vec3_u32 = 3 * u32;
 	const vec4_u32 = 4 * u32;
-	const particle = 3 * vec4_f32;
+	const particle = 13 * vec4_f32;
 	const gridPoint = vec4_f32;
 	const pointNeighborhood = vec4_f32 + vec4_f32 * 5;
 	const drawIndexedIndirectParameters = 2 * vec4_f32;
 	const dispatchIndirectParameters = vec4_u32;
+
+	const mpmGridPoint = 2 * vec4_f32;
+	const mpmGridHeader = vec4_f32;
 
 	const mat3x3_f32 = 3 * vec4_f32;
 	const mat4x4_f32 = 4 * vec4_f32;
@@ -33,6 +36,8 @@ const buildSizeOf = () => {
 		cameraUBO,
 		globalUniforms,
 		pointNeighborhood,
+		mpmGridPoint,
+		mpmGridHeader,
 	};
 };
 export const SIZEOF = Object.freeze(buildSizeOf());

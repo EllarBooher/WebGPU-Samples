@@ -1,6 +1,7 @@
 #include types.inc.wgsl
 #include svd.inc.wgsl
 #include graph.inc.wgsl
+#include linear_algebra.inc.wgsl
 
 struct GridPoint {
 	position : vec3<f32>,
@@ -147,25 +148,6 @@ struct ClosestPoint {
 	position : vec3<f32>,
 	distance : f32,
 	particle_idx: u32,
-}
-
-// Returns the inverse of the given matrix. Result is undefined if the determinant is zero.
-fn matrixInverse(
-	m: mat3x3<f32>
-) -> mat3x3<f32> {
-    var adjoint: mat3x3<f32>;
-
-    adjoint[0][0] =   (m[1][1] * m[2][2] - m[2][1] * m[1][2]);
-    adjoint[1][0] = - (m[1][0] * m[2][2] - m[2][0] * m[1][2]);
-    adjoint[2][0] =   (m[1][0] * m[2][1] - m[2][0] * m[1][1]);
-    adjoint[0][1] = - (m[0][1] * m[2][2] - m[2][1] * m[0][2]);
-    adjoint[1][1] =   (m[0][0] * m[2][2] - m[2][0] * m[0][2]);
-    adjoint[2][1] = - (m[0][0] * m[2][1] - m[2][0] * m[0][1]);
-    adjoint[0][2] =   (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
-    adjoint[1][2] = - (m[0][0] * m[1][2] - m[1][0] * m[0][2]);
-    adjoint[2][2] =   (m[0][0] * m[1][1] - m[1][0] * m[0][1]);
-
-	return (1.0 / determinant(m)) * adjoint;
 }
 
 @compute @workgroup_size(256, 1, 1)

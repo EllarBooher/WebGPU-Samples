@@ -29,13 +29,18 @@ struct GlobalUniforms {
 	debug_particle_idx :      u32 ,
 }
 
-struct Particle {
-	position_world : vec3<f32>,
-	is_surface     :      u32 ,
-	normal_world   : vec3<f32>,
-	padding0       :      f32 ,
-	color          : vec3<f32>,
-	padding1       :      f32 ,
+struct Particle {                       // Offsets
+	position_world       :   vec3<f32>, //   0
+	is_surface           :        u32 , //   3
+	normal_world         :   vec3<f32>, //   4
+	padding0             :        f32 , //   7
+	color                :   vec3<f32>, //   8
+	padding1             :        f32 , //   11
+	affine_velocity      : mat3x3<f32>, //   12
+	velocity             :   vec3<f32>, //   24
+	padding2             :        f32 , //   27
+	deformation_gradient : mat3x3<f32>, //   28
+	stress_cauchy        : mat3x3<f32>, //   40
 }
 
 struct ParticleBuffer {
@@ -65,3 +70,18 @@ struct Graph {
 	count    : u32        ,
 	edges    : array<Edge>,
 }
+
+struct MPMGridPoint {
+	momentum : vec3<f32>,
+	mass     :      f32 ,
+	velocity : vec3<f32>,
+	padding0 :      f32 ,
+}
+
+struct MPMGrid {
+	padding0 : vec2<u32>,
+	spacing_world : f32,
+	dimension : u32,
+	points : array<MPMGridPoint>,
+}
+
